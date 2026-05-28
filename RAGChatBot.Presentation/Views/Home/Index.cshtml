@@ -1,0 +1,80 @@
+@{
+    ViewData["Title"] = "Trang Chủ";
+}
+
+<div class="row min-vh-75 d-flex align-items-center">
+    <div class="col-lg-12 text-center py-5">
+        <div class="mb-4">
+            <span class="badge rounded-pill bg-indigo text-light px-3 py-2 text-uppercase fw-bold" style="font-size:0.8rem; letter-spacing: 1px;">
+                ⚡ Advanced AI Assistant
+            </span>
+        </div>
+        
+        <h1 class="display-3 fw-bold mb-3" style="background: linear-gradient(135deg, #a5b4fc 0%, #c084fc 50%, #f472b6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Hệ thống Trợ lý Tri thức RAG ChatBot
+        </h1>
+        
+        <p class="lead text-muted mx-auto mb-5" style="max-width: 700px; font-size: 1.2rem;">
+            Nền tảng ứng dụng mô hình ngôn ngữ lớn (LLM) để tương tác thông minh, tự động truy vấn thông tin chính xác từ kho tài liệu giảng dạy thô dựa trên công nghệ Retrieval-Augmented Generation (RAG).
+        </p>
+        
+        <div class="d-flex justify-content-center gap-3">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="Document" asp-action="Index" class="btn btn-primary-custom py-3 px-5 fs-5">
+                    <i class="fa-solid fa-folder-open me-2"></i> Đi tới trang Quản lý tài liệu
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" class="btn btn-primary-custom py-3 px-5 fs-5">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i> Bắt đầu sử dụng hệ thống
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-2">
+    <!-- Card 1 -->
+    <div class="col-md-4">
+        <div class="card-custom text-center p-4">
+            <div class="mb-3">
+                <span class="fa-stack fa-2x">
+                    <i class="fa-solid fa-circle fa-stack-2x" style="color: rgba(99, 102, 241, 0.1);"></i>
+                    <i class="fa-solid fa-shield-halved fa-stack-1x text-indigo"></i>
+                </span>
+            </div>
+            <h4 class="text-light fw-bold mb-3">Xác thực & Phân quyền</h4>
+            <p class="text-muted mb-0">Hệ thống bảo mật Cookie-based giúp nhận diện đúng vai trò Giảng viên/Admin và kiểm soát hạn mức tài nguyên sử dụng.</p>
+        </div>
+    </div>
+    
+    <!-- Card 2 -->
+    <div class="col-md-4">
+        <div class="card-custom text-center p-4">
+            <div class="mb-3">
+                <span class="fa-stack fa-2x">
+                    <i class="fa-solid fa-circle fa-stack-2x" style="color: rgba(168, 85, 247, 0.1);"></i>
+                    <i class="fa-solid fa-cloud-arrow-up fa-stack-1x text-purple"></i>
+                </span>
+            </div>
+            <h4 class="text-light fw-bold mb-3">Upload Tài Liệu Thô</h4>
+            <p class="text-muted mb-0">Hỗ trợ tải lên định dạng PDF, DOCX với khả năng tự động kiểm tra định dạng và dung lượng tệp theo phân hạng tài khoản.</p>
+        </div>
+    </div>
+    
+    <!-- Card 3 -->
+    <div class="col-md-4">
+        <div class="card-custom text-center p-4">
+            <div class="mb-3">
+                <span class="fa-stack fa-2x">
+                    <i class="fa-solid fa-circle fa-stack-2x" style="color: rgba(236, 72, 153, 0.1);"></i>
+                    <i class="fa-solid fa-brain fa-stack-1x text-pink"></i>
+                </span>
+            </div>
+            <h4 class="text-light fw-bold mb-3">Lưu Trữ Song Song</h4>
+            <p class="text-muted mb-0">Ghi file vật lý vào phân vùng thô và đồng bộ hóa Metadata vào CSDL PostgreSQL thông qua EF Core, sẵn sàng cho việc xử lý AI.</p>
+        </div>
+    </div>
+</div>

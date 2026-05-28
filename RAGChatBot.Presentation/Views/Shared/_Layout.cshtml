@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - RAG ChatBot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #090d16 0%, #0f1026 50%, #170720 100%);
+            --nav-bg: rgba(15, 23, 42, 0.6);
+            --card-bg: rgba(30, 41, 59, 0.45);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --primary: #6366f1;
+            --secondary: #a855f7;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-custom {
+            background: var(--nav-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 0;
+        }
+
+        .navbar-brand-custom {
+            font-weight: 700;
+            font-size: 1.4rem;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .nav-link-custom {
+            color: var(--text-sub) !important;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin: 0 5px;
+            padding: 8px 16px !important;
+            border-radius: 8px;
+        }
+
+        .nav-link-custom:hover, .nav-link-custom.active {
+            color: var(--text-main) !important;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .user-badge {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 20px;
+            padding: 6px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .tier-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+
+        .tier-free {
+            background: rgba(148, 163, 184, 0.2);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .tier-premium {
+            background: rgba(234, 179, 8, 0.2);
+            color: #fef08a;
+            border: 1px solid rgba(234, 179, 8, 0.3);
+        }
+
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5 !important;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-logout:hover {
+            background: #ef4444;
+            color: white !important;
+        }
+
+        .main-container {
+            flex: 1;
+            padding-top: 40px;
+            padding-bottom: 60px;
+        }
+
+        footer-custom {
+            background: rgba(15, 23, 42, 0.8);
+            border-top: 1px solid var(--border-color);
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-custom">
+            <div class="container">
+                <a class="navbar-brand-custom" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fa-solid fa-brain me-2"></i>RAG ChatBot
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav"
+                        aria-expanded="false" aria-label="Toggle navigation" style="border-color: var(--border-color);">
+                    <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" asp-controller="Home" asp-action="Index">Trang Chủ</a>
+                        </li>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-custom" asp-controller="Document" asp-action="Index">Quản Lý Tài Liệu</a>
+                            </li>
+                        }
+                    </ul>
+                    <div class="d-flex align-items-center gap-3">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            var tier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
+                            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Lecturer";
+                            <div class="user-badge text-light">
+                                <i class="fa-solid fa-circle-user" style="color: #818cf8;"></i>
+                                <span>@User.Identity.Name</span>
+                                <span class="badge rounded-pill bg-secondary text-light">@role</span>
+                                <span class="tier-badge @(tier == "Premium" ? "tier-premium" : "tier-free")">@tier</span>
+                            </div>
+                            <a class="btn-logout" asp-controller="Account" asp-action="Logout">
+                                <i class="fa-solid fa-right-from-bracket me-2"></i>Đăng Xuất
+                            </a>
+                        }
+                        else
+                        {
+                            <a class="btn btn-outline-light" asp-controller="Account" asp-action="Login" style="border-radius: 8px; font-weight: 500;">
+                                <i class="fa-solid fa-right-to-bracket me-2"></i>Đăng Nhập
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container main-container">
+        <main role="main">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="footer-custom py-4 text-center mt-auto" style="background: rgba(15, 23, 42, 0.4); border-top: 1px solid var(--border-color); color: var(--text-sub);">
+        <div class="container">
+            &copy; 2026 - RAG ChatBot Core System - Thiết kế theo mô hình Clean Architecture
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,73 @@
+## Ignore Visual Studio temporary files, build results, and
+## user-specific files for .NET projects.
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Re]leases/
+x64/
+x86/
+[Aa]rm/
+[Aa]rm64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Log]s/
+[Tt]est[Rr]esults/
+
+# Visual Studio Cache & Settings
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.suo.template
+*.suo.tmp
+
+# DiagnosticHub
+*.diagsession
+
+# Rider & Resharper
+.idea/
+*.sln.iml
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# VS Code Settings
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/code-workspace
+
+# NuGet Packages
+*.nupkg
+**/packages/*
+!**/packages/build/
+project.assets.json
+project.lock.json
+
+# Publish Web Output
+*.Publish.xml
+*.pubxml
+*.pubxml.user
+
+# Local Development Settings & Secrets
+appsettings.json
+appsettings.local.json
+secrets.json
+.microsoft/usersecrets/
+
+# Local Storage for Raw Documents (Uploaded raw files)
+Storage/
+
+
+# OS-generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
