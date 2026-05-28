@@ -61,8 +61,6 @@ appsettings.local.json
 secrets.json
 .microsoft/usersecrets/
 
-# Local Storage for Raw Documents (Uploaded raw files)
-Storage/
 
 
 # OS-generated files
