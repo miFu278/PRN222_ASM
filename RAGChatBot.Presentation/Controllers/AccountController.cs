@@ -3,10 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using RAGChatBot.Application.DTOs;
 using RAGChatBot.Application.Services;
-using System;
-using System.Collections.Generic;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace RAGChatBot.Presentation.Controllers
 {

@@ -1,14 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using RAGChatBot.Application.DTOs;
 using RAGChatBot.Application.Services;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace RAGChatBot.Presentation.Controllers
 {

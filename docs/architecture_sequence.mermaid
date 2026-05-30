@@ -1,0 +1,57 @@
+%%{init: {
+  "theme": "dark",
+  "themeVariables": {
+    "background": "#090d16",
+    "primaryColor": "#6366f1",
+    "primaryTextColor": "#ffffff",
+    "primaryBorderColor": "#4f46e5",
+    "lineColor": "#818cf8",
+    "actorBkg": "#1e293b",
+    "actorBorder": "#6366f1",
+    "actorTextColor": "#ffffff"
+  }
+}}%%
+sequenceDiagram
+    autonumber
+    actor Lecturer as Giảng viên
+    participant Ctrl as DocumentController<br/>(Presentation)
+    participant Service as DocumentService<br/>(Application)
+    participant Storage as SupabaseStorageService<br/>(Infrastructure)
+    participant Cloud as Supabase Storage<br/>(External Cloud)
+    participant Repo as DocumentRepository<br/>(Infrastructure)
+    participant DB as PostgreSQL Database<br/>(External DB)
+
+    Lecturer->>Ctrl: Gửi yêu cầu Upload File (POST Form kèm File, Course, Chapter)
+    Note over Ctrl: Trích xuất thông tin User<br/>(Id, SubscriptionTier từ Cookie Claims)
+    
+    Ctrl->>Service: UploadDocumentAsync(fileStream, fileName, size, course, chapter, userId, tier)
+    
+    rect rgb(20, 20, 45)
+        Note over Service: Logic Nghiệp vụ (Business Validation):<br/>1. Đuôi tệp hợp lệ (.pdf, .docx)?<br/>2. Dung lượng tệp vượt quá hạn mức Gói cước (Free: 5MB / Premium: 50MB)?
+    end
+
+    alt Tệp không hợp lệ hoặc Vượt giới hạn dung lượng
+        Service-->>Ctrl: Ném ngoại lệ (Exception với thông điệp chi tiết)
+        Ctrl-->>Lecturer: Hiển thị thông báo lỗi lên giao diện (TempData["Error"])
+    else Kiểm tra hợp lệ thành công
+        Service->>Storage: SaveFileAsync(fileStream, fileName)
+        
+        rect rgb(30, 20, 45)
+            Note over Storage: Tạo tên tệp duy nhất (unique)<br/>dùng Guid tránh trùng lặp
+            Storage->>Cloud: Upload file dưới dạng byte array lên bucket 'raw-documents'
+            Cloud-->>Storage: Tải lên thành công
+            Storage->>Storage: Lấy đường dẫn URL công khai (GetPublicUrl)
+        end
+        
+        Storage-->>Service: Trả về URL StoragePath (đường dẫn Supabase Public URL)
+        
+        Service->>Repo: AddAsync(KnowledgeDocument Entity mới chứa metadata & URL)
+        Repo->>DB: INSERT INTO "KnowledgeDocuments"
+        
+        Service->>Repo: SaveChangesAsync()
+        Repo->>DB: Commit Transaction
+        DB-->>Repo: Xác nhận lưu DB thành công
+        
+        Service-->>Ctrl: Trả về thông tin Document dưới dạng DocumentDto
+        Ctrl-->>Lecturer: Chuyển hướng về trang Index kèm thông báo thành công!
+    end

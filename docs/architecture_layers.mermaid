@@ -1,0 +1,51 @@
+%%{init: {
+  "theme": "dark",
+  "themeVariables": {
+    "background": "#090d16",
+    "primaryColor": "#6366f1",
+    "primaryTextColor": "#ffffff",
+    "primaryBorderColor": "#4f46e5",
+    "lineColor": "#818cf8",
+    "secondaryColor": "#1e293b",
+    "tertiaryColor": "#0f172a"
+  }
+}}%%
+flowchart TD
+    subgraph Presentation ["1. Tầng Presentation (RAGChatBot.Presentation)"]
+        style Presentation fill:#1e1b4b,stroke:#6366f1,stroke-width:2px,color:#ffffff
+        Controllers["Controllers (Account, Document, Home)"]
+        Views["Views (Razor Views: CSHTML, site.css)"]
+        Prog["Program.cs (Cấu hình DI, Middleware, Auth)"]
+    end
+
+    subgraph Infrastructure ["2. Tầng Infrastructure (RAGChatBot.Infrastructure)"]
+        style Infrastructure fill:#311042,stroke:#a855f7,stroke-width:2px,color:#ffffff
+        DbContext["Persistence (AppDbContext - EF Core)"]
+        Repos["Repositories (UserRepository, KnowledgeDocumentRepository)"]
+        Storage["Storage (SupabaseFileStorageService)"]
+        Security["Security (BCryptPasswordHasher)"]
+    end
+
+    subgraph Application ["3. Tầng Application (RAGChatBot.Application)"]
+        style Application fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ffffff
+        Services["Services (AuthService, DocumentService)"]
+        Interfaces["Interfaces (IUserRepository, IFileStorageService, ...)"]
+        DTOs["DTOs (DocumentDto, UserDto, LoginRequest)"]
+    end
+
+    subgraph Domain ["4. Tầng Domain (RAGChatBot.Domain)"]
+        style Domain fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#ffffff
+        Models["Models (User, KnowledgeDocument)"]
+    end
+
+    %% Dependency Flows (Outer to Inner)
+    Presentation -->|Tham chiếu & gọi| Application
+    Presentation -->|Đăng ký DI tại Program.cs| Infrastructure
+    Infrastructure -->|Triển khai các Interface của| Application
+    Infrastructure -->|Sử dụng thực thể| Domain
+    Application -->|Sử dụng thực thể| Domain
+
+    %% Interacting with External Resources
+    Client((Người dùng / Web Browser)) <-->|HTTP Requests / HTML Response| Presentation
+    DbContext <-->|SQL Queries / EF Core| PostgreSQL[(PostgreSQL Database)]
+    Storage <-->|API Upload / Delete| SupabaseStorage[[Supabase Storage Bucket]]
