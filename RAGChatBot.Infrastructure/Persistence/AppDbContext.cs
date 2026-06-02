@@ -11,6 +11,7 @@ namespace RAGChatBot.Infrastructure.Persistence
 
         public DbSet<User> Users => Set<User>();
         public DbSet<KnowledgeDocument> KnowledgeDocuments => Set<KnowledgeDocument>();
+        public DbSet<Course> Courses => Set<Course>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -20,6 +21,12 @@ namespace RAGChatBot.Infrastructure.Persistence
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Username).IsUnique();
+            });
+
+            modelBuilder.Entity<Course>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Code).IsUnique();
             });
 
             modelBuilder.Entity<KnowledgeDocument>(entity =>

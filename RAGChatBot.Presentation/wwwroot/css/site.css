@@ -4,118 +4,118 @@ html {
 
 body {
   margin-bottom: 0px;
-  background: linear-gradient(135deg, #090d16 0%, #0f1026 50%, #170720 100%) !important;
-  color: #f8fafc !important;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%) !important;
+  color: #0f172a !important;
 }
 
-/* Global Typography Overrides for Dark Theme (High Contrast) */
+/* Global Typography Overrides for Light Theme (High Contrast) */
 h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, .fw-bold {
-    color: #f8fafc !important;
+    color: #0f172a !important;
 }
 
 p, .lead, li {
-    color: #cbd5e1 !important;
+    color: #334155 !important;
 }
 
-/* Brighten bootstrap text-muted class for high contrast on dark background */
+/* Adjust bootstrap text-muted class for high contrast on light background */
 .text-muted {
-    color: #a3b3c9 !important;
+    color: #475569 !important;
 }
 
 /* Custom premium color definitions */
 .text-indigo {
-    color: #818cf8 !important;
+    color: #0284c7 !important;
 }
 .text-purple {
-    color: #c084fc !important;
+    color: #0369a1 !important;
 }
 .text-pink {
-    color: #f472b6 !important;
+    color: #0ea5e9 !important;
 }
 .bg-indigo {
-    background-color: #6366f1 !important;
+    background-color: #0284c7 !important;
 }
 
 /* Tab Button styles */
 .btn-indigo {
-    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important;
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
     color: white !important;
     border: none;
     font-weight: 500;
 }
 
 .btn-dark-outline {
-    background: rgba(255, 255, 255, 0.05);
-    color: #cbd5e1 !important;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.05);
+    color: #334155 !important;
+    border: 1px solid rgba(0, 0, 0, 0.1);
     font-weight: 500;
     transition: all 0.2s ease;
 }
 
 .btn-dark-outline:hover {
-    color: #f8fafc !important;
-    background: rgba(255, 255, 255, 0.1);
+    color: #0f172a !important;
+    background: rgba(0, 0, 0, 0.1);
 }
 
 /* Glassmorphic cards */
 .card-custom {
-    background: rgba(30, 41, 59, 0.55);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(14, 165, 233, 0.2);
     border-radius: 20px;
     padding: 30px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
 }
 
 .card-custom:hover {
-    border-color: rgba(99, 102, 241, 0.3);
-    box-shadow: 0 15px 35px rgba(99, 102, 241, 0.1);
+    border-color: rgba(14, 165, 233, 0.4);
+    box-shadow: 0 15px 35px rgba(14, 165, 233, 0.15);
 }
 
 /* Premium Form Elements */
 .form-label {
-    color: #cbd5e1 !important;
+    color: #334155 !important;
     font-weight: 500;
     font-size: 0.9rem;
     margin-bottom: 8px;
 }
 
 .form-control-custom {
-    background: rgba(15, 23, 42, 0.7) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(14, 165, 233, 0.3) !important;
     border-radius: 12px !important;
-    color: #f8fafc !important;
+    color: #0f172a !important;
     padding: 12px 16px !important;
     transition: all 0.2s ease;
 }
 
 .form-control-custom:focus {
-    background: rgba(15, 23, 42, 0.9) !important;
-    border-color: #818cf8 !important;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3) !important;
-    color: #f8fafc !important;
+    background: #ffffff !important;
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.3) !important;
+    color: #0f172a !important;
 }
 
 select.form-control-custom option {
-    background-color: #0f172a;
-    color: #f8fafc;
+    background-color: #ffffff;
+    color: #0f172a;
 }
 
 /* File Upload drag/drop styling */
 .file-upload-wrapper {
     position: relative;
-    border: 2px dashed rgba(99, 102, 241, 0.4);
+    border: 2px dashed rgba(14, 165, 233, 0.4);
     border-radius: 16px;
     cursor: pointer;
-    background: rgba(99, 102, 241, 0.04);
+    background: rgba(14, 165, 233, 0.04);
     transition: all 0.2s ease;
 }
 
 .file-upload-wrapper:hover {
-    border-color: #818cf8;
-    background: rgba(99, 102, 241, 0.08);
+    border-color: #0284c7;
+    background: rgba(14, 165, 233, 0.08);
 }
 
 .file-upload-input {
@@ -135,8 +135,8 @@ select.form-control-custom option {
 
 /* Tier Card style */
 .tier-info-card {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .font-size-08 {
@@ -145,7 +145,7 @@ select.form-control-custom option {
 
 /* Premium Buttons */
 .btn-primary-custom {
-    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
     border: none;
     border-radius: 12px;
     color: white !important;
@@ -155,7 +155,7 @@ select.form-control-custom option {
 
 .btn-primary-custom:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.5);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.4);
     color: white !important;
 }
 
@@ -167,14 +167,14 @@ select.form-control-custom option {
 .table-custom {
     width: 100%;
     margin-bottom: 0;
-    color: #e2e8f0 !important;
-    border-color: rgba(255, 255, 255, 0.08);
+    color: #0f172a !important;
+    border-color: rgba(0, 0, 0, 0.08);
 }
 
 .table-custom th {
     background: transparent !important;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.12) !important;
-    color: #f8fafc !important;
+    border-bottom: 2px solid rgba(14, 165, 233, 0.2) !important;
+    color: #0f172a !important;
     font-weight: 600 !important;
     font-size: 0.9rem;
     padding: 16px 12px !important;
@@ -182,14 +182,14 @@ select.form-control-custom option {
 
 .table-custom td {
     background: transparent !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-    color: #cbd5e1 !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    color: #334155 !important;
     padding: 16px 12px !important;
     vertical-align: middle !important;
 }
 
 .table-custom tr:hover td {
-    background: rgba(255, 255, 255, 0.03) !important;
+    background: rgba(14, 165, 233, 0.05) !important;
 }
 
 /* Status Badges */
@@ -204,21 +204,21 @@ select.form-control-custom option {
 
 .status-pending {
     background: rgba(234, 179, 8, 0.2);
-    color: #fef08a;
+    color: #ca8a04;
     border: 1px solid rgba(234, 179, 8, 0.4);
 }
 
 .status-processed {
     background: rgba(34, 197, 94, 0.2);
-    color: #86efac;
+    color: #16a34a;
     border: 1px solid rgba(34, 197, 94, 0.4);
 }
 
 /* Action button */
 .btn-action-view {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #cbd5e1;
+    background: rgba(14, 165, 233, 0.1);
+    border: 1px solid rgba(14, 165, 233, 0.2);
+    color: #0284c7;
     border-radius: 8px;
     width: 36px;
     height: 36px;
@@ -230,15 +230,15 @@ select.form-control-custom option {
 }
 
 .btn-action-view:hover {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: rgba(99, 102, 241, 0.4);
-    color: #818cf8;
+    background: rgba(14, 165, 233, 0.2);
+    border-color: rgba(14, 165, 233, 0.4);
+    color: #0369a1;
 }
 
 .btn-action-delete {
-    background: rgba(239, 68, 68, 0.08);
-    border: 1px solid rgba(239, 68, 68, 0.15);
-    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #dc2626;
     border-radius: 8px;
     width: 36px;
     height: 36px;

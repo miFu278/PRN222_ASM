@@ -21,10 +21,59 @@ namespace RAGChatBot.Presentation.Controllers
         {
             if (User.Identity?.IsAuthenticated == true)
             {
-                return RedirectToAction("Index", "Document");
+                return RedirectToAction("Index", "Home");
             }
             ViewData["ReturnUrl"] = returnUrl;
             return View();
+        }
+
+        [HttpGet]
+        public IActionResult Register()
+        {
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Register(RegisterRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(request);
+            }
+
+            try
+            {
+                var userDto = await _authService.RegisterAsync(request.Username, request.Password, request.Role, request.SubscriptionTier);
+                
+                // Ghi nhận thông tin Claims
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, userDto.Id.ToString()),
+                    new Claim(ClaimTypes.Name, userDto.Username),
+                    new Claim(ClaimTypes.Role, userDto.Role),
+                    new Claim("SubscriptionTier", userDto.SubscriptionTier)
+                };
+
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2)
+                };
+
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+
+                return RedirectToAction("Index", "Home");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View(request);
+            }
         }
 
         [HttpPost]
@@ -68,7 +117,7 @@ namespace RAGChatBot.Presentation.Controllers
                 return Redirect(returnUrl);
             }
 
-            return RedirectToAction("Index", "Document");
+            return RedirectToAction("Index", "Home");
         }
 
         [HttpPost]

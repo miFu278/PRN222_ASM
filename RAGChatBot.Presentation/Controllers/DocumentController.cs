@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace RAGChatBot.Presentation.Controllers
 {
-    [Authorize(Roles = "Lecturer,Admin")]
+    [Authorize]
     public class DocumentController : Controller
     {
         private readonly IDocumentService _documentService;
@@ -36,6 +36,7 @@ namespace RAGChatBot.Presentation.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Lecturer,Admin")]
         public async Task<IActionResult> Upload(IFormFile file, string courseCode, string chapter)
         {
             if (file == null || file.Length == 0)
@@ -87,6 +88,7 @@ namespace RAGChatBot.Presentation.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Lecturer,Admin")]
         public async Task<IActionResult> Delete(Guid id, string courseCode)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);

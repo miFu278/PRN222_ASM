@@ -1,0 +1,79 @@
+@model IEnumerable<RAGChatBot.Application.DTOs.CourseDto>
+@{
+    ViewData["Title"] = "Môn Học";
+    var isLecturerOrAdmin = User.IsInRole("Lecturer") || User.IsInRole("Admin");
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold" style="color: var(--text-main);">
+                <i class="fa-solid fa-layer-group me-2" style="color: var(--primary);"></i>Danh sách Môn học
+            </h2>
+            <p class="text-muted">Chọn môn học để xem tài liệu tương ứng.</p>
+        </div>
+        @if (isLecturerOrAdmin)
+        {
+            <a asp-action="Create" class="btn btn-primary" style="background-color: var(--primary); border: none;">
+                <i class="fa-solid fa-plus me-1"></i> Tạo Môn Học Mới
+            </a>
+        }
+    </div>
+
+    <!-- Search Box -->
+    <div class="card mb-4 border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-body">
+            <form method="get" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control" placeholder="Tìm kiếm theo mã môn (vd: CS101) hoặc tên môn..." value="@ViewData["SearchKeyword"]" style="border-radius: 8px;" />
+                <button type="submit" class="btn btn-primary" style="border-radius: 8px; background-color: var(--primary); border: none;"><i class="fa-solid fa-magnifying-glass"></i></button>
+                @if (!string.IsNullOrEmpty(ViewData["SearchKeyword"]?.ToString()))
+                {
+                    <a asp-action="Index" class="btn btn-outline-secondary" style="border-radius: 8px;">Xóa bộ lọc</a>
+                }
+            </form>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        @if (!Model.Any())
+        {
+            <div class="col-12 text-center py-5">
+                <i class="fa-solid fa-box-open fa-3x text-muted mb-3"></i>
+                <h5 class="text-dark">Không tìm thấy môn học nào.</h5>
+            </div>
+        }
+        else
+        {
+            foreach (var course in Model)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm" style="transition: transform 0.2s; border-radius: 16px; border: 1px solid var(--sidebar-border) !important;">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h4 class="fw-bold mb-0" style="color: var(--primary);">@course.Code</h4>
+                                <span class="badge text-secondary" style="background: rgba(0,0,0,0.05);">@course.CreatedAt.ToString("dd/MM/yyyy")</span>
+                            </div>
+                            <h6 class="card-title fw-bold text-dark fs-5 mb-2">@course.Name</h6>
+                            <p class="card-text text-muted flex-grow-1" style="font-size: 0.95rem;">
+                                @(string.IsNullOrEmpty(course.Description) ? "Không có mô tả chi tiết." : course.Description)
+                            </p>
+                            <div class="mt-3">
+                                <a asp-controller="Document" asp-action="Index" asp-route-courseCode="@course.Code" class="btn btn-outline-primary w-100" style="border-radius: 8px; font-weight: 500;">
+                                    <i class="fa-regular fa-folder-open me-2"></i>Vào kho tài liệu
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

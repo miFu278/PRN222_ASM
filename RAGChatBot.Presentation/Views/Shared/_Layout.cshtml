@@ -10,189 +10,283 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #090d16 0%, #0f1026 50%, #170720 100%);
-            --nav-bg: rgba(15, 23, 42, 0.6);
-            --card-bg: rgba(30, 41, 59, 0.45);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-main: #f8fafc;
-            --text-sub: #94a3b8;
-            --primary: #6366f1;
-            --secondary: #a855f7;
+            --sidebar-bg: #f8f9fa;
+            --sidebar-border: #e9ecef;
+            --text-main: #0f172a;
+            --text-sub: #475569;
+            --primary: #0ea5e9;
+            --hover-bg: #f1f5f9;
         }
 
         body {
             font-family: 'Outfit', sans-serif;
-            background: var(--bg-gradient);
+            background: #ffffff;
             color: var(--text-main);
-            min-height: 100vh;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--sidebar-border);
             display: flex;
             flex-direction: column;
-        }
-
-        header {
-            position: sticky;
-            top: 0;
+            transition: all 0.3s ease;
             z-index: 1000;
         }
-
-        .navbar-custom {
-            background: var(--nav-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border-color);
-            padding: 15px 0;
+        
+        .sidebar.collapsed {
+            transform: translateX(-260px);
+            margin-right: -260px;
         }
 
-        .navbar-brand-custom {
-            font-weight: 700;
-            font-size: 1.4rem;
-            background: linear-gradient(to right, #818cf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-decoration: none;
-        }
-
-        .nav-link-custom {
-            color: var(--text-sub) !important;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            margin: 0 5px;
-            padding: 8px 16px !important;
-            border-radius: 8px;
-        }
-
-        .nav-link-custom:hover, .nav-link-custom.active {
-            color: var(--text-main) !important;
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .user-badge {
-            background: rgba(99, 102, 241, 0.15);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 20px;
-            padding: 6px 16px;
+        .sidebar-header {
+            padding: 20px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--sidebar-border);
         }
 
-        .tier-badge {
-            font-size: 0.75rem;
+        .sidebar-brand {
             font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 12px;
-            text-transform: uppercase;
-        }
-
-        .tier-free {
-            background: rgba(148, 163, 184, 0.2);
-            color: #cbd5e1;
-            border: 1px solid rgba(148, 163, 184, 0.3);
-        }
-
-        .tier-premium {
-            background: rgba(234, 179, 8, 0.2);
-            color: #fef08a;
-            border: 1px solid rgba(234, 179, 8, 0.3);
-        }
-
-        .btn-logout {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5 !important;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-weight: 600;
-            transition: all 0.2s ease;
+            font-size: 1.2rem;
+            color: var(--text-main);
             text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .btn-logout:hover {
-            background: #ef4444;
-            color: white !important;
+        .sidebar-brand i {
+            color: var(--primary);
         }
 
-        .main-container {
+        .sidebar-content {
             flex: 1;
-            padding-top: 40px;
-            padding-bottom: 60px;
+            padding: 15px 10px;
+            overflow-y: auto;
         }
 
-        footer-custom {
-            background: rgba(15, 23, 42, 0.8);
-            border-top: 1px solid var(--border-color);
-            padding: 20px 0;
+        .nav-item-custom {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 15px;
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-bottom: 5px;
+        }
+
+        .nav-item-custom:hover, .nav-item-custom.active {
+            background-color: var(--hover-bg);
+            color: var(--primary);
+        }
+
+        .nav-item-custom i {
+            width: 20px;
             text-align: center;
-            font-size: 0.9rem;
             color: var(--text-sub);
-            margin-top: auto;
+        }
+        
+        .nav-item-custom:hover i, .nav-item-custom.active i {
+            color: var(--primary);
+        }
+
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid var(--sidebar-border);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .user-details {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+        }
+
+        /* Main Content */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .main-header {
+            height: 60px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--sidebar-border);
+            background: white;
+        }
+        
+        .toggle-sidebar-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--text-sub);
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        
+        .toggle-sidebar-btn:hover {
+            background: var(--hover-bg);
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        @@media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                height: 100vh;
+                transform: translateX(-100%);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-custom">
-            <div class="container">
-                <a class="navbar-brand-custom" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fa-solid fa-brain me-2"></i>RAG ChatBot
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/" class="sidebar-brand">
+                <i class="fa-solid fa-brain"></i> RAG ChatBot
+            </a>
+            <button class="toggle-sidebar-btn d-md-none" id="closeSidebarBtn">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-content">
+            <a asp-controller="Home" asp-action="Index" class="nav-item-custom @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Home" ? "active" : "")">
+                <i class="fa-regular fa-message"></i> Màn hình Chat
+            </a>
+            
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                var isActive = ViewContext.RouteData.Values["Controller"]?.ToString() == "Course" || ViewContext.RouteData.Values["Controller"]?.ToString() == "Document";
+                <a asp-controller="Course" asp-action="Index" class="nav-item-custom @(isActive ? "active" : "")">
+                    <i class="fa-regular fa-folder-open"></i> 
+                    Môn Học
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav"
-                        aria-expanded="false" aria-label="Toggle navigation" style="border-color: var(--border-color);">
-                    <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li class="nav-item">
-                            <a class="nav-link nav-link-custom" asp-controller="Home" asp-action="Index">Trang Chủ</a>
-                        </li>
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link nav-link-custom" asp-controller="Document" asp-action="Index">Quản Lý Tài Liệu</a>
-                            </li>
-                        }
-                    </ul>
-                    <div class="d-flex align-items-center gap-3">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            var tier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
-                            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Lecturer";
-                            <div class="user-badge text-light">
-                                <i class="fa-solid fa-circle-user" style="color: #818cf8;"></i>
-                                <span>@User.Identity.Name</span>
-                                <span class="badge rounded-pill bg-secondary text-light">@role</span>
-                                <span class="tier-badge @(tier == "Premium" ? "tier-premium" : "tier-free")">@tier</span>
-                            </div>
-                            <a class="btn-logout" asp-controller="Account" asp-action="Logout">
-                                <i class="fa-solid fa-right-from-bracket me-2"></i>Đăng Xuất
-                            </a>
-                        }
-                        else
-                        {
-                            <a class="btn btn-outline-light" asp-controller="Account" asp-action="Login" style="border-radius: 8px; font-weight: 500;">
-                                <i class="fa-solid fa-right-to-bracket me-2"></i>Đăng Nhập
-                            </a>
-                        }
+            }
+        </div>
+
+        <div class="sidebar-footer">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Lecturer";
+                var tier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
+                var initial = User.Identity.Name?.Substring(0, 1).ToUpper() ?? "U";
+
+                <div class="user-info">
+                    <div class="user-avatar">@initial</div>
+                    <div class="user-details">
+                        <div class="user-name">@User.Identity.Name</div>
+                        <div class="user-role">@role &bull; @tier</div>
                     </div>
                 </div>
-            </div>
-        </nav>
-    </header>
+                <a asp-controller="Account" asp-action="Logout" class="nav-item-custom text-danger mt-2" style="padding: 8px 15px;">
+                    <i class="fa-solid fa-right-from-bracket text-danger"></i> Đăng xuất
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" class="nav-item-custom">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+                </a>
+            }
+        </div>
+    </aside>
 
-    <div class="container main-container">
-        <main role="main">
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+        <header class="main-header">
+            <button class="toggle-sidebar-btn" id="toggleSidebarBtn">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="ms-3 fw-bold" style="font-size: 1.1rem; color: var(--text-main);">
+                @ViewData["Title"]
+            </div>
+        </header>
+
+        <main class="main-content">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="footer-custom py-4 text-center mt-auto" style="background: rgba(15, 23, 42, 0.4); border-top: 1px solid var(--border-color); color: var(--text-sub);">
-        <div class="container">
-            &copy; 2026 - RAG ChatBot Core System - Thiết kế theo mô hình Clean Architecture
-        </div>
-    </footer>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('toggleSidebarBtn');
+            const closeBtn = document.getElementById('closeSidebarBtn');
+
+            toggleBtn.addEventListener('click', function () {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('show');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                }
+            });
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function () {
+                    sidebar.classList.remove('show');
+                });
+            }
+        });
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

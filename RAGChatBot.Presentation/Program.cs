@@ -29,6 +29,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 // Tầng Application Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
 
 // Tầng Infrastructure Services
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
@@ -46,6 +47,7 @@ builder.Services.AddScoped<IFileStorageService, SupabaseFileStorageService>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IKnowledgeDocumentRepository, KnowledgeDocumentRepository>();
+builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 
 // 4. Thêm cấu hình MVC Controllers & Views
 builder.Services.AddControllersWithViews();

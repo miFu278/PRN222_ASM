@@ -1,4 +1,4 @@
-@model RAGChatBot.Application.DTOs.LoginRequest
+@model RAGChatBot.Application.DTOs.RegisterRequest
 @{
     Layout = null;
 }
@@ -7,7 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập - RAG ChatBot</title>
+    <title>Đăng ký - RAG ChatBot</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" />
     <style>
@@ -31,11 +31,12 @@
             justify-content: center;
             margin: 0;
             overflow-x: hidden;
+            padding: 20px 0;
         }
 
         .login-container {
             width: 100%;
-            max-width: 440px;
+            max-width: 480px;
             padding: 20px;
         }
 
@@ -82,7 +83,7 @@
             margin-bottom: 8px;
         }
 
-        .form-control {
+        .form-control, .form-select {
             background: rgba(255, 255, 255, 0.9);
             border: 1px solid var(--border-color);
             border-radius: 12px;
@@ -91,11 +92,16 @@
             transition: all 0.2s ease;
         }
 
-        .form-control:focus {
+        .form-control:focus, .form-select:focus {
             background: #ffffff;
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
             outline: none;
+        }
+        
+        .form-select option {
+            background: #fff;
+            color: var(--text-main);
         }
 
         .btn-primary {
@@ -130,7 +136,7 @@
 
         .register-link {
             text-align: center;
-            margin-top: 15px;
+            margin-top: 20px;
             font-size: 0.9rem;
             color: var(--text-sub);
         }
@@ -145,29 +151,6 @@
         .register-link a:hover {
             color: #0369a1;
         }
-
-        .demo-accounts {
-            margin-top: 25px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.4);
-            border: 1px solid rgba(14, 165, 233, 0.2);
-            border-radius: 16px;
-            font-size: 0.85rem;
-        }
-
-        .demo-accounts table {
-            width: 100%;
-            margin-top: 8px;
-            color: var(--text-sub);
-        }
-
-        .demo-accounts td {
-            padding: 3px 0;
-        }
-
-        .demo-accounts strong {
-            color: #0284c7;
-        }
     </style>
 </head>
 <body>
@@ -175,7 +158,7 @@
         <div class="login-card">
             <div class="brand-logo">
                 <h1>RAG ChatBot</h1>
-                <p>Hệ thống Quản trị & Trợ lý Tri thức AI</p>
+                <p>Đăng ký tài khoản mới</p>
             </div>
 
             @if (!ViewData.ModelState.IsValid)
@@ -185,38 +168,40 @@
                 </div>
             }
 
-            <form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+            <form asp-action="Register" method="post">
                 <div class="mb-3">
                     <label for="Username" class="form-label">Tên tài khoản</label>
-                    <input type="text" class="form-control" id="Username" name="Username" placeholder="Nhập tài khoản giảng viên..." required autofocus />
+                    <input type="text" class="form-control" id="Username" name="Username" value="@Model?.Username" placeholder="Nhập tài khoản mới..." required autofocus />
                 </div>
-                <div class="mb-4">
+                <div class="mb-3">
                     <label for="Password" class="form-label">Mật khẩu</label>
-                    <input type="password" class="form-control" id="Password" name="Password" placeholder="Nhập mật khẩu..." required />
+                    <input type="password" class="form-control" id="Password" name="Password" placeholder="Nhập mật khẩu..." required minlength="6" />
                 </div>
-                <button type="submit" class="btn btn-primary w-100 mb-3">Đăng Nhập</button>
+                
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <label for="Role" class="form-label">Vai trò</label>
+                        <select class="form-select" id="Role" name="Role">
+                            <option value="Student" selected="@(Model?.Role == "Student")">Student</option>
+                            <option value="Lecturer" selected="@(Model?.Role == "Lecturer")">Lecturer</option>
+                            <option value="Admin" selected="@(Model?.Role == "Admin")">Admin</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label for="SubscriptionTier" class="form-label">Gói đăng ký</label>
+                        <select class="form-select" id="SubscriptionTier" name="SubscriptionTier">
+                            <option value="Free" selected="@(Model?.SubscriptionTier == "Free")">Free</option>
+                            <option value="Basic" selected="@(Model?.SubscriptionTier == "Basic")">Basic</option>
+                            <option value="Premium" selected="@(Model?.SubscriptionTier == "Premium")">Premium</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 mb-3">Đăng Ký</button>
             </form>
 
             <div class="register-link">
-                Chưa có tài khoản? <a asp-action="Register">Đăng ký ngay</a>
-            </div>
-
-            <div class="demo-accounts">
-                <div class="text-center" style="color: var(--text-main); font-weight: 600;">🔑 Tài khoản thử nghiệm (mật khẩu: password123)</div>
-                <table>
-                    <tr>
-                        <td>Free (Giảng viên):</td>
-                        <td><strong>lecturer_free</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Premium (Giảng viên):</td>
-                        <td><strong>lecturer_premium</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Admin:</td>
-                        <td><strong>admin</strong></td>
-                    </tr>
-                </table>
+                Đã có tài khoản? <a asp-action="Login">Đăng nhập ngay</a>
             </div>
         </div>
     </div>

@@ -32,7 +32,14 @@ namespace RAGChatBot.Infrastructure.Storage
             var storage = _supabaseClient.Storage.From(BucketName);
 
             // 5. Thực hiện tải lên (Upload) tệp tin thô dưới dạng mảng byte
-            await storage.Upload(fileBytes, uniqueFileName);
+            try
+            {
+                await storage.Upload(fileBytes, uniqueFileName);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi lưu trữ Supabase: Không tìm thấy Bucket '{BucketName}' hoặc bạn chưa cấp quyền. Vui lòng vào trang quản trị Supabase, tạo Storage Bucket tên là '{BucketName}' và đặt quyền là Public. Chi tiết lỗi: {ex.Message}");
+            }
 
             // 6. Trả về đường dẫn URL công khai của tệp tin vừa tải lên để lưu vào DB
             return storage.GetPublicUrl(uniqueFileName);

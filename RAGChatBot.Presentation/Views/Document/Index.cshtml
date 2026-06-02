@@ -4,23 +4,24 @@
     var activeCourse = ViewBag.CourseCode as string ?? "CS101";
     var userTier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
     var maxUploadSize = userTier == "Premium" ? "50 MB" : "5 MB";
+    var isLecturerOrAdmin = User.IsInRole("Lecturer") || User.IsInRole("Admin");
 }
 
 <div class="row">
     <div class="col-lg-12 mb-4">
         <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
             <div>
-                <h2 class="fw-bold" style="background: linear-gradient(to right, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <h2 class="fw-bold" style="background: linear-gradient(to right, #0ea5e9, #0284c7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                     <i class="fa-solid fa-folder-open me-2"></i>Quản Lý Tài Liệu Thô
                 </h2>
                 <p class="text-muted mb-0">Tải lên các tài liệu giảng dạy thô để cung cấp làm tài liệu tham khảo cho hệ thống RAG.</p>
             </div>
             
-            <!-- Bộ lọc môn học bằng Tab -->
-            <div class="btn-group bg-dark-subtle p-1" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: rgba(15,23,42,0.4);">
-                <a href="?courseCode=CS101" class="btn btn-sm rounded-3 px-3 py-2 @(activeCourse == "CS101" ? "btn-indigo" : "btn-dark-outline")">CS101 (Cơ bản)</a>
-                <a href="?courseCode=SE202" class="btn btn-sm rounded-3 px-3 py-2 @(activeCourse == "SE202" ? "btn-indigo" : "btn-dark-outline")">SE202 (Phần mềm)</a>
-                <a href="?courseCode=AI303" class="btn btn-sm rounded-3 px-3 py-2 @(activeCourse == "AI303" ? "btn-indigo" : "btn-dark-outline")">AI303 (Trí tuệ nhân tạo)</a>
+            <!-- Course name can be displayed here later if passed -->
+            <div>
+                <a asp-controller="Course" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-3">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Quay lại Môn học
+                </a>
             </div>
         </div>
     </div>
@@ -43,64 +44,63 @@
 }
 
 <div class="row g-4">
-    <!-- Cột bên trái: Form Tải lên tài liệu -->
-    <div class="col-xl-4 col-lg-5">
-        <div class="card-custom">
-            <h4 class="fw-bold mb-4 text-light">
-                <i class="fa-solid fa-cloud-arrow-up me-2 text-indigo"></i>Tải Lên Tài Liệu
-            </h4>
-            
-            <form asp-action="Upload" method="post" enctype="multipart/form-data">
-                <div class="mb-3">
-                    <label for="courseCodeInput" class="form-label">Chọn Môn Học</label>
-                    <select class="form-select form-control-custom" id="courseCodeInput" name="courseCode">
-                        <option value="CS101" selected="@(activeCourse == "CS101")">CS101 - Cơ sở lập trình</option>
-                        <option value="SE202" selected="@(activeCourse == "SE202")">SE202 - Công nghệ phần mềm</option>
-                        <option value="AI303" selected="@(activeCourse == "AI303")">AI303 - Trí tuệ nhân tạo</option>
-                    </select>
-                </div>
+    @if (isLecturerOrAdmin)
+    {
+        <!-- Cột bên trái: Form Tải lên tài liệu -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card-custom">
+                <h4 class="fw-bold mb-4 text-dark">
+                    <i class="fa-solid fa-cloud-arrow-up me-2 text-indigo"></i>Tải Lên Tài Liệu
+                </h4>
                 
-                <div class="mb-3">
-                    <label for="chapterInput" class="form-label">Chương / Bài học</label>
-                    <input type="text" class="form-control form-control-custom" id="chapterInput" name="chapter" placeholder="Ví dụ: Chương 1, Tuần 2..." required />
-                </div>
-                
-                <div class="mb-4">
-                    <label class="form-label">Tệp tin tài liệu (.pdf, .docx)</label>
-                    <div class="file-upload-wrapper text-center">
-                        <input type="file" id="file" name="file" class="file-upload-input" accept=".pdf,.docx" required />
-                        <div class="file-upload-design py-4">
-                            <i class="fa-regular fa-file-pdf fa-3x mb-3 text-indigo"></i>
-                            <div class="fw-bold text-light">Bấm vào đây để chọn tệp tin</div>
-                            <small class="text-muted d-block mt-1">Chấp nhận tối đa @maxUploadSize</small>
-                            <span class="file-chosen text-indigo mt-2 d-block fw-semibold" style="display:none !important;">Chưa có file nào được chọn</span>
+                <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="courseCodeInput" class="form-label">Mã Môn Học</label>
+                        <input type="text" class="form-control form-control-custom" id="courseCodeInput" name="courseCode" value="@activeCourse" readonly />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="chapterInput" class="form-label">Chương / Bài học</label>
+                        <input type="text" class="form-control form-control-custom" id="chapterInput" name="chapter" placeholder="Ví dụ: Chương 1, Tuần 2..." required />
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Tệp tin tài liệu (.pdf, .docx)</label>
+                        <div class="file-upload-wrapper text-center">
+                            <input type="file" id="file" name="file" class="file-upload-input" accept=".pdf,.docx" required />
+                            <div class="file-upload-design py-4">
+                                <i class="fa-regular fa-file-pdf fa-3x mb-3 text-indigo"></i>
+                                <div class="fw-bold text-dark">Bấm vào đây để chọn tệp tin</div>
+                                <small class="text-muted d-block mt-1">Chấp nhận tối đa @maxUploadSize</small>
+                                <span class="file-chosen text-indigo mt-2 d-block fw-semibold" style="display:none !important;">Chưa có file nào được chọn</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="tier-info-card p-3 mb-4 rounded-3 d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="d-block fw-bold text-light" style="font-size: 0.95rem;">Gói của bạn: @userTier</span>
-                        <span class="text-muted" style="font-size: 0.8rem;">Hạn mức tải lên file</span>
+                    <div class="tier-info-card p-3 mb-4 rounded-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="d-block fw-bold text-dark" style="font-size: 0.95rem;">Gói của bạn: @userTier</span>
+                            <span class="text-muted" style="font-size: 0.8rem;">Hạn mức tải lên file</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge rounded-pill bg-indigo text-white mb-1 d-inline-block px-3 py-1">@userTier</span>
+                            <span class="d-block fw-bold text-indigo fs-5">Tối đa @maxUploadSize</span>
+                        </div>
                     </div>
-                    <div class="text-end">
-                        <span class="badge rounded-pill bg-indigo text-light mb-1 d-inline-block px-3 py-1">@userTier</span>
-                        <span class="d-block fw-bold text-indigo fs-5">Tối đa @maxUploadSize</span>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn btn-primary-custom w-100 py-3">
-                    <i class="fa-solid fa-circle-arrow-up me-2"></i> Bắt đầu Tải Lên
-                </button>
-            </form>
+                    
+                    <button type="submit" class="btn btn-primary-custom w-100 py-3">
+                        <i class="fa-solid fa-circle-arrow-up me-2"></i> Bắt đầu Tải Lên
+                    </button>
+                </form>
+            </div>
         </div>
-    </div>
+    }
     
     <!-- Cột bên phải: Danh sách tài liệu hiện có -->
-    <div class="col-xl-8 col-lg-7">
+    <div class="@(isLecturerOrAdmin ? "col-xl-8 col-lg-7" : "col-12")">
         <div class="card-custom">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold text-light mb-0">
+                <h4 class="fw-bold text-dark mb-0">
                     <i class="fa-solid fa-list-check me-2 text-indigo"></i>Danh sách Tài liệu
                 </h4>
                 <span class="badge bg-secondary rounded-pill px-3 py-2" style="background: rgba(255,255,255,0.05) !important; border: 1px solid var(--border-color);">
@@ -112,7 +112,7 @@
             {
                 <div class="text-center py-5">
                     <i class="fa-solid fa-box-open fa-3x text-muted mb-3" style="color: #4b5563 !important;"></i>
-                    <h5 class="text-light">Chưa có tài liệu nào cho môn học này!</h5>
+                    <h5 class="text-dark">Chưa có tài liệu nào cho môn học này!</h5>
                     <p class="text-muted">Chọn môn học khác trên thanh bộ lọc hoặc tải lên file mới ở bảng bên trái.</p>
                 </div>
             }
@@ -148,13 +148,13 @@
                                             {
                                                 <i class="fa-solid fa-file-word text-primary fs-5"></i>
                                             }
-                                            <span class="fw-semibold text-light text-truncate d-inline-block" style="max-width: 250px;" title="@doc.FileName">
+                                            <span class="fw-semibold text-dark text-truncate d-inline-block" style="max-width: 250px;" title="@doc.FileName">
                                                 @doc.FileName
                                             </span>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-dark-subtle border border-secondary text-secondary px-2 py-1" style="background: rgba(255,255,255,0.02) !important;">
+                                        <span class="badge border border-secondary text-secondary px-2 py-1" style="background: rgba(0,0,0,0.05) !important;">
                                             @doc.Chapter
                                         </span>
                                     </td>
@@ -178,16 +178,31 @@
                                     </td>
                                     <td class="text-end">
                                         <div class="d-flex justify-content-end gap-2">
-                                            <a href="@doc.StoragePath" target="_blank" class="btn btn-action-view" title="Xem chi tiết / Tải về">
+                                            @if (doc.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <a href="@doc.StoragePath" target="_blank" class="btn btn-action-view" title="Xem trực tiếp (PDF)">
+                                                    <i class="fa-regular fa-eye"></i>
+                                                </a>
+                                            }
+                                            else if (doc.FileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <a href="https://view.officeapps.live.com/op/view.aspx?src=@Uri.EscapeDataString(doc.StoragePath)" target="_blank" class="btn btn-action-view" title="Xem trực tiếp (Word)">
+                                                    <i class="fa-regular fa-eye"></i>
+                                                </a>
+                                            }
+                                            <a href="@doc.StoragePath" target="_blank" class="btn btn-action-view ms-1" title="Tải về">
                                                 <i class="fa-solid fa-download"></i>
                                             </a>
-                                            <form asp-action="Delete" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài liệu này vĩnh viễn khỏi hệ thống không?');">
-                                                <input type="hidden" name="id" value="@doc.Id" />
-                                                <input type="hidden" name="courseCode" value="@doc.CourseCode" />
-                                                <button type="submit" class="btn btn-action-delete" title="Xóa tài liệu">
-                                                    <i class="fa-solid fa-trash-can"></i>
-                                                </button>
-                                            </form>
+                                            @if (isLecturerOrAdmin)
+                                            {
+                                                <form asp-action="Delete" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài liệu này vĩnh viễn khỏi hệ thống không?');">
+                                                    <input type="hidden" name="id" value="@doc.Id" />
+                                                    <input type="hidden" name="courseCode" value="@doc.CourseCode" />
+                                                    <button type="submit" class="btn btn-action-delete" title="Xóa tài liệu">
+                                                        <i class="fa-solid fa-trash-can"></i>
+                                                    </button>
+                                                </form>
+                                            }
                                         </div>
                                     </td>
                                 </tr>
