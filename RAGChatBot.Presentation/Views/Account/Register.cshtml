@@ -179,20 +179,12 @@
                 </div>
                 
                 <div class="row mb-4">
-                    <div class="col-6">
+                    <div class="col-12">
                         <label for="Role" class="form-label">Vai trò</label>
                         <select class="form-select" id="Role" name="Role">
                             <option value="Student" selected="@(Model?.Role == "Student")">Student</option>
                             <option value="Lecturer" selected="@(Model?.Role == "Lecturer")">Lecturer</option>
                             <option value="Admin" selected="@(Model?.Role == "Admin")">Admin</option>
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <label for="SubscriptionTier" class="form-label">Gói đăng ký</label>
-                        <select class="form-select" id="SubscriptionTier" name="SubscriptionTier">
-                            <option value="Free" selected="@(Model?.SubscriptionTier == "Free")">Free</option>
-                            <option value="Basic" selected="@(Model?.SubscriptionTier == "Basic")">Basic</option>
-                            <option value="Premium" selected="@(Model?.SubscriptionTier == "Premium")">Premium</option>
                         </select>
                     </div>
                 </div>

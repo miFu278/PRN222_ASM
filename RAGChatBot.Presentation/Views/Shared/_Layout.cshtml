@@ -236,6 +236,13 @@
                         <div class="user-role">@role &bull; @tier</div>
                     </div>
                 </div>
+                
+                @if (tier == "Free")
+                {
+                    <a asp-controller="Subscription" asp-action="Index" class="btn w-100 fw-bold text-white mt-2 mb-1" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border-radius: 8px; font-size: 0.85rem; padding: 8px;">
+                        <i class="fa-solid fa-crown me-1" style="color: #fde047;"></i> Nâng cấp Premium
+                    </a>
+                }
                 <a asp-controller="Account" asp-action="Logout" class="nav-item-custom text-danger mt-2" style="padding: 8px 15px;">
                     <i class="fa-solid fa-right-from-bracket text-danger"></i> Đăng xuất
                 </a>

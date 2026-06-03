@@ -1,0 +1,74 @@
+@{
+    ViewData["Title"] = "Nâng cấp gói cước";
+    var currentTier = ViewBag.CurrentTier as string ?? "Free";
+}
+
+<div class="container-fluid py-4">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold" style="background: linear-gradient(to right, #0ea5e9, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Nâng Tầm Trải Nghiệm AI Của Bạn
+        </h2>
+        <p class="text-muted fs-5">Chọn gói cước phù hợp nhất với nhu cầu giảng dạy và học tập.</p>
+    </div>
+
+    <div class="row justify-content-center g-4">
+        <!-- Gói Free -->
+        <div class="col-md-5 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm" style="border-radius: 16px; transition: transform 0.3s;">
+                <div class="card-body p-5">
+                    <h4 class="fw-bold text-dark mb-3">Gói Free</h4>
+                    <h2 class="fw-bold mb-4" style="color: var(--text-main);">0đ <span class="fs-6 text-muted fw-normal">/ tháng</span></h2>
+                    
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i> Kích thước file tối đa: <b>5 MB</b></li>
+                        <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i> Hỗ trợ PDF, DOCX</li>
+                        <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i> Số lượng file không giới hạn</li>
+                        <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> Tốc độ xử lý RAG cơ bản</li>
+                        <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> Không ưu tiên Server</li>
+                    </ul>
+
+                    @if (currentTier == "Free")
+                    {
+                        <button class="btn btn-secondary w-100 py-3 fw-bold" disabled style="border-radius: 12px;">Đang sử dụng</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-outline-secondary w-100 py-3 fw-bold" disabled style="border-radius: 12px;">Chỉ dành cho tài khoản mới</button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Gói Premium -->
+        <div class="col-md-5 col-lg-4">
+            <div class="card h-100 shadow" style="border: 2px solid #8b5cf6; border-radius: 16px; position: relative; transform: scale(1.03);">
+                <div class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger px-3 py-2" style="font-size: 0.9rem;">
+                    Khuyên dùng
+                </div>
+                <div class="card-body p-5">
+                    <h4 class="fw-bold mb-3" style="color: #8b5cf6;">Gói Premium</h4>
+                    <h2 class="fw-bold mb-4" style="color: var(--text-main);">199.000đ <span class="fs-6 text-muted fw-normal">/ tháng</span></h2>
+                    
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i> Kích thước file tối đa: <b>50 MB</b></li>
+                        <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i> Hỗ trợ PDF, DOCX, PPTX (Sắp ra mắt)</li>
+                        <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i> Số lượng file không giới hạn</li>
+                        <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i> Tốc độ xử lý RAG cực nhanh</li>
+                        <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i> Máy chủ ưu tiên (Dedicated Server)</li>
+                    </ul>
+
+                    @if (currentTier == "Premium")
+                    {
+                        <button class="btn btn-secondary w-100 py-3 fw-bold" disabled style="border-radius: 12px;">Đang sử dụng</button>
+                    }
+                    else
+                    {
+                        <a asp-action="Checkout" class="btn w-100 py-3 fw-bold text-white" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border-radius: 12px;">
+                            Nâng cấp ngay
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

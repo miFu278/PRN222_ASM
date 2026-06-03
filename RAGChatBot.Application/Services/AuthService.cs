@@ -62,5 +62,18 @@ namespace RAGChatBot.Application.Services
                 SubscriptionTier = user.SubscriptionTier
             };
         }
+
+        public async Task<bool> UpgradeToPremiumAsync(Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.SubscriptionTier = "Premium";
+            await _userRepository.SaveChangesAsync();
+            return true;
+        }
     }
 }
