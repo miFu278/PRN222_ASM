@@ -145,29 +145,6 @@
         .register-link a:hover {
             color: #0369a1;
         }
-
-        .demo-accounts {
-            margin-top: 25px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.4);
-            border: 1px solid rgba(14, 165, 233, 0.2);
-            border-radius: 16px;
-            font-size: 0.85rem;
-        }
-
-        .demo-accounts table {
-            width: 100%;
-            margin-top: 8px;
-            color: var(--text-sub);
-        }
-
-        .demo-accounts td {
-            padding: 3px 0;
-        }
-
-        .demo-accounts strong {
-            color: #0284c7;
-        }
     </style>
 </head>
 <body>
@@ -197,26 +174,22 @@
                 <button type="submit" class="btn btn-primary w-100 mb-3">Đăng Nhập</button>
             </form>
 
-            <div class="register-link">
-                Chưa có tài khoản? <a asp-action="Register">Đăng ký ngay</a>
+            <div class="d-flex align-items-center mb-3">
+                <hr class="flex-grow-1" style="border-top: 1px solid var(--border-color);">
+                <span class="px-3 text-muted" style="font-size: 0.85rem;">Hoặc</span>
+                <hr class="flex-grow-1" style="border-top: 1px solid var(--border-color);">
             </div>
 
-            <div class="demo-accounts">
-                <div class="text-center" style="color: var(--text-main); font-weight: 600;">🔑 Tài khoản thử nghiệm (mật khẩu: password123)</div>
-                <table>
-                    <tr>
-                        <td>Free (Giảng viên):</td>
-                        <td><strong>lecturer_free</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Premium (Giảng viên):</td>
-                        <td><strong>lecturer_premium</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Admin:</td>
-                        <td><strong>admin</strong></td>
-                    </tr>
-                </table>
+            <form asp-action="ExternalLogin" method="post">
+                <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+                <button type="submit" class="btn w-100 py-2 d-flex align-items-center justify-content-center gap-2" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-main); font-weight: 500; transition: all 0.2s ease;">
+                    <img src="https://www.google.com/favicon.ico" alt="Google" width="20" height="20">
+                    Đăng nhập bằng Google
+                </button>
+            </form>
+
+            <div class="register-link">
+                Chưa có tài khoản? <a asp-action="Register">Đăng ký ngay</a>
             </div>
         </div>
     </div>

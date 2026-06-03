@@ -162,7 +162,7 @@
                                     <td class="text-muted" style="font-size:0.85rem">
                                         @doc.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                                     </td>
-                                    <td>
+                                    <td class="status-cell" data-id="@doc.Id" data-processed="@doc.IsProcessed.ToString().ToLower()">
                                         @if (doc.IsProcessed)
                                         {
                                             <span class="status-badge status-processed">
@@ -224,5 +224,51 @@
             textSpan.style.display = 'block';
             textSpan.style.setProperty('display', 'block', 'important');
         });
+
+        // Tự động cập nhật trạng thái xử lý file (AJAX Polling)
+        (function() {
+            var activeCourse = '@activeCourse';
+            var pollInterval = null;
+
+            function checkFileStatuses() {
+                var pendingCells = document.querySelectorAll('.status-cell[data-processed="false"]');
+                if (pendingCells.length === 0) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    return;
+                }
+
+                fetch('/Document/GetStatus?courseCode=' + encodeURIComponent(activeCourse))
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            var cell = document.querySelector('.status-cell[data-id="' + item.id + '"]');
+                            if (cell && cell.getAttribute('data-processed') === 'false' && item.isProcessed) {
+                                // Thay đổi giao diện sang trạng thái "Đã xử lý"
+                                cell.setAttribute('data-processed', 'true');
+                                cell.innerHTML = `
+                                    <span class="status-badge status-processed">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Đã xử lý
+                                    </span>
+                                `;
+                            }
+                        });
+
+                        // Nếu không còn file nào chờ xử lý thì tắt interval
+                        var remainingPending = document.querySelectorAll('.status-cell[data-processed="false"]');
+                        if (remainingPending.length === 0) {
+                            clearInterval(pollInterval);
+                            pollInterval = null;
+                        }
+                    })
+                    .catch(err => console.error("Lỗi cập nhật trạng thái tài liệu: ", err));
+            }
+
+            // Kích hoạt Polling sau mỗi 3 giây nếu có file đang chờ xử lý
+            var hasPending = document.querySelectorAll('.status-cell[data-processed="false"]').length > 0;
+            if (hasPending) {
+                pollInterval = setInterval(checkFileStatuses, 3000);
+            }
+        })();
     </script>
 }

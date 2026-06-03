@@ -12,10 +12,14 @@ namespace RAGChatBot.Infrastructure.Persistence
         public DbSet<User> Users => Set<User>();
         public DbSet<KnowledgeDocument> KnowledgeDocuments => Set<KnowledgeDocument>();
         public DbSet<Course> Courses => Set<Course>();
+        public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Kích hoạt extension pgvector trong PostgreSQL
+            modelBuilder.HasPostgresExtension("vector");
 
             modelBuilder.Entity<User>(entity =>
             {
@@ -33,6 +37,19 @@ namespace RAGChatBot.Infrastructure.Persistence
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.CourseCode);
+            });
+
+            modelBuilder.Entity<DocumentChunk>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.DocumentId);
+                entity.Property(e => e.Embedding)
+                      .HasColumnType("vector(1536)"); // 1536 chiều (chuẩn OpenAI text-embedding-3-small)
+                
+                entity.HasOne(e => e.Document)
+                      .WithMany(d => d.Chunks)
+                      .HasForeignKey(e => e.DocumentId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

@@ -75,5 +75,18 @@ namespace RAGChatBot.Application.Services
             await _userRepository.SaveChangesAsync();
             return true;
         }
+
+        public async Task<UserDto?> GetUserByUsernameAsync(string username)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            if (user == null) return null;
+            return new UserDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Role = user.Role,
+                SubscriptionTier = user.SubscriptionTier
+            };
+        }
     }
 }

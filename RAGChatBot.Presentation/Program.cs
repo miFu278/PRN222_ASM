@@ -14,15 +14,21 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? "Host=localhost;Database=rag_chatbot_db;Username=postgres;Password=your_password";
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString, x => x.UseVector()));
 
-// 2. Cấu hình Cookie Authentication
+// 2. Cấu hình Cookie Authentication & Google OAuth
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/Account/Login";
         options.AccessDeniedPath = "/Account/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(2);
+    })
+    .AddGoogle(options =>
+    {
+        var googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
+        options.ClientId = googleAuthNSection["ClientId"];
+        options.ClientSecret = googleAuthNSection["ClientSecret"];
     });
 
 // 3. Đăng ký Dependency Injection cho các tầng
@@ -48,6 +54,13 @@ builder.Services.AddScoped<IFileStorageService, SupabaseFileStorageService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IKnowledgeDocumentRepository, KnowledgeDocumentRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+
+// Đăng ký dịch vụ RAG & AI (Tự động Chunking & Vector hóa)
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<IChunkingService, ChunkingService>();
+builder.Services.AddScoped<ITextExtractor, TextExtractor>();
+builder.Services.AddHttpClient<IEmbeddingService, OpenAiEmbeddingService>();
+builder.Services.AddHostedService<DocumentProcessingWorker>();
 
 // 4. Thêm cấu hình MVC Controllers & Views
 builder.Services.AddControllersWithViews();

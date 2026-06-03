@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RAGChatBot.Application.DTOs;
 using RAGChatBot.Application.Services;
+using RAGChatBot.Application.Common.Interfaces;
 using System.Security.Claims;
 
 namespace RAGChatBot.Presentation.Controllers
@@ -112,6 +113,63 @@ namespace RAGChatBot.Presentation.Controllers
             }
 
             return RedirectToAction("Index", new { courseCode });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetStatus(string courseCode)
+        {
+            try
+            {
+                var documents = await _documentService.GetDocumentsByCourseAsync(courseCode);
+                return Json(documents.Select(d => new { id = d.Id, isProcessed = d.IsProcessed }));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> TestConnection()
+        {
+            var testResult = new System.Collections.Generic.Dictionary<string, object>();
+            try
+            {
+                // 1. Kiểm tra thuật toán Chunking
+                var sampleText = "Hệ thống RAG ChatBot hoạt động bằng cách chia nhỏ tài liệu học tập của giảng viên, chuyển đổi thành vector nhúng và tìm kiếm ngữ cảnh tương đồng khi học sinh đặt câu hỏi.";
+                var chunkingService = HttpContext.RequestServices.GetRequiredService<IChunkingService>();
+                var chunks = chunkingService.ChunkText(sampleText, 30, 5);
+                testResult["ChunkingTest"] = new
+                {
+                    Success = true,
+                    OriginalLength = sampleText.Length,
+                    ChunkCount = chunks.Count,
+                    Chunks = chunks
+                };
+
+                // 2. Kiểm tra kết nối API Embedding (9router)
+                var embeddingService = HttpContext.RequestServices.GetRequiredService<IEmbeddingService>();
+                var vector = await embeddingService.GenerateEmbeddingAsync("Hello, RAG Chatbot!");
+                testResult["EmbeddingApiTest"] = new
+                {
+                    Success = true,
+                    VectorLength = vector.Length,
+                    FirstThreeValues = vector.Take(3).ToArray()
+                };
+
+                testResult["OverallStatus"] = "Tất cả các kết nối và thuật toán hoạt động TỐT!";
+            }
+            catch (Exception ex)
+            {
+                testResult["OverallStatus"] = "Kết nối THẤT BẠI!";
+                testResult["ErrorMessage"] = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    testResult["InnerErrorMessage"] = ex.InnerException.Message;
+                }
+            }
+            return Json(testResult);
         }
     }
 }

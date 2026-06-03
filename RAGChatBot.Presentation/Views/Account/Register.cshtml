@@ -192,6 +192,19 @@
                 <button type="submit" class="btn btn-primary w-100 mb-3">Đăng Ký</button>
             </form>
 
+            <div class="d-flex align-items-center mb-3">
+                <hr class="flex-grow-1" style="border-top: 1px solid var(--border-color);">
+                <span class="px-3 text-muted" style="font-size: 0.85rem;">Hoặc</span>
+                <hr class="flex-grow-1" style="border-top: 1px solid var(--border-color);">
+            </div>
+
+            <form asp-action="ExternalLogin" asp-controller="Account" method="post">
+                <button type="submit" class="btn w-100 py-2 d-flex align-items-center justify-content-center gap-2" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-main); font-weight: 500; transition: all 0.2s ease;">
+                    <img src="https://www.google.com/favicon.ico" alt="Google" width="20" height="20">
+                    Đăng ký bằng Google
+                </button>
+            </form>
+
             <div class="register-link">
                 Đã có tài khoản? <a asp-action="Login">Đăng nhập ngay</a>
             </div>
