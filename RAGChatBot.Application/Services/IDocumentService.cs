@@ -24,5 +24,7 @@ namespace RAGChatBot.Application.Services
         Task ApproveDocumentAsync(Guid id, Guid userId, string userRole);
 
         Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId);
+
+        Task<DocumentDto?> GetDocumentByIdAsync(Guid id);
     }
 }

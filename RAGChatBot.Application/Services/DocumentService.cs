@@ -190,6 +190,19 @@ namespace RAGChatBot.Application.Services
                 });
         }
 
+        public async Task<DocumentDto?> GetDocumentByIdAsync(Guid id)
+        {
+            var doc = await _documentRepository.GetByIdAsync(id);
+            if (doc == null) return null;
+
+            var users = await _userRepository.GetAllAsync();
+            var userMap = users.ToDictionary(u => u.Id, u => u.Username);
+
+            var dto = MapToDto(doc);
+            dto.UploaderName = userMap.TryGetValue(doc.UploadedBy, out var name) ? name : "N/A";
+            return dto;
+        }
+
         private static DocumentDto MapToDto(KnowledgeDocument doc)
         {
             return new DocumentDto

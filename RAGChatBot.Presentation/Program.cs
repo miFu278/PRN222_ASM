@@ -6,6 +6,7 @@ using RAGChatBot.Infrastructure.Persistence;
 using RAGChatBot.Infrastructure.Persistence.Repositories;
 using RAGChatBot.Infrastructure.Security;
 using RAGChatBot.Infrastructure.Storage;
+using RAGChatBot.Infrastructure.Email;
 using RAGChatBot.Domain.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -62,6 +63,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IChunkingService, ChunkingService>();
 builder.Services.AddScoped<ITextExtractor, TextExtractor>();
 builder.Services.AddHttpClient<IEmbeddingService, OpenAiEmbeddingService>();
+builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
 builder.Services.AddHostedService<DocumentProcessingWorker>();
 
 // 4. Thêm cấu hình MVC Controllers & Views

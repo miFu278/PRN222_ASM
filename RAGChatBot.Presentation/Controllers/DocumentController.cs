@@ -29,6 +29,11 @@ namespace RAGChatBot.Presentation.Controllers
             {
                 var documents = await _documentService.GetDocumentsByCourseAsync(courseCode);
 
+                if (User.IsInRole("Student"))
+                {
+                    documents = documents.Where(d => d.IsApproved).ToList();
+                }
+
                 // Kiểm tra xem user hiện tại có phải là Subject Leader của môn học không
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var isSubjectLeader = false;
@@ -160,6 +165,10 @@ namespace RAGChatBot.Presentation.Controllers
             try
             {
                 var documents = await _documentService.GetDocumentsByCourseAsync(courseCode);
+                if (User.IsInRole("Student"))
+                {
+                    documents = documents.Where(d => d.IsApproved).ToList();
+                }
                 return Json(documents.Select(d => new { id = d.Id, isProcessed = d.IsProcessed }));
             }
             catch (Exception ex)
@@ -173,6 +182,14 @@ namespace RAGChatBot.Presentation.Controllers
         {
             try
             {
+                if (User.IsInRole("Student"))
+                {
+                    var doc = await _documentService.GetDocumentByIdAsync(id);
+                    if (doc == null || !doc.IsApproved)
+                    {
+                        return Forbid();
+                    }
+                }
                 var chunks = await _documentService.GetDocumentChunksAsync(id);
                 return Json(chunks);
             }

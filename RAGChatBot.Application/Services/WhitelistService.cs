@@ -1,4 +1,5 @@
 using MiniExcelLibs;
+using Microsoft.Extensions.Logging;
 using RAGChatBot.Application.Common.Interfaces;
 using RAGChatBot.Application.DTOs;
 using RAGChatBot.Domain.Models;
@@ -13,10 +14,17 @@ namespace RAGChatBot.Application.Services
     public class WhitelistService : IWhitelistService
     {
         private readonly IWhitelistRepository _whitelistRepository;
+        private readonly IEmailService _emailService;
+        private readonly ILogger<WhitelistService> _logger;
 
-        public WhitelistService(IWhitelistRepository whitelistRepository)
+        public WhitelistService(
+            IWhitelistRepository whitelistRepository,
+            IEmailService emailService,
+            ILogger<WhitelistService> logger)
         {
             _whitelistRepository = whitelistRepository;
+            _emailService = emailService;
+            _logger = logger;
         }
 
         public async Task<bool> IsEmailWhitelistedAsync(string email)
@@ -65,6 +73,15 @@ namespace RAGChatBot.Application.Services
 
             await _whitelistRepository.AddAsync(whitelistEmail);
             await _whitelistRepository.SaveChangesAsync();
+
+            try
+            {
+                await _emailService.SendWelcomeEmailAsync(cleanEmail, whitelistEmail.FullName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi gửi email chào mừng cho email {Email} vừa thêm vào Whitelist", cleanEmail);
+            }
         }
 
         public async Task DeleteAsync(Guid id)
@@ -100,6 +117,7 @@ namespace RAGChatBot.Application.Services
             }
 
             int count = 0;
+            var importedEmails = new List<(string Email, string? FullName)>();
             foreach (var row in rows)
             {
                 var emailObj = row.ContainsKey(emailHeader) ? row[emailHeader] : null;
@@ -134,6 +152,7 @@ namespace RAGChatBot.Application.Services
                     };
 
                     await _whitelistRepository.AddAsync(whitelistEmail);
+                    importedEmails.Add((cleanEmail, whitelistEmail.FullName));
                     count++;
                 }
             }
@@ -141,6 +160,19 @@ namespace RAGChatBot.Application.Services
             if (count > 0)
             {
                 await _whitelistRepository.SaveChangesAsync();
+
+                // Gửi email chào mừng cho từng tài khoản mới được import
+                foreach (var item in importedEmails)
+                {
+                    try
+                    {
+                        await _emailService.SendWelcomeEmailAsync(item.Email, item.FullName);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Lỗi gửi email chào mừng cho email {Email} trong quá trình import", item.Email);
+                    }
+                }
             }
 
             return count;
