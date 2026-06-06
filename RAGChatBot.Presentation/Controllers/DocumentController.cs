@@ -54,7 +54,7 @@ namespace RAGChatBot.Presentation.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Lecturer")]
+        [Authorize(Roles = "Lecturer,Admin")]
         public async Task<IActionResult> Upload(IFormFile file, string courseCode, string chapter)
         {
             if (file == null || file.Length == 0)
@@ -76,6 +76,14 @@ namespace RAGChatBot.Presentation.Controllers
             if (!Guid.TryParse(userIdStr, out var userId))
             {
                 TempData["ErrorMessage"] = "Không tìm thấy thông tin định danh người dùng hợp lệ!";
+                return RedirectToAction("Index", new { courseCode });
+            }
+
+            // Kiểm tra quyền: Chỉ Trưởng bộ môn của môn đó mới được phép upload
+            var isSubjectLeader = await _courseService.IsSubjectLeaderAsync(courseCode, userId);
+            if (!isSubjectLeader)
+            {
+                TempData["ErrorMessage"] = "Chỉ có Trưởng bộ môn của môn học này mới được phép tải lên tài liệu!";
                 return RedirectToAction("Index", new { courseCode });
             }
 
@@ -110,7 +118,6 @@ namespace RAGChatBot.Presentation.Controllers
         public async Task<IActionResult> Delete(Guid id, string courseCode)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "Lecturer";
 
             if (!Guid.TryParse(userIdStr, out var userId))
             {
@@ -120,7 +127,7 @@ namespace RAGChatBot.Presentation.Controllers
 
             try
             {
-                await _documentService.DeleteDocumentAsync(id, userId, userRole);
+                await _documentService.DeleteDocumentAsync(id, userId);
                 TempData["SuccessMessage"] = "Xóa tài liệu thành công!";
             }
             catch (Exception ex)
@@ -137,7 +144,6 @@ namespace RAGChatBot.Presentation.Controllers
         public async Task<IActionResult> Approve(Guid id, string courseCode)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "Lecturer";
 
             if (!Guid.TryParse(userIdStr, out var userId))
             {
@@ -147,7 +153,7 @@ namespace RAGChatBot.Presentation.Controllers
 
             try
             {
-                await _documentService.ApproveDocumentAsync(id, userId, userRole);
+                await _documentService.ApproveDocumentAsync(id, userId);
                 TempData["SuccessMessage"] = "Đã phê duyệt tài liệu thành công!";
             }
             catch (Exception ex)

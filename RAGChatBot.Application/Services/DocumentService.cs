@@ -118,7 +118,7 @@ namespace RAGChatBot.Application.Services
             }).OrderByDescending(d => d.UploadedAt);
         }
 
-        public async Task DeleteDocumentAsync(Guid id, Guid userId, string userRole)
+        public async Task DeleteDocumentAsync(Guid id, Guid userId)
         {
             var document = await _documentRepository.GetByIdAsync(id);
             if (document == null)
@@ -126,10 +126,11 @@ namespace RAGChatBot.Application.Services
                 throw new KeyNotFoundException("Không tìm thấy tài liệu yêu cầu xóa!");
             }
 
-            // Bảo mật nghiệp vụ: Chỉ cho phép người tải lên tệp hoặc Admin được quyền xóa tệp
-            if (document.UploadedBy != userId && userRole != "Admin")
+            var courses = await _courseRepository.GetAllAsync();
+            var course = courses.FirstOrDefault(c => c.Code.Equals(document.CourseCode, StringComparison.OrdinalIgnoreCase));
+            if (course == null || course.SubjectLeaderId != userId)
             {
-                throw new UnauthorizedAccessException("Bạn không có quyền xóa tài liệu của giảng viên khác!");
+                throw new UnauthorizedAccessException("Chỉ có Trưởng bộ môn của môn học này mới được quyền xóa tài liệu!");
             }
 
             // 1. Xóa file vật lý trên dịch vụ lưu trữ (đám mây hoặc local)
@@ -147,7 +148,7 @@ namespace RAGChatBot.Application.Services
             await _documentRepository.SaveChangesAsync();
         }
 
-        public async Task ApproveDocumentAsync(Guid id, Guid userId, string userRole)
+        public async Task ApproveDocumentAsync(Guid id, Guid userId)
         {
             var document = await _documentRepository.GetByIdAsync(id);
             if (document == null)
@@ -162,10 +163,10 @@ namespace RAGChatBot.Application.Services
                 throw new KeyNotFoundException("Không tìm thấy môn học liên quan đến tài liệu!");
             }
 
-            // Kiểm tra quyền duyệt: Chỉ Trưởng bộ môn của môn đó hoặc Admin mới được duyệt
-            if (course.SubjectLeaderId != userId && userRole != "Admin")
+            // Kiểm tra quyền duyệt: Chỉ Trưởng bộ môn của môn đó mới được duyệt
+            if (course.SubjectLeaderId != userId)
             {
-                throw new UnauthorizedAccessException("Bạn không có quyền phê duyệt tài liệu cho môn học này!");
+                throw new UnauthorizedAccessException("Chỉ có Trưởng bộ môn của môn học này mới có quyền phê duyệt!");
             }
 
             document.IsApproved = true;

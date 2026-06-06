@@ -6,6 +6,7 @@
     var maxUploadSize = userTier == "Premium" ? "50 MB" : "5 MB";
     var isLecturerOrAdmin = User.IsInRole("Lecturer") || User.IsInRole("Admin");
     var isLecturer = User.IsInRole("Lecturer");
+    var canUpload = ViewBag.IsSubjectLeader == true;
 }
 
 <div class="row">
@@ -45,7 +46,7 @@
 }
 
 <div class="row g-4">
-    @if (isLecturer)
+    @if (canUpload)
     {
         <!-- Cột bên trái: Form Tải lên tài liệu -->
         <div class="col-xl-4 col-lg-5">
@@ -98,7 +99,7 @@
     }
     
     <!-- Cột bên phải: Danh sách tài liệu hiện có -->
-    <div class="@(isLecturer ? "col-xl-8 col-lg-7" : "col-12")">
+    <div class="@(canUpload ? "col-xl-8 col-lg-7" : "col-12")">
         <div class="card-custom">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold text-dark mb-0">
@@ -190,7 +191,7 @@
                                     </td>
                                     <td class="text-end">
                                         <div class="d-flex justify-content-end gap-2 align-items-center">
-                                            @if (!doc.IsApproved && (ViewBag.IsSubjectLeader == true || User.IsInRole("Admin")))
+                                            @if (!doc.IsApproved && ViewBag.IsSubjectLeader == true)
                                             {
                                                 <form asp-action="Approve" method="post" style="display:inline;">
                                                     <input type="hidden" name="id" value="@doc.Id" />
@@ -218,7 +219,7 @@
                                             <a href="@doc.StoragePath" target="_blank" class="btn btn-action-view ms-1" title="Tải về">
                                                 <i class="fa-solid fa-download"></i>
                                             </a>
-                                            @if (isLecturerOrAdmin)
+                                            @if (ViewBag.IsSubjectLeader == true)
                                             {
                                                 <form asp-action="Delete" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài liệu này vĩnh viễn khỏi hệ thống không?');">
                                                     <input type="hidden" name="id" value="@doc.Id" />

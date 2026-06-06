@@ -19,9 +19,9 @@ namespace RAGChatBot.Application.Services
 
         Task<IEnumerable<DocumentDto>> GetDocumentsByCourseAsync(string courseCode);
 
-        Task DeleteDocumentAsync(Guid id, Guid userId, string userRole);
+        Task DeleteDocumentAsync(Guid id, Guid userId);
 
-        Task ApproveDocumentAsync(Guid id, Guid userId, string userRole);
+        Task ApproveDocumentAsync(Guid id, Guid userId);
 
         Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId);
 
