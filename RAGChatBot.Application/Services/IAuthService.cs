@@ -1,6 +1,7 @@
 using RAGChatBot.Application.DTOs;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace RAGChatBot.Application.Services
@@ -14,5 +15,6 @@ namespace RAGChatBot.Application.Services
         Task<UserDto?> GetUserByUsernameAsync(string username);
         Task<IEnumerable<UserDto>> GetAllUsersAsync();
         Task DeleteUserAsync(Guid userId);
+        Task<(int Success, int Skipped)> ImportUsersFromExcelAsync(Stream excelStream, string defaultPassword);
     }
 }
