@@ -1,0 +1,379 @@
+@page "/courses"
+@attribute [Authorize]
+@inject ICourseService CourseService
+@inject IAuthService AuthService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject ILogger<Courses> Logger
+
+<PageTitle>Quản Lý Học Liệu</PageTitle>
+
+<div class="zen-container py-4">
+    <div class="zen-hero mb-4">
+        <div class="zen-hero-title">
+            <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">Hệ thống học liệu</div>
+            <h2 class="font-serif m-0">Danh sách môn học</h2>
+        </div>
+        <div class="zen-hero-desc">
+            <p class="text-muted m-0">
+                Xem và quản lý các môn học trong hệ thống. Giảng viên và Trưởng bộ môn có thể quản lý tài liệu học tập của từng môn học cụ thể.
+            </p>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: 0; font-size: 0.95rem; background-color: rgba(40, 167, 69, 0.05); border-color: rgba(40, 167, 69, 0.2); color: #28a745;">
+            <i class="fa-solid fa-circle-check me-2"></i> @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 0; font-size: 0.95rem; background-color: rgba(191, 42, 35, 0.05); border-color: rgba(191, 42, 35, 0.2); color: var(--accent-shu);">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    <!-- Search & Action Bar -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div style="flex: 1; min-width: 250px; max-width: 450px;">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-0 border-bottom border-light" style="border-radius: 0;"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" class="form-control border-0 border-bottom border-light" style="border-radius: 0; box-shadow: none;" placeholder="Tìm kiếm môn học theo mã hoặc tên..." @bind="searchKeyword" @bind:event="oninput" @onkeyup="FilterCourses" />
+            </div>
+        </div>
+
+        <AuthorizeView Roles="Lecturer,Admin">
+            <button class="btn-zen" @onclick="OpenCreateForm">
+                <i class="fa-solid fa-plus me-1"></i> Tạo môn học mới
+            </button>
+        </AuthorizeView>
+    </div>
+
+    <!-- Create/Edit Form (Inline Panel for Zen simplicity) -->
+    @if (showCreateForm || showEditForm)
+    {
+        <div class="p-4 mb-4 border border-light" style="background-color: rgba(255, 255, 255, 0.8);">
+            <h4 class="font-serif mb-3">@(showCreateForm ? "Tạo môn học mới" : "Chỉnh sửa thông tin môn học")</h4>
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Mã môn học (Code):</label>
+                    <input type="text" class="form-control" @bind="courseModel.Code" placeholder="Ví dụ: PRN222" disabled="@showEditForm" required />
+                </div>
+                <div class="col-md-9 mb-3">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Tên môn học (Name):</label>
+                    <input type="text" class="form-control" @bind="courseModel.Name" placeholder="Ví dụ: Web Application Development" required />
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Mô tả chi tiết:</label>
+                    <textarea class="form-control" rows="3" @bind="courseModel.Description" placeholder="Mô tả tóm tắt nội dung môn học..."></textarea>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-2">
+                <button class="btn-zen" style="padding: 8px 24px;" @onclick="CancelForm">Hủy bỏ</button>
+                <button class="btn-zen" style="padding: 8px 24px; background-color: var(--text-sumi); color: var(--bg-washi);" @onclick="SaveCourse">
+                    Lưu môn học
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Assign Leader Form (Inline Panel) -->
+    @if (showAssignForm && selectedCourseForLeader != null)
+    {
+        <div class="p-4 mb-4 border border-light" style="background-color: rgba(255, 255, 255, 0.8); max-width: 600px;">
+            <h4 class="font-serif mb-2">Phân công Trưởng bộ môn</h4>
+            <p class="text-muted small mb-3">Chọn Giảng viên làm Trưởng bộ môn cho môn học <strong>@selectedCourseForLeader.Code</strong>. Người này sẽ có quyền phê duyệt tài liệu học tập.</p>
+            <div class="mb-3">
+                <select class="form-select" @bind="selectedLeaderId">
+                    <option value="">-- Chọn Giảng viên --</option>
+                    @if (lecturers != null)
+                    {
+                        @foreach (var lec in lecturers)
+                        {
+                            <option value="@lec.Id.ToString()">@lec.FullName (@lec.Username)</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-2">
+                <button class="btn-zen" style="padding: 8px 24px;" @onclick="CancelAssignForm">Hủy bỏ</button>
+                <button class="btn-zen" style="padding: 8px 24px; background-color: var(--accent-shu); color: var(--bg-washi);" @onclick="SaveLeaderAssignment">
+                    Xác nhận phân công
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Table of Courses -->
+    <div class="table-responsive">
+        <table class="table-zen">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Mã Môn</th>
+                    <th style="width: 35%;">Tên Môn Học</th>
+                    <th style="width: 25%;">Trưởng Bộ Môn (Leader)</th>
+                    <th style="width: 25%; text-align: right; padding-right: 10px;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (filteredCourses == null)
+                {
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="spinner-border text-secondary" role="status"></div>
+                            <p class="text-muted mt-2 small">Đang tải danh sách môn học...</p>
+                        </td>
+                    </tr>
+                }
+                else if (!filteredCourses.Any())
+                {
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                             Không tìm thấy môn học nào khớp với từ khóa tìm kiếm.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var course in filteredCourses)
+                    {
+                        <tr>
+                            <td class="fw-bold text-uppercase">@course.Code</td>
+                            <td>
+                                <div>@course.Name</div>
+                                @if (!string.IsNullOrEmpty(course.Description))
+                                {
+                                    <div class="text-muted small text-truncate" style="max-width: 400px; font-weight: 300;">@course.Description</div>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(course.SubjectLeaderName))
+                                {
+                                    <span><i class="fa-solid fa-user-shield text-accent me-1 small"></i> @course.SubjectLeaderName</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small" style="font-style: italic;">Chưa phân công</span>
+                                }
+                            </td>
+                            <td style="text-align: right; padding-right: 10px;">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="/courses/@course.Code/documents" class="btn-zen" style="padding: 6px 16px; font-size: 0.85rem; text-transform: none;">
+                                        <i class="fa-solid fa-folder-open me-1"></i> Tài liệu
+                                    </a>
+                                    
+                                    <AuthorizeView Roles="Admin">
+                                        <Authorized>
+                                            <button class="btn-zen" style="padding: 6px 12px; font-size: 0.85rem; text-transform: none;" @onclick="() => OpenAssignForm(course)">
+                                                <i class="fa-solid fa-user-gear"></i> Phân công
+                                            </button>
+                                            <button class="btn-zen" style="padding: 6px 12px; font-size: 0.85rem; text-transform: none;" @onclick="() => OpenEditForm(course)">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button class="btn-zen danger" style="padding: 6px 12px; font-size: 0.85rem; text-transform: none;" @onclick="() => DeleteCourse(course)">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </Authorized>
+                                    </AuthorizeView>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private IEnumerable<CourseDto>? allCourses;
+    private IEnumerable<CourseDto>? filteredCourses;
+    private IEnumerable<UserDto>? lecturers;
+    private string searchKeyword = "";
+
+    // Notifications
+    private string? successMessage;
+    private string? errorMessage;
+
+    // Modals/Forms State
+    private bool showCreateForm = false;
+    private bool showEditForm = false;
+    private bool showAssignForm = false;
+
+    private CourseDto courseModel = new();
+    private CourseDto? selectedCourseForLeader;
+    private string selectedLeaderId = "";
+    private Guid currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userIdStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        Guid.TryParse(userIdStr, out currentUserId);
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            allCourses = await CourseService.GetAllCoursesAsync();
+            filteredCourses = allCourses;
+
+            // Lấy danh sách giảng viên để phân công
+            var users = await AuthService.GetAllUsersAsync();
+            lecturers = users.Where(u => u.Role == "Lecturer" || u.Role == "Admin").ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Không thể tải dữ liệu: {ex.Message}";
+        }
+    }
+
+    private void FilterCourses()
+    {
+        if (string.IsNullOrWhiteSpace(searchKeyword))
+        {
+            filteredCourses = allCourses;
+        }
+        else
+        {
+            var kw = searchKeyword.Trim().ToLower();
+            filteredCourses = allCourses?.Where(c => c.Code.ToLower().Contains(kw) || c.Name.ToLower().Contains(kw)).ToList();
+        }
+    }
+
+    private void OpenCreateForm()
+    {
+        showEditForm = false;
+        showAssignForm = false;
+        courseModel = new CourseDto();
+        showCreateForm = true;
+    }
+
+    private void OpenEditForm(CourseDto course)
+    {
+        showCreateForm = false;
+        showAssignForm = false;
+        courseModel = new CourseDto
+        {
+            Id = course.Id,
+            Code = course.Code,
+            Name = course.Name,
+            Description = course.Description,
+            SubjectLeaderId = course.SubjectLeaderId
+        };
+        showEditForm = true;
+    }
+
+    private void OpenAssignForm(CourseDto course)
+    {
+        showCreateForm = false;
+        showEditForm = false;
+        selectedCourseForLeader = course;
+        selectedLeaderId = course.SubjectLeaderId?.ToString() ?? "";
+        showAssignForm = true;
+    }
+
+    private void CancelForm()
+    {
+        showCreateForm = false;
+        showEditForm = false;
+    }
+
+    private void CancelAssignForm()
+    {
+        showAssignForm = false;
+        selectedCourseForLeader = null;
+    }
+
+    private async Task SaveCourse()
+    {
+        successMessage = null;
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(courseModel.Code) || string.IsNullOrWhiteSpace(courseModel.Name))
+        {
+            errorMessage = "Vui lòng điền đầy đủ mã môn học và tên môn học.";
+            return;
+        }
+
+        try
+        {
+            if (showCreateForm)
+            {
+                await CourseService.CreateCourseAsync(courseModel, currentUserId);
+                successMessage = $"Tạo môn học {courseModel.Code} thành công!";
+            }
+            else if (showEditForm)
+            {
+                await CourseService.UpdateCourseAsync(courseModel);
+                successMessage = $"Cập nhật môn học {courseModel.Code} thành công!";
+            }
+
+            showCreateForm = false;
+            showEditForm = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Lỗi khi lưu môn học: {ex.Message}";
+        }
+    }
+
+    private async Task SaveLeaderAssignment()
+    {
+        successMessage = null;
+        errorMessage = null;
+
+        if (selectedCourseForLeader == null) return;
+
+        try
+        {
+            if (Guid.TryParse(selectedLeaderId, out var leaderId))
+            {
+                await CourseService.UpdateSubjectLeaderAsync(selectedCourseForLeader.Id, leaderId);
+                successMessage = "Phân công Trưởng bộ môn mới thành công!";
+            }
+            else
+            {
+                errorMessage = "Vui lòng chọn Giảng viên hợp lệ.";
+                return;
+            }
+
+            showAssignForm = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Lỗi phân công Trưởng bộ môn: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteCourse(CourseDto course)
+    {
+        successMessage = null;
+        errorMessage = null;
+
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn xóa môn học {course.Code} và toàn bộ tài liệu liên quan không?");
+        if (!confirmed) return;
+
+        try
+        {
+            await CourseService.DeleteCourseAsync(course.Id);
+            successMessage = "Đã xóa môn học và tài liệu liên quan thành công!";
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Không thể xóa môn học: {ex.Message}";
+        }
+    }
+}

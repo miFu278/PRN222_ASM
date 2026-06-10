@@ -1,0 +1,74 @@
+@page "/Account/Login"
+@layout Layout.MainLayout
+@inject NavigationManager NavigationManager
+
+<PageTitle>Đăng nhập - RAG ChatBot</PageTitle>
+
+<div class="row justify-content-center align-items-center" style="min-height: calc(100vh - 180px);">
+    <div class="col-md-5 col-sm-8 p-4" style="border: 1px solid var(--border-light); background-color: rgba(255, 255, 255, 0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+        <div class="text-center mb-4">
+            <span class="hanko-seal" style="width: 36px; height: 36px; font-size: 1.1rem; margin-right: 0;">印</span>
+            <h2 class="font-serif mt-3 mb-1">RAG ChatBot</h2>
+            <p class="text-muted small">Hệ thống trợ lý học tập tối giản & hiệu quả</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Error))
+        {
+            <div class="alert alert-danger d-flex align-items-center py-2" role="alert" style="border-radius: 0; font-size: 0.9rem; background-color: rgba(191, 42, 35, 0.05); border-color: rgba(191, 42, 35, 0.3); color: var(--accent-shu);">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <div>@Error</div>
+            </div>
+        }
+
+        <!-- Traditional HTML form posting directly to Controller to handle cookies -->
+        <form action="Account/PerformLogin?returnUrl=@Uri.EscapeDataString(ReturnUrl ?? "")" method="post" class="mb-4">
+            <AntiforgeryToken />
+            
+            <div class="mb-3">
+                <label for="username" class="form-label text-muted small text-uppercase fw-bold">Tên tài khoản (Email):</label>
+                <input type="text" id="username" name="Username" class="input-zen" placeholder="Nhập email hoặc username..." required autocomplete="username" />
+            </div>
+
+            <div class="mb-4">
+                <label for="password" class="form-label text-muted small text-uppercase fw-bold">Mật khẩu:</label>
+                <input type="password" id="password" name="Password" class="input-zen" placeholder="Nhập mật khẩu của bạn..." required autocomplete="current-password" />
+            </div>
+
+            <button type="submit" class="btn-zen w-100 py-3">Đăng nhập hệ thống</button>
+        </form>
+
+        <div class="position-relative my-4 text-center">
+            <hr style="border-top: 1px solid var(--border-light); margin: 0;" />
+            <span class="bg-washi px-3 text-muted small" style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-weight: 300;">Hoặc</span>
+        </div>
+
+        <!-- Google OAuth Authentication -->
+        <form action="Account/ExternalLogin?returnUrl=@Uri.EscapeDataString(ReturnUrl ?? "")" method="post">
+            <AntiforgeryToken />
+            <button type="submit" class="btn-zen danger w-100 py-3">
+                <i class="fa-brands fa-google me-2"></i> Đăng nhập bằng tài khoản Google
+            </button>
+        </form>
+
+        <div class="text-center mt-4 text-muted small" style="font-weight: 300;">
+            Chỉ dành cho cán bộ giảng viên và sinh viên có trong whitelist hệ thống.
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Error { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    protected override void OnInitialized()
+    {
+        // Default ReturnUrl to home if not provided
+        if (string.IsNullOrEmpty(ReturnUrl))
+        {
+            ReturnUrl = "/";
+        }
+    }
+}

@@ -1,0 +1,309 @@
+@page "/"
+@attribute [Authorize]
+@inject ICourseService CourseService
+@inject IChatService ChatService
+@inject ILogger<Home> Logger
+
+<PageTitle>Trợ Lý Học Thuật AI</PageTitle>
+
+<div class="zen-chat-container py-4">
+    <!-- Header/Hero section -->
+    <div class="zen-hero mb-4">
+        <div class="zen-hero-title">
+            <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">Trợ Lý Thông Minh</div>
+            <h2 class="font-serif m-0">Hỏi đáp Học liệu</h2>
+        </div>
+        <div class="zen-hero-desc">
+            <p class="text-muted m-0">
+                Hãy lựa chọn môn học và bắt đầu đặt câu hỏi. Hệ thống sẽ phân tích các tài liệu giảng dạy đã được phê duyệt của môn học để cung cấp câu trả lời chính xác nhất.
+            </p>
+        </div>
+    </div>
+
+    <!-- Course Selector & Reset -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6 col-sm-8">
+            <label class="form-label text-muted small text-uppercase fw-bold">Chọn môn học:</label>
+            <select class="form-select form-select-lg" @bind="SelectedCourseCode">
+                <option value="">-- Hỏi đáp tất cả môn học (Toàn hệ thống) --</option>
+                @if (courses != null)
+                {
+                    @foreach (var course in courses)
+                    {
+                        <option value="@course.Code">@course.Code - @course.Name</option>
+                    }
+                }
+            </select>
+        </div>
+        @if (chatMessages.Count > 0)
+        {
+            <div class="col-md-6 col-sm-4 text-sm-end mt-3 mt-sm-0">
+                <button class="btn-zen danger mt-3" @onclick="ClearChat">Xóa lịch sử</button>
+            </div>
+        }
+    </div>
+    <div class="chat-history-box p-3 mb-4" style="min-height: 350px; max-height: 550px; overflow-y: auto; border: 1px solid var(--border-light); background-color: rgba(255, 255, 255, 0.5);">
+        @if (chatMessages.Count == 0)
+        {
+            <div class="d-flex flex-column align-items-center justify-content-center py-5 text-center">
+                <span class="hanko-seal mb-3" style="width: 48px; height: 48px; font-size: 1.5rem;">問</span>
+                <h4 class="font-serif">Trợ lý Học thuật AI</h4>
+                <p class="text-muted small">Hãy gõ câu hỏi của bạn để tìm câu trả lời từ tài liệu giảng dạy đã được phê duyệt.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var msg in chatMessages)
+            {
+                <div class="chat-message-row d-flex @(msg.Role == "User" ? "justify-content-end" : "justify-content-start") mb-3">
+                    <div class="message-bubble p-3 @(msg.Role == "User" ? "message-user" : "message-bot")" style="max-width: 80%; border-radius: 4px; line-height: 1.6;">
+                        <div class="d-flex align-items-center mb-1">
+                            @if (msg.Role == "User")
+                            {
+                                <span class="badge bg-secondary me-2">Bạn</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger me-2" style="background-color: var(--accent-shu) !important;">Trợ lý</span>
+                            }
+                            <span class="text-muted style-time small">@msg.Timestamp.ToString("HH:mm")</span>
+                        </div>
+                        <div style="white-space: pre-line; font-weight: @(msg.Role == "User" ? "300" : "400");">
+                            @msg.Content
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (isSending)
+            {
+                <div class="chat-message-row d-flex justify-content-start mb-3">
+                    <div class="message-bubble p-3 message-bot" style="max-width: 80%; border-radius: 4px;">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-danger me-2" style="background-color: var(--accent-shu) !important;">Trợ lý</span>
+                            <span class="text-muted small">Đang suy nghĩ...</span>
+                        </div>
+                        <div class="loading-dots">
+                            <span>.</span><span>.</span><span>.</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Input Box & Suggestions -->
+    <div class="zen-input-area mb-4">
+        <div class="zen-input-wrapper">
+            <input type="text" class="input-zen" placeholder="Viết câu hỏi của bạn tại đây..." 
+                   @bind="question" @bind:event="oninput" @onkeypress="HandleKeyPress" disabled="@isSending">
+            <button class="zen-send-btn" @onclick="SendMessage" disabled="@(isSending || string.IsNullOrWhiteSpace(question))">
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    @if (chatMessages.Count == 0 && !isSending)
+    {
+        <div class="zen-suggestions">
+            <span class="text-muted mb-2 small text-uppercase tracking-wider fw-bold">Gợi ý câu hỏi</span>
+            <button class="zen-suggestion-btn text-start" @onclick='() => SetSuggestion("Tóm tắt nội dung chính của các môn học.")'>
+                <i class="fa-solid fa-circle-question me-2"></i> Tóm tắt nội dung chính của các môn học.
+            </button>
+            <button class="zen-suggestion-btn text-start" @onclick='() => SetSuggestion("Những khái niệm quan trọng nhất sinh viên cần nắm là gì?")'>
+                <i class="fa-solid fa-circle-question me-2"></i> Những khái niệm quan trọng nhất sinh viên cần nắm là gì?
+            </button>
+            <button class="zen-suggestion-btn text-start" @onclick='() => SetSuggestion("Tạo giúp tôi 5 câu hỏi ôn tập dựa trên các bài giảng.")'>
+                <i class="fa-solid fa-circle-question me-2"></i> Tạo giúp tôi 5 câu hỏi ôn tập dựa trên các bài giảng.
+            </button>
+        </div>
+    }
+</div>
+
+<style>
+    .tracking-wider {
+        letter-spacing: 0.1em;
+    }
+    
+    .chat-history-box {
+        transition: all 0.3s ease;
+    }
+
+    .message-bubble {
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .message-user {
+        background-color: var(--border-light);
+        color: var(--text-sumi);
+        border: 1px solid rgba(0,0,0,0.03);
+    }
+
+    .message-bot {
+        background-color: #ffffff;
+        color: var(--text-sumi);
+        border-left: 3px solid var(--accent-shu);
+        border-top: 1px solid var(--border-light);
+        border-right: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .style-time {
+        font-size: 0.75rem;
+    }
+
+    .zen-suggestion-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        padding: 8px 0;
+        transition: color 0.4s ease, padding-left 0.4s ease;
+        cursor: pointer;
+        outline: none;
+        display: inline-flex;
+        align-items: center;
+        text-align: left;
+    }
+
+    .zen-suggestion-btn::before {
+        content: '';
+        display: inline-block;
+        width: 15px;
+        height: 1px;
+        background-color: var(--border-light);
+        margin-right: 15px;
+        transition: width 0.4s ease, background-color 0.4s ease;
+        flex-shrink: 0;
+    }
+
+    .zen-suggestion-btn:hover {
+        color: var(--text-sumi);
+        padding-left: 5px;
+    }
+
+    .zen-suggestion-btn:hover::before {
+        width: 30px;
+        background-color: var(--accent-shu);
+    }
+
+    .loading-dots span {
+        font-size: 2rem;
+        line-height: 0.5;
+        animation: blink 1.4s infinite both;
+        display: inline-block;
+        margin: 0 2px;
+    }
+
+    .loading-dots span:nth-child(2) { animation-delay: .2s; }
+    .loading-dots span:nth-child(3) { animation-delay: .4s; }
+
+    @@keyframes blink {
+        0% { opacity: .2; }
+        20% { opacity: 1; }
+        100% { opacity: .2; }
+    }
+</style>
+
+@code {
+    private IEnumerable<CourseDto>? courses;
+    private string selectedCourseCode = "";
+    private List<ChatMessage> chatMessages = new();
+    private string question = "";
+    private bool isSending = false;
+
+    private string SelectedCourseCode
+    {
+        get => selectedCourseCode;
+        set
+        {
+            if (selectedCourseCode != value)
+            {
+                selectedCourseCode = value;
+                chatMessages.Clear(); // Xóa lịch sử khi đổi môn học
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            courses = await CourseService.GetAllCoursesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Lỗi khi tải danh sách môn học.");
+        }
+    }
+
+    private void SetSuggestion(string val)
+    {
+        question = val;
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(question) || isSending)
+            return;
+
+        var userQuestion = question.Trim();
+        question = "";
+        
+        chatMessages.Add(new ChatMessage 
+        { 
+            Role = "User", 
+            Content = userQuestion, 
+            Timestamp = DateTime.Now 
+        });
+        
+        isSending = true;
+        StateHasChanged();
+
+        try
+        {
+            var reply = await ChatService.GetChatResponseAsync(userQuestion, SelectedCourseCode);
+            chatMessages.Add(new ChatMessage 
+            { 
+                Role = "Bot", 
+                Content = reply, 
+                Timestamp = DateTime.Now 
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Lỗi khi gọi ChatService cho môn {Course}", SelectedCourseCode);
+            chatMessages.Add(new ChatMessage 
+            { 
+                Role = "Bot", 
+                Content = $"Đã xảy ra lỗi khi tạo phản hồi từ AI: {ex.Message}", 
+                Timestamp = DateTime.Now 
+            });
+        }
+        finally
+        {
+            isSending = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearChat()
+    {
+        chatMessages.Clear();
+    }
+
+    private class ChatMessage
+    {
+        public string Role { get; set; } = "";
+        public string Content { get; set; } = "";
+        public DateTime Timestamp { get; set; }
+    }
+}

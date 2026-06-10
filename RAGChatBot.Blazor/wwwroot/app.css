@@ -1,0 +1,482 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;500;700&display=swap');
+
+:root {
+    --bg-washi: #fcfbf9;
+    --text-sumi: #2c2c2c;
+    --text-muted: #8e8e8e;
+    --accent-shu: #bf2a23;
+    --border-light: #eaeaea;
+    --font-serif: 'Noto Serif JP', serif;
+    --font-sans: 'Noto Sans JP', sans-serif;
+}
+
+html {
+    font-size: 16px;
+    background-color: var(--bg-washi);
+}
+
+body {
+    margin: 0;
+    background-color: var(--bg-washi) !important;
+    color: var(--text-sumi) !important;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, .font-serif {
+    font-family: var(--font-serif);
+    color: var(--text-sumi) !important;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+}
+
+p, .lead, li {
+    color: var(--text-sumi) !important;
+    line-height: 1.8;
+    font-weight: 300;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+.text-accent {
+    color: var(--accent-shu) !important;
+}
+
+a {
+    color: var(--text-sumi);
+    text-decoration: none;
+    transition: color 0.4s ease;
+}
+
+a:hover {
+    color: var(--accent-shu);
+}
+
+/* Hanko (Seal) Accent */
+.hanko-seal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: var(--accent-shu);
+    color: var(--bg-washi);
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-family: var(--font-serif);
+    margin-right: 8px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+}
+
+/* Minimalist Button */
+.btn-zen {
+    background: transparent;
+    border: 1px solid var(--text-sumi);
+    color: var(--text-sumi);
+    padding: 12px 32px;
+    font-family: var(--font-sans);
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    border-radius: 0;
+}
+
+.btn-zen::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background-color: var(--text-sumi);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: -1;
+}
+
+.btn-zen:hover {
+    color: var(--bg-washi) !important;
+}
+
+.btn-zen:hover::after {
+    height: 100%;
+}
+
+.btn-zen.danger {
+    border-color: var(--accent-shu);
+    color: var(--accent-shu);
+}
+.btn-zen.danger::after {
+    background-color: var(--accent-shu);
+}
+
+/* Minimalist Input */
+.input-zen {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-light);
+    border-radius: 0;
+    padding: 12px 0;
+    color: var(--text-sumi);
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+    transition: border-color 0.4s ease;
+    width: 100%;
+}
+.input-zen:focus {
+    outline: none;
+    border-bottom-color: var(--text-sumi);
+    box-shadow: none;
+}
+.input-zen::placeholder {
+    color: var(--text-muted);
+    font-weight: 300;
+}
+
+/* Overlay Menu */
+.zen-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--bg-washi);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+    visibility: hidden;
+}
+
+.zen-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+}
+
+
+.zen-menu-item {
+    font-family: var(--font-serif);
+    font-size: 3rem;
+    color: var(--text-sumi);
+    text-decoration: none;
+    margin: 20px 0;
+    position: relative;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: color 0.4s ease, transform 0.6s ease, opacity 0.6s ease;
+}
+
+.zen-overlay.active .zen-menu-item {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.zen-menu-item:hover {
+    color: var(--accent-shu);
+}
+
+/* Minimalist Tables */
+.table-zen {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table-zen th {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    text-align: left;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--text-sumi);
+    color: var(--text-sumi);
+}
+.table-zen td {
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-sumi);
+    font-weight: 300;
+}
+.table-zen tr {
+    transition: background-color 0.4s ease;
+}
+.table-zen tr:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+/* Form controls overrides */
+.form-control, .form-select {
+    background: transparent !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: 0 !important;
+    color: var(--text-sumi) !important;
+    padding: 12px 16px !important;
+    box-shadow: none !important;
+    transition: border-color 0.4s ease;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--text-sumi) !important;
+}
+
+/* Status Badges Zen */
+.status-badge {
+    font-size: 0.8rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    padding: 4px 0;
+    display: inline-flex;
+    align-items: center;
+}
+.status-badge::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+.status-pending { color: var(--text-muted); }
+.status-pending::before { background-color: var(--text-muted); }
+.status-processed { color: var(--text-sumi); }
+.status-processed::before { background-color: var(--text-sumi); }
+
+/* GSAP Defaults */
+.gsap-fade-up {
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+/* Hide scrollbar for a cleaner look */
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border-light);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Blazor Specifics */
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+/* Layout and Spacing */
+.zen-header {
+    padding: 40px 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+}
+
+.zen-brand {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--text-sumi);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.05em;
+}
+
+.zen-menu-trigger {
+    background: transparent;
+    border: none;
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--text-sumi);
+    cursor: pointer;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zen-menu-trigger::before {
+    content: '';
+    width: 30px;
+    height: 1px;
+    background-color: var(--text-sumi);
+    transition: width 0.3s ease;
+}
+
+.zen-menu-trigger:hover::before {
+    width: 50px;
+}
+
+.zen-main {
+    flex: 1;
+    padding: 0 60px 60px 60px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.overlay-close {
+    position: absolute;
+    top: 40px;
+    right: 60px;
+    background: transparent;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-sumi);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-weight: 300;
+}
+
+/* Zen Container */
+.zen-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Chat Layout & Hero Section */
+.zen-chat-container {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 220px);
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.zen-hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-bottom: 40px;
+    gap: 30px;
+}
+
+.zen-hero-title {
+    flex: 1;
+    min-width: 300px;
+    position: relative;
+}
+
+.zen-hero-title h2 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
+.zen-hero-title .text-accent {
+    font-size: 0.85rem;
+    font-family: var(--font-sans);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.zen-hero-desc {
+    flex: 1;
+    min-width: 300px;
+    padding-top: 15px;
+    font-size: 1.05rem;
+    color: var(--text-muted) !important;
+    position: relative;
+}
+
+.zen-hero-desc::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40px;
+    height: 1px;
+    background-color: var(--text-sumi);
+}
+
+.zen-input-area {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.zen-input-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+}
+
+.zen-send-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-sumi);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding-bottom: 12px;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.zen-send-btn:hover:not(:disabled) {
+    opacity: 1;
+}
+
+.zen-send-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
+}
+
+.zen-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+    .zen-header {
+        padding: 20px;
+    }
+    .zen-main {
+        padding: 0 20px 20px 20px;
+    }
+    .overlay-close {
+        top: 20px;
+        right: 20px;
+    }
+    .zen-menu-item {
+        font-size: 2rem;
+    }
+    .zen-hero {
+        margin-bottom: 20px;
+        gap: 15px;
+    }
+    .zen-hero-title h2 {
+        font-size: 2rem;
+    }
+}

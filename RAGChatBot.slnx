@@ -3,4 +3,5 @@
   <Project Path="RAGChatBot.Domain/RAGChatBot.Domain.csproj" />
   <Project Path="RAGChatBot.Infrastructure/RAGChatBot.Infrastructure.csproj" />
   <Project Path="RAGChatBot.Presentation/RAGChatBot.Presentation.csproj" />
+  <Project Path="RAGChatBot.Blazor/RAGChatBot.Blazor.csproj" />
 </Solution>

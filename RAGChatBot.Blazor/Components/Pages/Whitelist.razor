@@ -1,0 +1,288 @@
+@page "/admin/whitelist"
+@attribute [Authorize(Roles = "Admin")]
+@inject IWhitelistService WhitelistService
+@inject IJSRuntime JS
+@inject ILogger<Whitelist> Logger
+
+<PageTitle>Whitelist Emails - Admin</PageTitle>
+
+<div class="zen-container py-4">
+    <div class="zen-hero mb-4">
+        <div class="zen-hero-title">
+            <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">Hệ thống quản trị</div>
+            <h2 class="font-serif m-0">Danh sách Whitelist</h2>
+        </div>
+        <div class="zen-hero-desc">
+            <p class="text-muted m-0">
+                Các email nằm trong danh sách này sẽ được phép đăng ký và truy cập vào hệ thống khi sử dụng phương thức đăng nhập bằng Google OAuth.
+            </p>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: 0; font-size: 0.95rem; background-color: rgba(40, 167, 69, 0.05); border-color: rgba(40, 167, 69, 0.2); color: #28a745;">
+            <i class="fa-solid fa-circle-check me-2"></i> @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 0; font-size: 0.95rem; background-color: rgba(191, 42, 35, 0.05); border-color: rgba(191, 42, 35, 0.2); color: var(--accent-shu);">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Add / Import Panels -->
+        <div class="col-lg-4 mb-4">
+            <!-- Manual Add Form -->
+            <div class="p-4 border border-light mb-4" style="background-color: rgba(255, 255, 255, 0.8);">
+                <h4 class="font-serif mb-3">Thêm email thủ công</h4>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Địa chỉ Email:</label>
+                    <input type="email" class="form-control" @bind="newEmail" placeholder="Ví dụ: student@gmail.com" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Họ và tên (Tùy chọn):</label>
+                    <input type="text" class="form-control" @bind="newFullName" placeholder="Ví dụ: Nguyễn Văn A" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Mã số sinh viên (Tùy chọn):</label>
+                    <input type="text" class="form-control" @bind="newStudentId" placeholder="Ví dụ: HE150123" />
+                </div>
+                <button class="btn-zen w-100 mt-2" @onclick="AddEmail" disabled="@(string.IsNullOrWhiteSpace(newEmail))">
+                    <i class="fa-solid fa-plus me-1"></i> Thêm vào danh sách
+                </button>
+            </div>
+
+            <!-- Excel Import Form -->
+            <div class="p-4 border border-light" style="background-color: rgba(255, 255, 255, 0.8);">
+                <h4 class="font-serif mb-3">Nhập danh sách từ Excel</h4>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Chọn tệp Excel (.xlsx):</label>
+                    <InputFile OnChange="HandleExcelFileSelected" class="form-control" accept=".xlsx" />
+                    <div class="form-text small text-muted">
+                        Tệp Excel cần chứa các cột: Email, Họ và tên (tùy chọn), MSSV (tùy chọn).
+                    </div>
+                </div>
+                <button class="btn-zen w-100 mt-2 danger" @onclick="ImportExcel" disabled="@(excelFile == null || isImporting)">
+                    @if (isImporting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <span>Đang nhập dữ liệu...</span>
+                    }
+                    else
+                    {
+                        <span><i class="fa-solid fa-file-import me-1"></i> Nhập từ Excel</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        <!-- Whitelist Table -->
+        <div class="col-lg-8 mb-4">
+            <!-- Search & Count Bar -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                <div style="flex: 1; max-width: 350px;">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-0 border-bottom border-light" style="border-radius: 0;"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                        <input type="text" class="form-control border-0 border-bottom border-light" style="border-radius: 0; box-shadow: none;" placeholder="Tìm kiếm email hoặc MSSV..." @bind="searchKeyword" @bind:event="oninput" @onkeyup="FilterWhitelist" />
+                    </div>
+                </div>
+                <div class="text-muted small">
+                    Tổng số: <strong>@(filteredEmails?.Count() ?? 0)</strong> địa chỉ
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table-zen">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Địa chỉ Email</th>
+                            <th style="width: 25%;">Họ và tên</th>
+                            <th style="width: 20%;">MSSV</th>
+                            <th style="width: 15%; text-align: right; padding-right: 10px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (filteredEmails == null)
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-5">
+                                    <div class="spinner-border text-secondary" role="status"></div>
+                                    <p class="text-muted mt-2 small">Đang tải whitelist...</p>
+                                </td>
+                            </tr>
+                        }
+                        else if (!filteredEmails.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    Danh sách whitelist trống hoặc không khớp với tìm kiếm.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in filteredEmails)
+                            {
+                                <tr>
+                                    <td class="fw-bold">@item.Email</td>
+                                    <td>@(item.FullName ?? "-")</td>
+                                    <td>@(item.StudentId ?? "-")</td>
+                                    <td style="text-align: right; padding-right: 10px;">
+                                        <button class="btn-zen danger" style="padding: 6px 12px; font-size: 0.8rem; text-transform: none;" @onclick="() => DeleteEmail(item)">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private IEnumerable<WhitelistEmailDto>? allEmails;
+    private IEnumerable<WhitelistEmailDto>? filteredEmails;
+    private string searchKeyword = "";
+
+    // Manual Form Inputs
+    private string newEmail = "";
+    private string newFullName = "";
+    private string newStudentId = "";
+
+    // Excel Upload
+    private IBrowserFile? excelFile;
+    private bool isImporting = false;
+
+    // Notifications
+    private string? successMessage;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            allEmails = await WhitelistService.GetAllAsync();
+            filteredEmails = allEmails;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Không thể tải danh sách Whitelist: {ex.Message}";
+        }
+    }
+
+    private void FilterWhitelist()
+    {
+        if (string.IsNullOrWhiteSpace(searchKeyword))
+        {
+            filteredEmails = allEmails;
+        }
+        else
+        {
+            var kw = searchKeyword.Trim().ToLower();
+            filteredEmails = allEmails?.Where(e => 
+                e.Email.ToLower().Contains(kw) || 
+                (e.FullName != null && e.FullName.ToLower().Contains(kw)) ||
+                (e.StudentId != null && e.StudentId.ToLower().Contains(kw))
+            ).ToList();
+        }
+    }
+
+    private async Task AddEmail()
+    {
+        successMessage = null;
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(newEmail)) return;
+
+        try
+        {
+            await WhitelistService.AddAsync(newEmail.Trim(), newFullName.Trim(), newStudentId.Trim());
+            successMessage = $"Đã thêm thành công email '{newEmail}' vào whitelist!";
+            
+            // Clear inputs
+            newEmail = "";
+            newFullName = "";
+            newStudentId = "";
+            
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Lỗi khi thêm email: {ex.Message}";
+        }
+    }
+
+    private void HandleExcelFileSelected(InputFileChangeEventArgs e)
+    {
+        excelFile = e.File;
+        successMessage = null;
+        errorMessage = null;
+    }
+
+    private async Task ImportExcel()
+    {
+        if (excelFile == null) return;
+
+        isImporting = true;
+        successMessage = null;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            // Thư viện ImportFromExcelAsync nhận Stream và đọc file
+            using var fileStream = excelFile.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024); // Tối đa 5MB cho file Excel
+            using var memoryStream = new System.IO.MemoryStream();
+            await fileStream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            int count = await WhitelistService.ImportFromExcelAsync(memoryStream);
+            successMessage = $"Nhập whitelist thành công! Đã thêm {count} email mới vào cơ sở dữ liệu.";
+            excelFile = null;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Lỗi khi nhập tệp Excel: {ex.Message}";
+        }
+        finally
+        {
+            isImporting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteEmail(WhitelistEmailDto item)
+    {
+        successMessage = null;
+        errorMessage = null;
+
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn xóa email '{item.Email}' khỏi whitelist không?");
+        if (!confirmed) return;
+
+        try
+        {
+            await WhitelistService.DeleteAsync(item.Id);
+            successMessage = $"Đã xóa email '{item.Email}' khỏi whitelist thành công!";
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Lỗi khi xóa email: {ex.Message}";
+        }
+    }
+}

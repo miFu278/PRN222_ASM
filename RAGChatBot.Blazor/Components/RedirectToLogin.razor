@@ -1,0 +1,14 @@
+@inject NavigationManager NavigationManager
+
+@code {
+    protected override void OnInitialized()
+    {
+        var relativeUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        // Tránh bị lặp vô hạn nếu đang ở trang login
+        if (!relativeUrl.StartsWith("Account/Login", StringComparison.OrdinalIgnoreCase))
+        {
+            var returnUrl = string.IsNullOrEmpty(relativeUrl) ? "/" : $"/{relativeUrl}";
+            NavigationManager.NavigateTo($"/Account/Login?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
+        }
+    }
+}

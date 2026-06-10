@@ -1,0 +1,134 @@
+@page "/subscription"
+@attribute [Authorize]
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Gói Dịch Vụ - RAG ChatBot</PageTitle>
+
+<div class="zen-container py-4">
+    <div class="zen-hero mb-5">
+        <div class="zen-hero-title">
+            <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">Gói cước tài khoản</div>
+            <h2 class="font-serif m-0">Nâng Cấp Premium</h2>
+        </div>
+        <div class="zen-hero-desc">
+            <p class="text-muted m-0">
+                Nâng cấp hạn mức tải lên tài liệu học tập của bạn để hỗ trợ phân tích các tài liệu lớn, tài liệu tham khảo dài tập hoặc giáo trình đầy đủ chương trình học.
+            </p>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    @if (!string.IsNullOrEmpty(Success))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: 0; font-size: 0.95rem; background-color: rgba(40, 167, 69, 0.05); border-color: rgba(40, 167, 69, 0.2); color: #28a745;">
+            <i class="fa-solid fa-circle-check me-2"></i> @Success
+            <button type="button" class="btn-close" @onclick="() => Success = null"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(Error))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 0; font-size: 0.95rem; background-color: rgba(191, 42, 35, 0.05); border-color: rgba(191, 42, 35, 0.2); color: var(--accent-shu);">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> @Error
+            <button type="button" class="btn-close" @onclick="() => Error = null"></button>
+        </div>
+    }
+
+    <!-- Pricing Comparison Grid -->
+    <div class="row justify-content-center gap-4 mb-5">
+        <!-- Free Tier Card -->
+        <div class="col-md-5 p-4 border border-light" style="background-color: rgba(255, 255, 255, 0.6); box-shadow: 0 4px 10px rgba(0,0,0,0.01);">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="font-serif m-0">Gói Free (Miễn phí)</h4>
+                @if (currentTier == "Free")
+                {
+                    <span class="badge bg-secondary">Hiện tại</span>
+                }
+            </div>
+            <h1 class="font-serif mb-4">0đ <span class="fs-6 text-muted font-sans" style="font-weight: 300;">/ vĩnh viễn</span></h1>
+            
+            <hr class="my-3" style="border-color: var(--border-light);" />
+            
+            <ul class="list-unstyled mb-4">
+                <li class="mb-2"><i class="fa-solid fa-check text-accent me-2"></i> Tải lên tài liệu giảng dạy tối đa <strong>5 MB</strong></li>
+                <li class="mb-2"><i class="fa-solid fa-check text-accent me-2"></i> Trích xuất và phân tích văn bản AI (RAG)</li>
+                <li class="mb-2"><i class="fa-solid fa-check text-accent me-2"></i> Chatbot học thuật tương tác thời gian thực</li>
+                <li class="mb-2 text-muted" style="text-decoration: line-through;"><i class="fa-solid fa-xmark me-2"></i> Tải lên tệp dung lượng lớn (giáo trình dài)</li>
+            </ul>
+        </div>
+
+        <!-- Premium Tier Card -->
+        <div class="col-md-5 p-4 border @(currentTier == "Premium" ? "border-success" : "border-dark")" style="background-color: rgba(255, 255, 255, 0.9); box-shadow: 0 10px 30px rgba(0,0,0,0.03); position: relative; overflow: hidden;">
+            @if (currentTier == "Premium")
+            {
+                <div class="premium-ribbon">ĐANG DÙNG</div>
+            }
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="font-serif m-0 text-accent">Gói Premium (Cao cấp)</h4>
+                @if (currentTier == "Premium")
+                {
+                    <span class="badge bg-success">Hiện tại</span>
+                }
+            </div>
+            <h1 class="font-serif mb-4">99.000đ <span class="fs-6 text-muted font-sans" style="font-weight: 300;">/ tháng</span></h1>
+            
+            <hr class="my-3" style="border-color: var(--text-sumi);" />
+            
+            <ul class="list-unstyled mb-4">
+                <li class="mb-2"><i class="fa-solid fa-circle-check text-accent me-2"></i> Tải lên tài liệu giảng dạy lên tới <strong>50 MB</strong></li>
+                <li class="mb-2"><i class="fa-solid fa-circle-check text-accent me-2"></i> Hỗ trợ file giáo trình dày, nhiều chương</li>
+                <li class="mb-2"><i class="fa-solid fa-circle-check text-accent me-2"></i> Mức độ ưu tiên cao khi trích xuất vector hóa</li>
+                <li class="mb-2"><i class="fa-solid fa-circle-check text-accent me-2"></i> Đầy đủ tính năng như gói Free</li>
+            </ul>
+
+            @if (currentTier == "Free")
+            {
+                <form action="Subscription/Upgrade" method="post" class="mt-4">
+                    <AntiforgeryToken />
+                    <button type="submit" class="btn-zen danger w-100 py-3">
+                        Nâng cấp lên Premium ngay
+                    </button>
+                </form>
+            }
+            else
+            {
+                <div class="alert alert-success text-center mt-4 mb-0 py-3" style="border-radius: 0;">
+                    <i class="fa-solid fa-sparkles me-1 text-accent"></i> Tài khoản của bạn đã được nâng cấp Premium.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .premium-ribbon {
+        position: absolute;
+        top: 15px;
+        right: -30px;
+        background-color: var(--accent-shu);
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: bold;
+        padding: 4px 30px;
+        transform: rotate(45deg);
+        letter-spacing: 0.1em;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Success { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Error { get; set; }
+
+    private string currentTier = "Free";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        currentTier = user.FindFirst("SubscriptionTier")?.Value ?? "Free";
+    }
+}
