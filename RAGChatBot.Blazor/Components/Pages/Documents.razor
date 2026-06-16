@@ -1,5 +1,8 @@
 @page "/courses/{CourseCode}/documents"
 @attribute [Authorize]
+@implements IDisposable
+@using RAGChatBot.Blazor.Services
+@inject DocumentEventService EventService
 @inject IDocumentService DocumentService
 @inject ICourseService CourseService
 @inject AuthenticationStateProvider AuthStateProvider
@@ -266,6 +269,21 @@
 
         await LoadCourseDetails();
         await LoadDocuments();
+
+        // Đăng ký sự kiện real-time
+        EventService.OnDocumentChanged += HandleDocumentChanged;
+    }
+
+    private void HandleDocumentChanged(string courseCode)
+    {
+        if (courseCode.Equals(CourseCode, StringComparison.OrdinalIgnoreCase))
+        {
+            InvokeAsync(async () =>
+            {
+                await LoadDocuments();
+                StateHasChanged();
+            });
+        }
     }
 
     private async Task LoadCourseDetails()
@@ -357,6 +375,8 @@
             chapter = "";
             uploadedFile = null;
             await LoadDocuments();
+
+            EventService.NotifyDocumentChanged(CourseCode);
         }
         catch (Exception ex)
         {
@@ -379,6 +399,8 @@
             await DocumentService.ApproveDocumentAsync(docId, currentUserId);
             successMessage = "Duyệt tài liệu thành công!";
             await LoadDocuments();
+
+            EventService.NotifyDocumentChanged(CourseCode);
         }
         catch (Exception ex)
         {
@@ -399,6 +421,8 @@
             await DocumentService.DeleteDocumentAsync(docId, currentUserId);
             successMessage = "Xóa tài liệu học tập thành công!";
             await LoadDocuments();
+
+            EventService.NotifyDocumentChanged(CourseCode);
         }
         catch (Exception ex)
         {
@@ -430,5 +454,10 @@
             return $"{(bytes / 1024.0 / 1024.0):F2} MB";
         }
         return $"{(bytes / 1024.0):F2} KB";
+    }
+
+    public void Dispose()
+    {
+        EventService.OnDocumentChanged -= HandleDocumentChanged;
     }
 }

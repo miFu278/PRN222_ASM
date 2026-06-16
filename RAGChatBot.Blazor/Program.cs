@@ -9,6 +9,7 @@ using RAGChatBot.Infrastructure.Storage;
 using RAGChatBot.Infrastructure.Email;
 using RAGChatBot.Domain.Models;
 using RAGChatBot.Blazor.Components;
+using RAGChatBot.Blazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,6 +80,9 @@ builder.Services.AddControllers();
 
 // Đăng ký các dịch vụ HttpContextAccessor để hỗ trợ lấy thông tin User trong Blazor
 builder.Services.AddHttpContextAccessor();
+
+// Đăng ký Event Service cho Real-time UI updates
+builder.Services.AddSingleton<DocumentEventService>();
 
 var app = builder.Build();
 
