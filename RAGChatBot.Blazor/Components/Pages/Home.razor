@@ -2,29 +2,29 @@
 @attribute [Authorize]
 @inject ICourseService CourseService
 @inject IChatService ChatService
+@inject IJSRuntime JS
 @inject ILogger<Home> Logger
 
 <PageTitle>Trợ Lý Học Thuật AI</PageTitle>
 
-<div class="zen-chat-container py-4">
+<div class="zen-chat-container py-4 gsap-fade-up">
     <!-- Header/Hero section -->
-    <div class="zen-hero mb-4">
+    <div class="zen-hero mb-5">
         <div class="zen-hero-title">
             <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">Trợ Lý Thông Minh</div>
-            <h2 class="font-serif m-0">Hỏi đáp Học liệu</h2>
+            <h2 class="font-serif m-0" style="font-size: 2.5rem;">Hỏi đáp Học liệu</h2>
         </div>
         <div class="zen-hero-desc">
-            <p class="text-muted m-0">
-                Hãy lựa chọn môn học và bắt đầu đặt câu hỏi. Hệ thống sẽ phân tích các tài liệu giảng dạy đã được phê duyệt của môn học để cung cấp câu trả lời chính xác nhất.
+            <p class="text-muted m-0" style="font-size: 1.1rem; line-height: 1.8;">
+                Hãy lựa chọn môn học và bắt đầu đặt câu hỏi. Hệ thống sẽ phân tích các tài liệu giảng dạy đã được phê duyệt để cung cấp câu trả lời chính xác nhất.
             </p>
         </div>
     </div>
 
     <!-- Course Selector & Reset -->
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-6 col-sm-8">
-            <label class="form-label text-muted small text-uppercase fw-bold">Chọn môn học:</label>
-            <select class="form-select form-select-lg" @bind="SelectedCourseCode">
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-4 mb-5">
+        <div style="flex: 1; max-width: 600px;">
+            <select class="form-inline-zen w-100" @bind="SelectedCourseCode" style="font-size: 1.1rem; cursor: pointer;">
                 <option value="">-- Hỏi đáp tất cả môn học (Toàn hệ thống) --</option>
                 @if (courses != null)
                 {
@@ -37,85 +37,89 @@
         </div>
         @if (chatMessages.Count > 0)
         {
-            <div class="col-md-6 col-sm-4 text-sm-end mt-3 mt-sm-0">
-                <button class="btn-zen danger mt-3" @onclick="ClearChat">Xóa lịch sử</button>
+            <div>
+                <button class="zen-action-link danger" @onclick="ClearChat">Xóa lịch sử</button>
             </div>
         }
     </div>
-    <div class="chat-history-box p-3 mb-4" style="min-height: 350px; max-height: 550px; overflow-y: auto; border: 1px solid var(--border-light); background-color: rgba(255, 255, 255, 0.5);">
+
+    <div class="chat-history-box mb-5" style="min-height: 400px; max-height: 600px; overflow-y: auto;">
         @if (chatMessages.Count == 0)
         {
-            <div class="d-flex flex-column align-items-center justify-content-center py-5 text-center">
-                <span class="hanko-seal mb-3" style="width: 48px; height: 48px; font-size: 1.5rem;">問</span>
-                <h4 class="font-serif">Trợ lý Học thuật AI</h4>
-                <p class="text-muted small">Hãy gõ câu hỏi của bạn để tìm câu trả lời từ tài liệu giảng dạy đã được phê duyệt.</p>
+            <div class="d-flex flex-column align-items-center justify-content-center py-5 text-center mt-5" style="opacity: 0.5;">
+                <span class="hanko-seal mb-4" style="width: 64px; height: 64px; font-size: 2rem;">問</span>
+                <h4 class="font-serif text-sumi" style="font-size: 1.5rem;">Trợ lý Học thuật tĩnh lặng</h4>
+                <p class="text-muted small mt-2" style="font-weight: 300;">Trò chuyện để khám phá tri thức.</p>
             </div>
         }
         else
         {
-            @foreach (var msg in chatMessages)
-            {
-                <div class="chat-message-row d-flex @(msg.Role == "User" ? "justify-content-end" : "justify-content-start") mb-3">
-                    <div class="message-bubble p-3 @(msg.Role == "User" ? "message-user" : "message-bot")" style="max-width: 80%; border-radius: 4px; line-height: 1.6;">
-                        <div class="d-flex align-items-center mb-1">
-                            @if (msg.Role == "User")
-                            {
-                                <span class="badge bg-secondary me-2">Bạn</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger me-2" style="background-color: var(--accent-shu) !important;">Trợ lý</span>
-                            }
-                            <span class="text-muted style-time small">@msg.Timestamp.ToString("HH:mm")</span>
-                        </div>
-                        <div style="white-space: pre-line; font-weight: @(msg.Role == "User" ? "300" : "400");">
-                            @msg.Content
+            <div class="pe-3">
+                @foreach (var msg in chatMessages)
+                {
+                    <div class="chat-message-row d-flex @(msg.Role == "User" ? "justify-content-end" : "justify-content-start") mb-4">
+                        <div class="message-bubble p-4 @(msg.Role == "User" ? "message-user" : "message-bot")" style="max-width: 85%; font-size: 1.05rem;">
+                            <div class="d-flex align-items-center mb-2">
+                                @if (msg.Role == "User")
+                                {
+                                    <span class="text-muted small text-uppercase tracking-wider fw-bold me-3">Bạn</span>
+                                }
+                                else
+                                {
+                                    <span class="text-accent small text-uppercase tracking-wider fw-bold me-3">Trợ lý</span>
+                                }
+                                <span class="text-muted style-time">@msg.Timestamp.ToString("HH:mm")</span>
+                            </div>
+                            <div style="white-space: pre-line; line-height: 1.8;">
+                                @msg.Content
+                            </div>
                         </div>
                     </div>
-                </div>
-            }
+                }
 
-            @if (isSending)
-            {
-                <div class="chat-message-row d-flex justify-content-start mb-3">
-                    <div class="message-bubble p-3 message-bot" style="max-width: 80%; border-radius: 4px;">
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="badge bg-danger me-2" style="background-color: var(--accent-shu) !important;">Trợ lý</span>
-                            <span class="text-muted small">Đang suy nghĩ...</span>
-                        </div>
-                        <div class="loading-dots">
-                            <span>.</span><span>.</span><span>.</span>
+                @if (isSending)
+                {
+                    <div class="chat-message-row d-flex justify-content-start mb-4">
+                        <div class="message-bubble p-4 message-bot" style="max-width: 85%;">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="text-accent small text-uppercase tracking-wider fw-bold me-3">Trợ lý</span>
+                                <span class="text-muted style-time">Đang suy nghĩ...</span>
+                            </div>
+                            <div class="loading-dots text-sumi">
+                                <span>.</span><span>.</span><span>.</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            }
+                }
+            </div>
         }
     </div>
 
     <!-- Input Box & Suggestions -->
-    <div class="zen-input-area mb-4">
+    <div class="zen-input-area mt-auto">
         <div class="zen-input-wrapper">
             <input type="text" class="input-zen" placeholder="Viết câu hỏi của bạn tại đây..." 
-                   @bind="question" @bind:event="oninput" @onkeypress="HandleKeyPress" disabled="@isSending">
-            <button class="zen-send-btn" @onclick="SendMessage" disabled="@(isSending || string.IsNullOrWhiteSpace(question))">
-                <i class="fa-solid fa-arrow-right"></i>
+                   @bind="question" @bind:event="oninput" @onkeypress="HandleKeyPress" disabled="@isSending" style="font-size: 1.2rem;" />
+            <button class="zen-send-btn magnetic-btn" @onclick="SendMessage" disabled="@(isSending || string.IsNullOrWhiteSpace(question))">
+                <i class="fa-solid fa-arrow-right" style="font-size: 1.5rem;"></i>
             </button>
         </div>
     </div>
 
     @if (chatMessages.Count == 0 && !isSending)
     {
-        <div class="zen-suggestions">
-            <span class="text-muted mb-2 small text-uppercase tracking-wider fw-bold">Gợi ý câu hỏi</span>
-            <button class="zen-suggestion-btn text-start" @onclick='() => SetSuggestion("Tóm tắt nội dung chính của các môn học.")'>
-                <i class="fa-solid fa-circle-question me-2"></i> Tóm tắt nội dung chính của các môn học.
-            </button>
-            <button class="zen-suggestion-btn text-start" @onclick='() => SetSuggestion("Những khái niệm quan trọng nhất sinh viên cần nắm là gì?")'>
-                <i class="fa-solid fa-circle-question me-2"></i> Những khái niệm quan trọng nhất sinh viên cần nắm là gì?
-            </button>
-            <button class="zen-suggestion-btn text-start" @onclick='() => SetSuggestion("Tạo giúp tôi 5 câu hỏi ôn tập dựa trên các bài giảng.")'>
-                <i class="fa-solid fa-circle-question me-2"></i> Tạo giúp tôi 5 câu hỏi ôn tập dựa trên các bài giảng.
-            </button>
+        <div class="zen-suggestions mt-4 pt-3" style="border-top: 1px solid var(--border-light);">
+            <div class="d-flex flex-wrap gap-4">
+                <button class="zen-suggestion-btn" @onclick='() => SetSuggestion("Tóm tắt nội dung chính của môn học.")'>
+                    Tóm tắt nội dung môn học.
+                </button>
+                <button class="zen-suggestion-btn" @onclick='() => SetSuggestion("Những khái niệm quan trọng nhất là gì?")'>
+                    Các khái niệm quan trọng?
+                </button>
+                <button class="zen-suggestion-btn" @onclick='() => SetSuggestion("Tạo 5 câu hỏi ôn tập.")'>
+                    Tạo câu hỏi ôn tập.
+                </button>
+            </div>
         </div>
     }
 </div>
@@ -130,26 +134,25 @@
     }
 
     .message-bubble {
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        border-radius: 0;
     }
 
     .message-user {
-        background-color: var(--border-light);
+        background-color: rgba(0,0,0,0.03);
         color: var(--text-sumi);
-        border: 1px solid rgba(0,0,0,0.03);
+        border: 1px solid var(--border-light);
     }
 
     .message-bot {
-        background-color: #ffffff;
+        background-color: var(--bg-washi);
         color: var(--text-sumi);
-        border-left: 3px solid var(--accent-shu);
-        border-top: 1px solid var(--border-light);
-        border-right: 1px solid var(--border-light);
-        border-bottom: 1px solid var(--border-light);
+        border-left: 2px solid var(--accent-shu);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
     }
 
     .style-time {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
+        font-weight: 300;
     }
 
     .zen-suggestion-btn {
@@ -160,7 +163,6 @@
         padding: 8px 0;
         transition: color 0.4s ease, padding-left 0.4s ease;
         cursor: pointer;
-        outline: none;
         display: inline-flex;
         align-items: center;
         text-align: left;
@@ -174,7 +176,6 @@
         background-color: var(--border-light);
         margin-right: 15px;
         transition: width 0.4s ease, background-color 0.4s ease;
-        flex-shrink: 0;
     }
 
     .zen-suggestion-btn:hover {
@@ -220,7 +221,7 @@
             if (selectedCourseCode != value)
             {
                 selectedCourseCode = value;
-                chatMessages.Clear(); // Xóa lịch sử khi đổi môn học
+                chatMessages.Clear(); 
             }
         }
     }
@@ -234,6 +235,15 @@
         catch (Exception ex)
         {
             Logger.LogError(ex, "Lỗi khi tải danh sách môn học.");
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("zenInteract.initPageReveal");
+            await JS.InvokeVoidAsync("zenInteract.initMagneticButtons");
         }
     }
 
@@ -268,6 +278,8 @@
         isSending = true;
         StateHasChanged();
 
+        // Cuộn xuống mỗi khi thêm tin nhắn mới có thể được handle bằng JS, nhưng tạm thời dựa vào overflow
+
         try
         {
             var reply = await ChatService.GetChatResponseAsync(userQuestion, SelectedCourseCode);
@@ -284,7 +296,7 @@
             chatMessages.Add(new ChatMessage 
             { 
                 Role = "Bot", 
-                Content = $"Đã xảy ra lỗi khi tạo phản hồi từ AI: {ex.Message}", 
+                Content = $"Đã xảy ra lỗi: {ex.Message}", 
                 Timestamp = DateTime.Now 
             });
         }

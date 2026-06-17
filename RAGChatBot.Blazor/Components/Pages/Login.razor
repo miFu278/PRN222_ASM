@@ -1,57 +1,59 @@
 @page "/Account/Login"
 @layout Layout.MainLayout
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 
 <PageTitle>Đăng nhập - RAG ChatBot</PageTitle>
 
-<div class="row justify-content-center align-items-center" style="min-height: calc(100vh - 180px);">
-    <div class="col-md-5 col-sm-8 p-4" style="border: 1px solid var(--border-light); background-color: rgba(255, 255, 255, 0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
-        <div class="text-center mb-4">
-            <span class="hanko-seal" style="width: 36px; height: 36px; font-size: 1.1rem; margin-right: 0;">印</span>
-            <h2 class="font-serif mt-3 mb-1">RAG ChatBot</h2>
-            <p class="text-muted small">Hệ thống trợ lý học tập tối giản & hiệu quả</p>
+<div class="row justify-content-center align-items-center gsap-fade-up" style="min-height: calc(100vh - 180px);">
+    <div class="col-md-5 col-sm-8 px-4" style="background: transparent;">
+        <div class="text-center mb-5">
+            <span class="hanko-seal" style="width: 48px; height: 48px; font-size: 1.5rem; margin-right: 0; box-shadow: none;">印</span>
+            <h2 class="font-serif mt-4 mb-2" style="font-size: 2.5rem; font-weight: 300;">RAG ChatBot</h2>
+            <p class="text-muted small" style="letter-spacing: 0.15em; text-transform: uppercase; font-size: 0.75rem;">Hệ thống trợ lý tĩnh lặng</p>
         </div>
 
         @if (!string.IsNullOrEmpty(Error))
         {
-            <div class="alert alert-danger d-flex align-items-center py-2" role="alert" style="border-radius: 0; font-size: 0.9rem; background-color: rgba(191, 42, 35, 0.05); border-color: rgba(191, 42, 35, 0.3); color: var(--accent-shu);">
-                <i class="fa-solid fa-triangle-exclamation me-2"></i>
-                <div>@Error</div>
+            <div class="text-center mb-4" style="color: var(--accent-shu); font-size: 0.9rem;">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i> @Error
             </div>
         }
 
         <!-- Traditional HTML form posting directly to Controller to handle cookies -->
-        <form action="Account/PerformLogin?returnUrl=@Uri.EscapeDataString(ReturnUrl ?? "")" method="post" class="mb-4">
+        <form action="Account/PerformLogin?returnUrl=@Uri.EscapeDataString(ReturnUrl ?? "")" method="post" class="mb-5">
             <AntiforgeryToken />
             
-            <div class="mb-3">
-                <label for="username" class="form-label text-muted small text-uppercase fw-bold">Tên tài khoản (Email):</label>
-                <input type="text" id="username" name="Username" class="input-zen" placeholder="Nhập email hoặc username..." required autocomplete="username" />
-            </div>
-
             <div class="mb-4">
-                <label for="password" class="form-label text-muted small text-uppercase fw-bold">Mật khẩu:</label>
-                <input type="password" id="password" name="Password" class="input-zen" placeholder="Nhập mật khẩu của bạn..." required autocomplete="current-password" />
+                <input type="text" id="username" name="Username" class="input-zen text-center" placeholder="Nhập email hoặc tên tài khoản" required autocomplete="username" style="font-size: 1.2rem;" />
             </div>
 
-            <button type="submit" class="btn-zen w-100 py-3">Đăng nhập hệ thống</button>
+            <div class="mb-5">
+                <input type="password" id="password" name="Password" class="input-zen text-center" placeholder="Mật khẩu" required autocomplete="current-password" style="font-size: 1.2rem;" />
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="btn-zen magnetic-btn px-5 py-3" style="width: 100%; max-width: 300px;">
+                    Đăng nhập
+                </button>
+            </div>
         </form>
 
-        <div class="position-relative my-4 text-center">
+        <div class="position-relative mb-5 text-center">
             <hr style="border-top: 1px solid var(--border-light); margin: 0;" />
-            <span class="bg-washi px-3 text-muted small" style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-weight: 300;">Hoặc</span>
+            <span class="bg-washi px-3 text-muted small" style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-weight: 300; letter-spacing: 0.1em; text-transform: uppercase; font-size: 0.75rem;">Hoặc</span>
         </div>
 
         <!-- Google OAuth Authentication -->
-        <form action="Account/ExternalLogin?returnUrl=@Uri.EscapeDataString(ReturnUrl ?? "")" method="post">
+        <form action="Account/ExternalLogin?returnUrl=@Uri.EscapeDataString(ReturnUrl ?? "")" method="post" class="text-center">
             <AntiforgeryToken />
-            <button type="submit" class="btn-zen danger w-100 py-3">
-                <i class="fa-brands fa-google me-2"></i> Đăng nhập bằng tài khoản Google
+            <button type="submit" class="btn-zen danger magnetic-btn" style="width: 100%; max-width: 300px; border: none; border-bottom: 1px solid var(--accent-shu);">
+                Đăng nhập bằng Google
             </button>
         </form>
 
-        <div class="text-center mt-4 text-muted small" style="font-weight: 300;">
-            Chỉ dành cho cán bộ giảng viên và sinh viên có trong whitelist hệ thống.
+        <div class="text-center mt-5 text-muted small" style="font-weight: 300; opacity: 0.6;">
+            Chỉ dành cho cán bộ giảng viên và sinh viên có trong whitelist.
         </div>
     </div>
 </div>
@@ -65,10 +67,18 @@
 
     protected override void OnInitialized()
     {
-        // Default ReturnUrl to home if not provided
         if (string.IsNullOrEmpty(ReturnUrl))
         {
             ReturnUrl = "/";
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("zenInteract.initPageReveal");
+            await JS.InvokeVoidAsync("zenInteract.initMagneticButtons");
         }
     }
 }
