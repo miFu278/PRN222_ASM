@@ -9,17 +9,15 @@ using RAGChatBot.Infrastructure.Storage;
 using RAGChatBot.Infrastructure.Email;
 using RAGChatBot.Domain.Models;
 
-using RAGChatBot.Presentation.Services;
-
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Cáº¥u hÃ¬nh EF Core vá»›i PostgreSQL
+// 1. Cấu hình EF Core với PostgreSQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? "Host=localhost;Database=rag_chatbot_db;Username=postgres;Password=your_password";
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString, x => x.UseVector()));
 
-// 2. Cáº¥u hÃ¬nh Cookie Authentication & Google OAuth
+// 2. Cấu hình Cookie Authentication & Google OAuth
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -34,19 +32,17 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ClientSecret = googleAuthNSection["ClientSecret"];
     });
 
-builder.Services.AddCascadingAuthenticationState();
-
-// 3. ÄÄƒng kÃ½ Dependency Injection cho cÃ¡c táº§ng
-// Táº§ng Application Services
+// 3. Đăng ký Dependency Injection cho các tầng
+// Tầng Application Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IWhitelistService, WhitelistService>();
 
-// Táº§ng Infrastructure Services
+// Tầng Infrastructure Services
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 
-// ÄÄƒng kÃ½ Supabase Client
+// Đăng ký Supabase Client
 var supabaseUrl = builder.Configuration["Supabase:Url"] ?? "https://dssylnlnvftebqsodsnk.supabase.co";
 var supabaseKey = builder.Configuration["Supabase:AnonKey"] ?? "your-anon-key";
 builder.Services.AddSingleton(provider => new Supabase.Client(supabaseUrl, supabaseKey, new Supabase.SupabaseOptions
@@ -54,7 +50,7 @@ builder.Services.AddSingleton(provider => new Supabase.Client(supabaseUrl, supab
     AutoConnectRealtime = false
 }));
 
-// ÄÄƒng kÃ½ dá»‹ch vá»¥ lÆ°u trá»¯ file Ä‘Ã¡m mÃ¢y
+// Đăng ký dịch vụ lưu trữ file đám mây
 builder.Services.AddScoped<IFileStorageService, SupabaseFileStorageService>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -62,31 +58,20 @@ builder.Services.AddScoped<IKnowledgeDocumentRepository, KnowledgeDocumentReposi
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IWhitelistRepository, WhitelistRepository>();
 
-// Ä Äƒng kÃ½ dá»‹ch vá»¥ RAG & AI (Tá»± Ä‘á»™ng Chunking & Vector hÃ³a)
+// Đăng ký dịch vụ RAG & AI (Tự động Chunking & Vector hóa)
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IChunkingService, ChunkingService>();
 builder.Services.AddScoped<ITextExtractor, TextExtractor>();
 builder.Services.AddHttpClient<IEmbeddingService, OpenAiEmbeddingService>();
-builder.Services.AddHttpClient<IChatService, OpenAiChatService>(); // Dá»‹ch vá»¥ RAG Chatbot má»›i cho ASM02
 builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
 builder.Services.AddHostedService<DocumentProcessingWorker>();
 
-// 4. Ä Äƒng kÃ½ Razor Pages
-builder.Services.AddRazorPages();
-
-// Ä Äƒng kÃ½ MVC Controllers (dÃ nh cho Authentication login/logout)
-builder.Services.AddControllers();
-
-// Ä Äƒng kÃ½ cÃ¡c dá»‹ch vá»¥ HttpContextAccessor Ä‘á»ƒ há»— trá»£ láº¥y thÃ´ng tin User trong Blazor
-builder.Services.AddHttpContextAccessor();
-
-// Ä Äƒng kÃ½ Event Service cho Real-time UI updates
-builder.Services.AddSingleton<RAGChatBot.Application.Common.Interfaces.IDocumentEventService, DocumentEventService>();
-builder.Services.AddSingleton<DocumentEventService>(sp => (DocumentEventService)sp.GetRequiredService<RAGChatBot.Application.Common.Interfaces.IDocumentEventService>());
+// 4. Thêm cấu hình MVC Controllers & Views
+builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// 5. Tá»± Ä‘á»™ng cháº¡y Migration & Seed dá»¯ liá»‡u thá»­ nghiá»‡m khi khá»Ÿi Ä‘á»™ng
+// 5. Tự động chạy Migration & Seed dữ liệu thử nghiệm khi khởi động
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -94,10 +79,10 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<AppDbContext>();
         
-        // Tá»± Ä‘á»™ng migrate database khi á»©ng dá»¥ng cháº¡y
+        // Tự động migrate database khi ứng dụng chạy
         context.Database.Migrate();
 
-        // Seed dá»¯ liá»‡u máº«u náº¿u báº£ng Users trá»‘ng
+        // Seed dữ liệu mẫu nếu bảng Users trống
         if (!context.Users.Any())
         {
             var hasher = services.GetRequiredService<IPasswordHasher>();
@@ -132,72 +117,34 @@ using (var scope = app.Services.CreateScope())
 
             context.Users.AddRange(testUsers);
             context.SaveChanges();
-            Console.WriteLine("[Database Seed] Ä Ã£ táº¡o thÃ nh cÃ´ng cÃ¡c tÃ i khoáº£n thá»­ nghiá»‡m: lecturer_free, lecturer_premium, admin (máº­t kháº©u chung: password123)");
+            Console.WriteLine("[Database Seed] Đã tạo thành công các tài khoản thử nghiệm: lecturer_free, lecturer_premium, admin (mật khẩu chung: password123)");
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[Database Error] KhÃ´ng thá»ƒ káº¿t ná»‘i hoáº·c khá»Ÿi táº¡o dá»¯ liá»‡u PostgreSQL: {ex.Message}");
-    }
-
-    // Kiá»ƒm tra káº¿t ná»‘i AI API
-    try
-    {
-        var config = services.GetRequiredService<IConfiguration>();
-        var httpClientFactory = services.GetRequiredService<IHttpClientFactory>();
-        using var client = httpClientFactory.CreateClient();
-        
-        var baseUrl = config["AiSettings:BaseUrl"];
-        var apiKey = config["AiSettings:ApiKey"];
-        
-        if (!string.IsNullOrEmpty(baseUrl) && !string.IsNullOrEmpty(apiKey))
-        {
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-            // Ä á»‘i vá»›i Google Gemini dÃ¹ng OpenAI interface, thá»­ láº¥y danh sÃ¡ch model
-            var response = await client.GetAsync($"{baseUrl.TrimEnd('/')}/models");
-            
-            if (response.IsSuccessStatusCode)
-            {
-                Console.WriteLine("[API Check] Káº¾T Ná» I THÃ€NH CÃ”NG Tá»šI AI API.");
-            }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"[API Error] Lá»–I Káº¾T Ná» I AI API ({response.StatusCode}): {errorContent}");
-            }
-        }
-        else
-        {
-            Console.WriteLine("[API Check] Thiáº¿u cáº¥u hÃ¬nh AiSettings:BaseUrl hoáº·c AiSettings:ApiKey trong appsettings.json.");
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[API Error] KhÃ´ng thá»ƒ kiá»ƒm tra káº¿t ná»‘i AI API: {ex.Message}");
+        Console.WriteLine($"[Database Error] Không thể kết nối hoặc khởi tạo dữ liệu PostgreSQL: {ex.Message}");
     }
 }
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
+    app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
+app.UseRouting();
 
-
-app.MapStaticAssets();
-
-// KÃ­ch hoáº¡t Middleware xÃ¡c thá»±c vÃ  phÃ¢n quyá»n
-// KÃ­ch hoáº¡t Middleware xÃ¡c thá»±c vÃ  phÃ¢n quyá» n
+// Thêm Middleware xác thực và phân quyền
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Ä Äƒng kÃ½ cÃ¡c controller Ä‘á»‹nh tuyáº¿n (AccountController)
-app.MapControllers();
+app.MapStaticAssets();
 
-// Ä Äƒng kÃ½ cÃ¡c Razor Pages
-app.MapRazorPages();
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}")
+    .WithStaticAssets();
 
 app.Run();

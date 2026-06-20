@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - RAG ChatBot</title>
+    <base href="/" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/app.css" />
+    <link rel="icon" type="image/png" href="~/favicon.png" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <!-- Top Header -->
+    <header class="zen-header">
+        <a href="/" class="zen-brand">
+            <span class="hanko-seal">印</span>
+            RAG ChatBot
+        </a>
+        
+        <div style="display: flex; align-items: center; gap: 30px;">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                var name = User.Identity.Name ?? "User";
+                var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Học viên";
+                var tier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
+                
+                <div style="text-align: right; font-family: var(--font-sans);">
+                    <div style="font-weight: 500; font-size: 0.95rem; color: var(--text-sumi);">@name</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px;">
+                        @role &bull; <span style="@(tier == "Premium" ? "color: var(--accent-shu); font-weight: 500;" : "")">@tier</span>
+                    </div>
+                </div>
+            }
+
+            <button class="zen-menu-trigger" onclick="toggleMenu()">
+                Menu
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="zen-main">
+        @RenderBody()
+    </main>
+
+    <!-- Full-screen Overlay Menu -->
+    <div class="zen-overlay" id="zenOverlay">
+        <button class="overlay-close" onclick="toggleMenu()">&times;</button>
+        
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            var name = User.Identity.Name ?? "User";
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Student";
+            var tier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
+            
+            <div style="position: absolute; top: 40px; left: 60px; font-family: var(--font-sans); font-size: 0.9rem; color: var(--text-muted); text-align: left;">
+                Xin chào, <span style="color: var(--text-sumi); font-weight: 500;">@name</span><br>
+                <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">@role &bull; @tier</span>
+            </div>
+
+            @if (role == "Admin")
+            {
+                <a href="/Admin/Users" class="zen-menu-item" onclick="toggleMenu()">Tài Khoản</a>
+                <a href="/Admin/Whitelist" class="zen-menu-item" onclick="toggleMenu()">Whitelist</a>
+            }
+            else
+            {
+                <a href="/" class="zen-menu-item" onclick="toggleMenu()">Trò Chuyện</a>
+            }
+            
+            <a href="/Courses" class="zen-menu-item" onclick="toggleMenu()">Học Liệu</a>
+            
+            @if (role != "Admin" && tier == "Free")
+            {
+                <a href="/Subscription" class="zen-menu-item" style="color: var(--accent-shu);" onclick="toggleMenu()">Nâng cấp Premium</a>
+            }
+            
+            <form action="/Account/Logout" method="post" style="margin-top: 40px;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-zen" style="font-size: 1.1rem; cursor: pointer;">
+                    Đăng xuất
+                </button>
+            </form>
+        }
+        else
+        {
+            <a href="/" class="zen-menu-item" onclick="toggleMenu()">Trang chủ</a>
+            <a href="/Account/Login" class="zen-menu-item" style="font-size: 2rem; margin-top: 40px;" onclick="toggleMenu()">Đăng nhập</a>
+        }
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="~/js/zen-interact.js"></script>
+    <script>
+        function toggleMenu() {
+            var overlay = document.getElementById('zenOverlay');
+            overlay.classList.toggle('active');
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

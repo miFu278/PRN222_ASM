@@ -1,0 +1,293 @@
+@page "/Courses/{CourseCode}/Documents"
+@model RAGChatBot.Presentation.Pages.Courses.DocumentsModel
+@{
+    ViewData["Title"] = $"Quản Lý Tài Liệu - {Model.CourseCode}";
+}
+
+<div class="zen-container py-4 gsap-fade-up">
+    <!-- Back to Courses -->
+    <div class="mb-4">
+        <a href="/Courses" class="zen-action-link text-muted small"><i class="fa-solid fa-arrow-left me-2"></i> Trở về</a>
+    </div>
+
+    <!-- Hero Header -->
+    <div class="zen-hero mb-5">
+        <div class="zen-hero-title">
+            <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">Quản lý tài liệu</div>
+            <h2 class="font-serif m-0" style="font-size: 2.5rem;">@Model.CourseCode - @Model.CourseName</h2>
+        </div>
+        <div class="zen-hero-desc">
+            @if (!string.IsNullOrEmpty(Model.CourseDescription))
+            {
+                <p class="text-muted m-0 mb-2">@Model.CourseDescription</p>
+            }
+            <div class="text-muted small" style="letter-spacing: 0.1em; text-transform: uppercase;">
+                Giám sát: @(Model.SubjectLeaderName ?? "Chưa phân công")
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <div asp-validation-summary="All" class="mb-0"></div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row mt-5">
+        <!-- Document Upload (Lecturer/Admin) -->
+        @if (Model.CanUpload)
+        {
+            <div class="col-lg-4 mb-5 pe-lg-5 zen-list-item">
+                <h4 class="font-serif mb-4 pb-2" style="border-bottom: 1px solid var(--text-sumi); display: inline-block;">Tải lên tài liệu</h4>
+                
+                <form method="post" asp-page-handler="Upload" enctype="multipart/form-data" id="uploadForm">
+                    <input type="hidden" asp-for="CourseCode" />
+                    
+                    <div class="mb-4 mt-2">
+                        <input asp-for="Chapter" class="form-inline-zen w-100" placeholder="Tên chương/phần tài liệu" required />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted small text-uppercase tracking-wider">Tệp đính kèm (.pdf, .docx):</label>
+                        <input type="file" asp-for="UploadedFile" class="form-inline-zen w-100" accept=".pdf,.docx" required style="padding: 0 !important; cursor: pointer;" />
+                        <div class="mt-2 small text-muted" style="font-weight: 300;">
+                            Giới hạn: @(Model.CurrentSubscriptionTier == "Premium" ? "50 MB (Premium)" : "5 MB (Free)")
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-zen magnetic-btn w-100 mt-2" id="uploadBtn">
+                        <span class="upload-text">Tải lên hệ thống</span>
+                        <span class="upload-spinner d-none">
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Đang xử lý...
+                        </span>
+                    </button>
+                </form>
+            </div>
+        }
+
+        <!-- Document List -->
+        <div class="@(Model.CanUpload ? "col-lg-8" : "col-12") mb-5 zen-list-item">
+            <div class="table-responsive">
+                <table class="table-zen">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Tài liệu</th>
+                            <th style="width: 25%;">Chương</th>
+                            <th style="width: 20%;">Trạng thái</th>
+                            <th style="width: 15%; text-align: right;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Documents.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    <span class="hanko-seal mb-2" style="opacity: 0.5;">無</span>
+                                    <div>Chưa có tài liệu.</div>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var doc in Model.Documents)
+                            {
+                                <tr>
+                                    <td>
+                                        <a href="@doc.StoragePath" target="_blank" style="font-weight: 500; font-size: 1.05rem; text-decoration: none; color: var(--accent-shu);">
+                                            <i class="fa-regular fa-file-pdf me-2" style="color: var(--text-muted);"></i>@doc.FileName
+                                        </a>
+                                        <div class="text-muted small mt-1" style="font-weight: 300;">
+                                            @{
+                                                var sizeStr = doc.FileSize >= 1024 * 1024 ? $"{(doc.FileSize / 1024.0 / 1024.0):F2} MB" : $"{(doc.FileSize / 1024.0):F2} KB";
+                                            }
+                                            @sizeStr &bull; @doc.UploadedAt.ToString("dd/MM/yyyy HH:mm") &bull; @doc.UploaderName
+                                        </div>
+                                    </td>
+                                    <td>@doc.Chapter</td>
+                                    <td class="status-cell" data-id="@doc.Id" data-processed="@doc.IsProcessed.ToString().ToLower()">
+                                        <div class="mb-1 processing-status">
+                                            @if (doc.IsProcessed)
+                                            {
+                                                <span class="status-badge status-processed">Vectorized</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="status-badge status-pending">Processing...</span>
+                                            }
+                                        </div>
+                                        <div>
+                                            @if (doc.IsApproved)
+                                            {
+                                                <span class="status-badge status-processed text-accent">Approved</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="status-badge status-pending">Pending</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <div class="d-flex justify-content-end gap-3 align-items-center">
+                                            
+                                            <!-- Nút view chunks hiển thị hoặc ẩn tùy theo trạng thái -->
+                                            <button type="button" class="zen-action-link btn-view-chunks" data-id="@doc.Id" title="Xem chunks" style="@(doc.IsProcessed ? "" : "display: none !important;")">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </button>
+                                            
+                                            @if (!doc.IsApproved && Model.CanApprove)
+                                            {
+                                                <form method="post" asp-page-handler="Approve" class="d-inline">
+                                                    <input type="hidden" name="documentId" value="@doc.Id" />
+                                                    <button type="submit" class="zen-action-link" style="color: #28a745; background: none; border: none; padding: 0;" title="Duyệt">
+                                                        <i class="fa-solid fa-check"></i>
+                                                    </button>
+                                                </form>
+                                            }
+
+                                            @if (Model.CanDelete || doc.UploadedBy == Model.CurrentUserId)
+                                            {
+                                                <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài liệu này?');">
+                                                    <input type="hidden" name="documentId" value="@doc.Id" />
+                                                    <button type="submit" class="zen-action-link danger" style="background: none; border: none; padding: 0;" title="Xóa">
+                                                        <i class="fa-solid fa-trash-can"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Placeholder cho chunks (sẽ load bằng JS) -->
+                                <tr class="chunks-row" id="chunks-row-@doc.Id" style="display: none;">
+                                    <td colspan="4" class="py-3 px-4" style="background-color: rgba(0,0,0,0.01);">
+                                        <div style="border-left: 2px solid var(--text-sumi); padding-left: 20px;">
+                                            <h6 class="font-serif text-muted mb-3">Dữ liệu Vector (Chunks)</h6>
+                                            <div class="chunks-container" id="chunks-container-@doc.Id">
+                                                <div class="small text-muted"><span class="spinner-border spinner-border-sm text-secondary me-2"></span> Đang tải...</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('uploadForm')?.addEventListener('submit', function() {
+            const btn = document.getElementById('uploadBtn');
+            btn.setAttribute('disabled', 'disabled');
+            btn.querySelector('.upload-text').classList.add('d-none');
+            btn.querySelector('.upload-spinner').classList.remove('d-none');
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Xem Chunks
+            document.querySelectorAll('.btn-view-chunks').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const docId = this.getAttribute('data-id');
+                    const row = document.getElementById('chunks-row-' + docId);
+                    const container = document.getElementById('chunks-container-' + docId);
+                    
+                    if (row.style.display === 'none') {
+                        row.style.display = 'table-row';
+                        this.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+                        
+                        // Fetch chunks
+                        fetch(`?handler=Chunks&id=${docId}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.length === 0) {
+                                    container.innerHTML = '<p class="text-muted small">Không tìm thấy phân mảnh.</p>';
+                                    return;
+                                }
+                                
+                                let html = '<div class="d-flex flex-column gap-3">';
+                                data.forEach(chunk => {
+                                    html += `
+                                        <div>
+                                            <span class="badge bg-secondary mb-1">#${chunk.chunkIndex}</span>
+                                            <div class="text-muted small" style="white-space: pre-line; line-height: 1.6;">
+                                                ${chunk.content}
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                                html += '</div>';
+                                container.innerHTML = html;
+                            })
+                            .catch(err => {
+                                container.innerHTML = '<div class="text-danger small">Lỗi khi tải dữ liệu</div>';
+                            });
+                    } else {
+                        row.style.display = 'none';
+                        this.innerHTML = '<i class="fa-solid fa-eye"></i>';
+                    }
+                });
+            });
+
+            // AJAX Polling for Real-time Refresh
+            var courseCode = '@Model.CourseCode';
+            var pollInterval = null;
+
+            function checkFileStatuses() {
+                var pendingCells = document.querySelectorAll('.status-cell[data-processed="false"]');
+                if (pendingCells.length === 0) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    return;
+                }
+
+                fetch(`?handler=Status`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            var cell = document.querySelector(`.status-cell[data-id="${item.id}"]`);
+                            if (cell && cell.getAttribute('data-processed') === 'false' && item.isProcessed) {
+                                // Update status text
+                                cell.setAttribute('data-processed', 'true');
+                                var statusDiv = cell.querySelector('.processing-status');
+                                statusDiv.innerHTML = '<span class="status-badge status-processed">Vectorized</span>';
+
+                                // Show the View Chunks button
+                                var chunkBtn = document.querySelector(`.btn-view-chunks[data-id="${item.id}"]`);
+                                if (chunkBtn) {
+                                    chunkBtn.style.setProperty('display', 'inline-block', 'important');
+                                }
+                            }
+                        });
+
+                        // Stop polling if no more pending files
+                        var remainingPending = document.querySelectorAll('.status-cell[data-processed="false"]');
+                        if (remainingPending.length === 0) {
+                            clearInterval(pollInterval);
+                            pollInterval = null;
+                        }
+                    })
+                    .catch(err => console.error("Polling error: ", err));
+            }
+
+            // Start polling if there are pending files
+            var hasPending = document.querySelectorAll('.status-cell[data-processed="false"]').length > 0;
+            if (hasPending) {
+                pollInterval = setInterval(checkFileStatuses, 3000);
+            }
+        });
+    </script>
+}

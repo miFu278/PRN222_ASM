@@ -143,6 +143,14 @@ namespace RAGChatBot.Infrastructure.Storage
                 document.IsProcessed = true;
                 await dbContext.SaveChangesAsync(stoppingToken);
             }
+            finally
+            {
+                if (document.IsProcessed)
+                {
+                    var eventService = scope.ServiceProvider.GetService<IDocumentEventService>();
+                    eventService?.NotifyDocumentChanged(document.CourseCode);
+                }
+            }
         }
     }
 }

@@ -1,0 +1,180 @@
+@page "/Account/Login"
+@model RAGChatBot.Presentation.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = null; // No layout for login page
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - RAG ChatBot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/app.css" />
+    <style>
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-sumi);
+            font-family: var(--font-sans);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 450px;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .brand-seal {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            background: var(--accent-shu);
+            color: white;
+            font-family: var(--font-serif);
+            font-size: 1.5rem;
+            line-height: 50px;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+        }
+
+        .form-control-zen {
+            background: rgba(0,0,0,0.02);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control-zen:focus {
+            background: #ffffff;
+            border-color: var(--accent-shu);
+            box-shadow: 0 0 0 4px rgba(211, 47, 47, 0.1);
+            outline: none;
+        }
+
+        .btn-zen-primary {
+            background: var(--text-sumi);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem;
+            font-weight: 500;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .btn-zen-primary:hover {
+            background: #000000;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .divider:not(:empty)::before { margin-right: .5em; }
+        .divider:not(:empty)::after { margin-left: .5em; }
+
+        .btn-google {
+            background: #ffffff;
+            color: var(--text-sumi);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 0.8rem;
+            font-weight: 500;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-google:hover {
+            background: #f8fafc;
+            border-color: rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="brand-header">
+                <div class="brand-seal">印</div>
+                <h2 class="font-serif mb-1" style="font-size: 1.8rem; font-weight: 600;">RAG ChatBot</h2>
+                <p class="text-muted small m-0">Hệ thống hỏi đáp nội bộ</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger" style="font-size: 0.9rem; border-radius: 8px;">
+                    <i class="fa-solid fa-circle-exclamation me-2"></i> @Model.ErrorMessage
+                </div>
+            }
+
+            <form method="post">
+                <input type="hidden" asp-for="ReturnUrl" />
+                <div class="mb-3">
+                    <input type="text" asp-for="Username" class="form-control w-100 form-control-zen" placeholder="Tên đăng nhập" required />
+                </div>
+                <div class="mb-4">
+                    <input type="password" asp-for="Password" class="form-control w-100 form-control-zen" placeholder="Mật khẩu" required />
+                </div>
+                <button type="submit" class="btn-zen-primary">
+                    Đăng nhập hệ thống
+                </button>
+            </form>
+
+            <div class="divider">hoặc</div>
+
+            <form method="post" asp-page-handler="ExternalLogin">
+                <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+                <button type="submit" class="btn-google">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" height="20" alt="Google">
+                    Đăng nhập với Google FPT
+                </button>
+            </form>
+        </div>
+        
+        <div class="text-center mt-4 text-muted small">
+            &copy; @DateTime.Now.Year RAG ChatBot System.
+        </div>
+    </div>
+</body>
+</html>

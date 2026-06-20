@@ -1,0 +1,153 @@
+@page "/Admin/Whitelist"
+@model RAGChatBot.Presentation.Pages.Admin.WhitelistModel
+@{
+    ViewData["Title"] = "Quản lý Whitelist";
+}
+
+<div class="zen-container py-5 gsap-fade-up">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-end mb-5 flex-wrap gap-3">
+        <div>
+            <div class="text-accent mb-2" style="font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase;">
+                Admin Dashboard
+            </div>
+            <h1 class="font-serif m-0" style="font-size: 3rem;">Danh sách Whitelist</h1>
+        </div>
+        <div class="d-flex gap-3">
+            <button type="button" class="btn-zen" style="background: var(--bg-washi); color: var(--text-sumi); border: 1px solid var(--border-light);" data-bs-toggle="modal" data-bs-target="#importWhitelistModal">
+                <i class="fa-solid fa-file-import me-2"></i> Import Excel
+            </button>
+            <button type="button" class="btn-zen" data-bs-toggle="modal" data-bs-target="#addWhitelistModal">
+                <i class="fa-solid fa-plus me-2"></i> Thêm Email mới
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="mb-4" style="color: #059669; padding: 15px 0; border-bottom: 1px solid #059669;">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="mb-4" style="color: var(--accent-shu); padding: 15px 0; border-bottom: 1px solid var(--accent-shu);">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <!-- Whitelist Table -->
+    <div class="table-responsive">
+        <table class="table-zen w-100">
+            <thead>
+                <tr>
+                    <th style="width: 30%;">Email</th>
+                    <th style="width: 25%;">Họ và tên</th>
+                    <th style="width: 20%;">Mã SV/CB</th>
+                    <th style="width: 15%;">Ngày thêm</th>
+                    <th style="width: 10%; text-align: right;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.WhitelistEmails.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <span class="hanko-seal mb-2" style="opacity: 0.5;">無</span>
+                            <div>Danh sách trống.</div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var item in Model.WhitelistEmails)
+                    {
+                        <tr>
+                            <td style="font-weight: 500;">@item.Email</td>
+                            <td class="text-muted">@(string.IsNullOrEmpty(item.FullName) ? "-" : item.FullName)</td>
+                            <td class="text-muted">@(string.IsNullOrEmpty(item.StudentId) ? "-" : item.StudentId)</td>
+                            <td class="text-muted small">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td style="text-align: right;">
+                                <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Xác nhận xóa email @item.Email khỏi Whitelist?');">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="zen-action-link danger" style="padding: 0; background: none; border: none;">
+                                        Xóa bỏ
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Add Whitelist -->
+<div class="modal fade" id="addWhitelistModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--bg-washi); border-radius: 0; border: 1px solid var(--border-light);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border-light);">
+                <h5 class="modal-title font-serif">Thêm Email Vào Whitelist</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Add">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase">Email được phép truy cập</label>
+                        <input type="email" asp-for="Email" class="input-zen" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase">Họ và tên (Tùy chọn)</label>
+                        <input type="text" asp-for="FullName" class="input-zen" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase">Mã SV/CB (Tùy chọn)</label>
+                        <input type="text" asp-for="StudentId" class="input-zen" />
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: none;">
+                    <button type="button" class="zen-action-link me-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn-zen">Thêm vào danh sách</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Import Excel -->
+<div class="modal fade" id="importWhitelistModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--bg-washi); border-radius: 0; border: 1px solid var(--border-light);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border-light);">
+                <h5 class="modal-title font-serif">Import Danh Sách Từ Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Import" enctype="multipart/form-data">
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-4">
+                        Tải lên file Excel (.xlsx) với các cột: <strong>Email</strong>, <strong>Họ tên</strong>, <strong>Mã SV</strong>. <br />
+                        Những email này sẽ được phép đăng nhập qua hệ thống Google SSO mà không bị chặn.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase">Chọn file Excel</label>
+                        <input type="file" asp-for="ImportFile" class="input-zen" accept=".xlsx, .xls" required />
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: none;">
+                    <button type="button" class="zen-action-link me-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn-zen">Thực hiện Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            gsap.to(".gsap-fade-up", { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" });
+        });
+    </script>
+}

@@ -26,6 +26,7 @@ namespace RAGChatBot.Infrastructure.Persistence.Repositories
         public async Task<KnowledgeDocument?> GetByIdWithChunksAsync(System.Guid id)
         {
             return await _context.KnowledgeDocuments
+                .AsNoTracking()
                 .Include(d => d.Chunks)
                 .FirstOrDefaultAsync(d => d.Id == id);
         }
@@ -33,6 +34,7 @@ namespace RAGChatBot.Infrastructure.Persistence.Repositories
         public async Task<IEnumerable<KnowledgeDocument>> GetByCourseCodeAsync(string courseCode)
         {
             return await _context.KnowledgeDocuments
+                .AsNoTracking()
                 .Where(d => d.CourseCode == courseCode)
                 .ToListAsync();
         }
