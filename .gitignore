@@ -73,3 +73,6 @@ $RECYCLE.BIN/
 .agents/
 docs/
 DESIGN.md
+
+# Ignore WebMVC locally but keep the files
+RAGChatBot.WebMVC/
