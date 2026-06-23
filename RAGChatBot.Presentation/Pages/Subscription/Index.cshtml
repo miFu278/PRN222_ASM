@@ -1,0 +1,259 @@
+@page "/Subscription"
+@model RAGChatBot.Presentation.Pages.Subscription.IndexModel
+@{
+    ViewData["Title"] = "Nâng cấp gói cước";
+}
+
+<style>
+    .zen-pricing-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding-top: 20px;
+    }
+
+    .zen-hero {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        margin-bottom: 50px;
+        gap: 30px;
+    }
+
+    .zen-hero-title {
+        flex: 1;
+        min-width: 300px;
+        position: relative;
+    }
+
+    .zen-hero-title h1 {
+        font-size: 3rem;
+        font-weight: 300;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+    }
+    
+    .zen-hero-title .text-accent {
+        font-size: 0.85rem;
+        font-family: var(--font-sans);
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        font-weight: 500;
+    }
+
+    .zen-hero-desc {
+        flex: 1;
+        min-width: 300px;
+        padding-top: 15px;
+        font-size: 1.05rem;
+        color: var(--text-muted) !important;
+        position: relative;
+    }
+
+    .zen-hero-desc::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 40px;
+        height: 1px;
+        background-color: var(--text-sumi);
+    }
+
+    /* Minimalist Pricing Table */
+    .pricing-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 40px;
+        margin-top: 40px;
+        border-top: 1px solid var(--border-light);
+        padding-top: 40px;
+    }
+
+    .pricing-card {
+        flex: 1;
+        min-width: 280px;
+        padding: 40px 30px;
+        border: 1px solid var(--border-light);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        transition: border-color 0.4s ease;
+    }
+
+    .pricing-card:hover {
+        border-color: var(--text-sumi);
+    }
+
+    .pricing-card.premium-tier {
+        border-color: var(--accent-shu);
+    }
+
+    .pricing-badge {
+        position: absolute;
+        top: -12px;
+        left: 30px;
+        background-color: var(--accent-shu);
+        color: var(--bg-washi);
+        font-family: var(--font-sans);
+        font-size: 0.75rem;
+        padding: 4px 16px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 500;
+    }
+
+    .tier-name {
+        font-family: var(--font-serif);
+        font-size: 1.8rem;
+        color: var(--text-sumi);
+        margin-bottom: 10px;
+    }
+
+    .tier-price {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: var(--text-sumi);
+        margin-bottom: 30px;
+        font-family: var(--font-serif);
+    }
+
+    .tier-price span {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-family: var(--font-sans);
+        font-weight: 300;
+    }
+
+    .tier-features {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 40px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .tier-features li {
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        color: var(--text-sumi);
+    }
+
+    .tier-features li.disabled {
+        color: var(--text-muted) !important;
+        text-decoration: line-through;
+    }
+
+    .tier-features .hanko-seal {
+        width: 18px;
+        height: 18px;
+        font-size: 0.6rem;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+
+    .tier-features li.disabled .hanko-seal {
+        background-color: var(--text-muted);
+        opacity: 0.5;
+    }
+</style>
+
+<div class="zen-pricing-container gsap-fade-up">
+    <!-- Hero Header -->
+    <div class="zen-hero">
+        <div class="zen-hero-title">
+            <div class="text-accent">Gói Dịch Vụ</div>
+            <h1 class="font-serif m-0">Nâng Tầm Trải Nghiệm</h1>
+        </div>
+        <div class="zen-hero-desc">
+            <p>
+                Lựa chọn gói dịch vụ phù hợp nhất để tối ưu hóa khả năng phân tích học liệu của trợ lý AI. 
+                Gói Premium mở rộng dung lượng và tốc độ phản hồi.
+            </p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Success))
+    {
+        <div class="mb-4" style="color: #059669; padding: 15px 0; border-bottom: 1px solid #059669; font-weight: 500;">
+            <i class="fa-solid fa-circle-check me-2"></i> @Model.Success
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.Error))
+    {
+        <div class="mb-4" style="color: var(--accent-shu); padding: 15px 0; border-bottom: 1px solid var(--accent-shu); font-weight: 500;">
+            <i class="fa-solid fa-circle-exclamation me-2"></i> @Model.Error
+        </div>
+    }
+
+    <!-- Pricing Grid -->
+    <div class="pricing-grid">
+        <!-- Gói Free -->
+        <div class="pricing-card">
+            <div>
+                <div class="tier-name">Gói Free</div>
+                <div class="tier-price">0đ <span>/ tháng</span></div>
+                
+                <ul class="tier-features">
+                    <li><span class="hanko-seal">✓</span> Dung lượng file tối đa: <b>5 MB</b></li>
+                    <li><span class="hanko-seal">✓</span> Định dạng hỗ trợ: PDF, DOCX</li>
+                    <li><span class="hanko-seal">✓</span> Không giới hạn số lượng file tải lên</li>
+                    <li class="disabled"><span class="hanko-seal">✕</span> Tốc độ xử lý RAG ưu tiên</li>
+                    <li class="disabled"><span class="hanko-seal">✕</span> Dedicated Server (Máy chủ riêng)</li>
+                </ul>
+            </div>
+
+            @if (Model.CurrentTier == "Free")
+            {
+                <button class="btn-zen w-100" disabled style="opacity: 0.5; cursor: not-allowed;">Đang sử dụng</button>
+            }
+            else
+            {
+                <button class="btn-zen w-100" disabled style="opacity: 0.5; cursor: not-allowed; font-size: 0.8rem;">Gói mặc định cho sinh viên mới</button>
+            }
+        </div>
+
+        <!-- Gói Premium -->
+        <div class="pricing-card premium-tier">
+            <span class="pricing-badge">Khuyên dùng</span>
+            <div>
+                <div class="tier-name" style="color: var(--accent-shu);">Gói Premium</div>
+                <div class="tier-price">199.000đ <span>/ tháng</span></div>
+                
+                <ul class="tier-features">
+                    <li><span class="hanko-seal">✓</span> Dung lượng file tối đa: <b>50 MB</b></li>
+                    <li><span class="hanko-seal">✓</span> Định dạng hỗ trợ: PDF, DOCX, PPTX (Sắp có)</li>
+                    <li><span class="hanko-seal">✓</span> Không giới hạn số lượng file tải lên</li>
+                    <li><span class="hanko-seal">✓</span> Tốc độ xử lý RAG cực nhanh</li>
+                    <li><span class="hanko-seal">✓</span> Máy chủ ưu tiên (Dedicated Server)</li>
+                </ul>
+            </div>
+
+            @if (Model.CurrentTier == "Premium")
+            {
+                <button class="btn-zen w-100" disabled style="opacity: 0.5; cursor: not-allowed;">Đang sử dụng</button>
+            }
+            else
+            {
+                <a href="/Subscription/Checkout" class="btn-zen w-100 text-center py-3 magnetic-btn" style="border-color: var(--accent-shu); color: var(--accent-shu);">
+                    Nâng cấp ngay
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.zenInteract !== 'undefined') {
+                window.zenInteract.initPageReveal();
+                window.zenInteract.initMagneticButtons();
+            }
+        });
+    </script>
+}
