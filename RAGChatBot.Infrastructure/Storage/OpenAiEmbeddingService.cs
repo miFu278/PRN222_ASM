@@ -80,7 +80,16 @@ namespace RAGChatBot.Infrastructure.Storage
                     return GenerateMockEmbedding();
                 }
 
-                return result.Data[0].Embedding;
+                var embedding = result.Data[0].Embedding;
+                if (embedding.Length != 1536)
+                {
+                    _logger.LogWarning("Kích thước Vector Embedding từ API ({ActualLength}) khác với kích thước yêu cầu (1536). Đang tự động điều chỉnh bằng cách đệm hoặc cắt...", embedding.Length);
+                    var adjustedEmbedding = new float[1536];
+                    Array.Copy(embedding, adjustedEmbedding, Math.Min(embedding.Length, 1536));
+                    return adjustedEmbedding;
+                }
+
+                return embedding;
             }
             catch (Exception ex)
             {

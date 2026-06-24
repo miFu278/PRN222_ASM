@@ -114,6 +114,17 @@ namespace RAGChatBot.Infrastructure.Storage
                 for (int i = 0; i < textChunks.Count; i++)
                 {
                     var chunkText = textChunks[i];
+
+                    // Loại bỏ ký tự null byte (0x00) - PostgreSQL UTF-8 không chấp nhận ký tự này
+                    chunkText = chunkText.Replace("\0", string.Empty);
+
+                    // Bỏ qua chunk nếu sau khi làm sạch không còn nội dung
+                    if (string.IsNullOrWhiteSpace(chunkText))
+                    {
+                        _logger.LogWarning("Bỏ qua chunk {Index}/{Total} vì không có nội dung hợp lệ sau khi làm sạch.", i + 1, textChunks.Count);
+                        continue;
+                    }
+
                     _logger.LogInformation("Đang sinh vector cho chunk {Index}/{Total}...", i + 1, textChunks.Count);
                     
                     var vectorValues = await embeddingService.GenerateEmbeddingAsync(chunkText);

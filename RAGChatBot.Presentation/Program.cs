@@ -85,6 +85,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<RAGChatBot.Application.Common.Interfaces.IDocumentEventService, DocumentEventService>();
 builder.Services.AddSingleton<DocumentEventService>(sp => (DocumentEventService)sp.GetRequiredService<RAGChatBot.Application.Common.Interfaces.IDocumentEventService>());
 
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 // 5. Tự động chạy Migration & Seed dữ liệu thử nghiệm khi khởi động
@@ -200,5 +202,7 @@ app.MapControllers();
 
 // Ä ăng ký các Razor Pages
 app.MapRazorPages();
+
+app.MapHub<RAGChatBot.Presentation.Hubs.DocumentHub>("/documentHub");
 
 app.Run();

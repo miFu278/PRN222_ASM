@@ -15,17 +15,20 @@ namespace RAGChatBot.Application.Services
         private readonly IKnowledgeDocumentRepository _documentRepository;
         private readonly ICourseRepository _courseRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IDocumentEventService _eventService;
 
         public DocumentService(
             IFileStorageService fileStorageService,
             IKnowledgeDocumentRepository documentRepository,
             ICourseRepository courseRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IDocumentEventService eventService)
         {
             _fileStorageService = fileStorageService;
             _documentRepository = documentRepository;
             _courseRepository = courseRepository;
             _userRepository = userRepository;
+            _eventService = eventService;
         }
 
         public async Task<DocumentDto> UploadDocumentAsync(
@@ -82,6 +85,9 @@ namespace RAGChatBot.Application.Services
 
             await _documentRepository.AddAsync(document);
             await _documentRepository.SaveChangesAsync();
+
+            // Trigger SignalR event for real-time UI updates
+            _eventService.NotifyDocumentChanged(courseCode);
 
             var dto = MapToDto(document);
             dto.UploaderName = uploaderName;
@@ -140,6 +146,9 @@ namespace RAGChatBot.Application.Services
             // 2. Xóa bản ghi siêu dữ liệu trong DB
             await _documentRepository.DeleteAsync(document);
             await _documentRepository.SaveChangesAsync();
+            
+            // Trigger SignalR event
+            _eventService.NotifyDocumentChanged(document.CourseCode);
         }
 
         public async Task ApproveDocumentAsync(Guid id, Guid userId)
@@ -165,6 +174,9 @@ namespace RAGChatBot.Application.Services
 
             document.IsApproved = true;
             await _documentRepository.SaveChangesAsync();
+
+            // Trigger SignalR event
+            _eventService.NotifyDocumentChanged(document.CourseCode);
         }
 
         public async Task UpdateDocumentMetadataAsync(Guid id, string newFileName, string newChapter, Guid userId)
@@ -207,6 +219,9 @@ namespace RAGChatBot.Application.Services
             }
 
             await _documentRepository.SaveChangesAsync();
+
+            // Trigger SignalR event
+            _eventService.NotifyDocumentChanged(document.CourseCode);
         }
 
         public async Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId)

@@ -330,10 +330,10 @@ a:hover {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    margin-bottom: 40px;
+    margin-bottom: 32px;
     gap: 30px;
-    min-height: 85vh; /* Khóa chiều cao Hero ổn định */
-    padding-top: 4rem;
+    min-height: 30vh; /* Giảm từ 85vh để đẩy chat box lên cao hơn */
+    padding-top: 2rem;
 }
 
 .zen-hero-title {
@@ -474,3 +474,225 @@ a:hover {
 .zen-toast-error {
     border-bottom: 2px solid var(--accent-shu);
 }
+
+/* User Badge (Navbar) */
+.zen-user-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zen-user-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background-color: var(--text-sumi);
+    color: var(--bg-washi);
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-family: var(--font-serif);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.zen-user-name {
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--text-sumi);
+    letter-spacing: 0.02em;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Chat Messages */
+.zen-chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 420px;
+    overflow-y: scroll;       /* Luôn hiển thị scrollbar */
+    overflow-x: hidden;
+    margin-bottom: 16px;
+    padding: 4px 0 4px 4px;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain; /* Ngăn Lenis can thiệp vào phần tử con */
+}
+
+.zen-msg {
+    display: flex;
+    width: 100%;
+}
+
+.zen-msg-user {
+    justify-content: flex-end;
+}
+
+.zen-msg-bot {
+    justify-content: flex-start;
+}
+
+.zen-msg-bubble {
+    max-width: 72%;
+    padding: 14px 20px;
+    font-size: 1rem;
+    line-height: 1.7;
+    font-weight: 300;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.zen-msg-user .zen-msg-bubble {
+    background-color: var(--text-sumi);
+    color: var(--bg-washi);
+    border-radius: 20px 20px 4px 20px;
+}
+
+.zen-msg-bot .zen-msg-bubble {
+    background-color: transparent;
+    border: 1px solid var(--border-light);
+    border-radius: 20px 20px 20px 4px;
+    color: var(--text-sumi);
+}
+
+/* Typing Indicator */
+.zen-typing {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 20px !important;
+}
+
+.zen-typing span {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    background-color: var(--text-muted);
+    border-radius: 50%;
+    animation: zenTypingBounce 1.2s infinite;
+}
+
+.zen-typing span:nth-child(2) { animation-delay: 0.2s; }
+.zen-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes zenTypingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Suggestion Items */
+.zen-suggestion-item {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: opacity 0.3s ease;
+}
+
+.zen-suggestion-item:hover {
+    opacity: 0.7;
+}
+
+/* Document Card Layout */
+.doc-card {
+    border-bottom: 1px solid var(--border-light);
+    padding: 20px 0;
+    transition: background-color 0.3s ease;
+}
+
+.doc-card:first-child {
+    border-top: 1px solid var(--text-sumi);
+}
+
+.doc-card:hover {
+    background-color: rgba(0,0,0,0.01);
+}
+
+.doc-card-main {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.doc-card-info {
+    flex: 1;
+    min-width: 0; /* Bắt buộc để text-overflow hoạt động trong flexbox */
+}
+
+.doc-card-name {
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--accent-shu);
+    text-decoration: none;
+    word-break: break-word;     /* Cho phép tên file dài xuống dòng */
+    overflow-wrap: break-word;
+    display: block;
+    line-height: 1.5;
+    transition: opacity 0.3s ease;
+}
+
+.doc-card-name:hover {
+    opacity: 0.75;
+    color: var(--accent-shu);
+}
+
+.doc-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 300;
+}
+
+.doc-meta-sep {
+    opacity: 0.4;
+    margin: 0 2px;
+}
+
+.doc-chapter-badge {
+    background-color: rgba(0,0,0,0.05);
+    color: var(--text-sumi);
+    padding: 1px 8px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+}
+
+.doc-card-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.chunks-inner {
+    margin-top: 16px;
+    border-left: 2px solid var(--text-sumi);
+    padding-left: 20px;
+    padding-bottom: 8px;
+}
+
+@media (max-width: 576px) {
+    .doc-card-main {
+        flex-direction: column;
+    }
+    .doc-card-actions {
+        align-items: flex-start;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+}

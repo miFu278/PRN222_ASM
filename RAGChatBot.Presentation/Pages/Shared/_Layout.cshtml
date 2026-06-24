@@ -36,9 +36,22 @@
         </nav>
 
         <!-- Fixed Navigation Actions -->
+        @{
+            var displayName = User.Identity?.IsAuthenticated == true
+                ? (User.FindFirst("FullName")?.Value
+                    ?? User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value
+                    ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                    ?? User.Identity?.Name
+                    ?? "Người dùng")
+                : string.Empty;
+        }
         <div class="zen-nav-actions">
             @if (User.Identity?.IsAuthenticated == true)
             {
+                <div class="zen-user-badge">
+                    <span class="zen-user-avatar">@(displayName.Length > 0 ? displayName[0].ToString().ToUpper() : "?")</span>
+                    <span class="zen-user-name">@displayName</span>
+                </div>
                 <form action="/Account/Logout" method="post" style="display: inline;">
                     @Html.AntiForgeryToken()
                     <button type="submit" class="btn-zen magnetic-btn" style="padding: 10px 28px;">Đăng Xuất</button>
@@ -49,6 +62,7 @@
                 <a class="btn-zen magnetic-btn" asp-area="" asp-page="/Account/Login">Đăng Nhập</a>
             }
         </div>
+
     </header>
 
     <main class="zen-main">

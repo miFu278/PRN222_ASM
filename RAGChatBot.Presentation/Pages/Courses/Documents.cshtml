@@ -77,118 +77,119 @@
         }
 
         <!-- Document List -->
-        <div class="@(Model.CanUpload ? "col-lg-8" : "col-12") mb-5 zen-list-item">
-            <div class="table-responsive">
-                <table class="table-zen">
-                    <thead>
-                        <tr>
-                            <th style="width: 40%;">Tài liệu</th>
-                            <th style="width: 25%;">Chương</th>
-                            <th style="width: 20%;">Trạng thái</th>
-                            <th style="width: 15%; text-align: right;"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (!Model.Documents.Any())
-                        {
-                            <tr>
-                                <td colspan="4" class="text-center py-5 text-muted">
-                                    <span class="hanko-seal mb-2" style="opacity: 0.5;">無</span>
-                                    <div>Chưa có tài liệu.</div>
-                                </td>
-                            </tr>
-                        }
-                        else
-                        {
-                            foreach (var doc in Model.Documents)
-                            {
-                                <tr>
-                                    <td>
-                                        <a href="@doc.StoragePath" target="_blank" style="font-weight: 500; font-size: 1.05rem; text-decoration: none; color: var(--accent-shu);">
-                                            <i class="fa-regular fa-file-pdf me-2" style="color: var(--text-muted);"></i>@doc.FileName
-                                        </a>
-                                        <div class="text-muted small mt-1" style="font-weight: 300;">
-                                            @{
-                                                var sizeStr = doc.FileSize >= 1024 * 1024 ? $"{(doc.FileSize / 1024.0 / 1024.0):F2} MB" : $"{(doc.FileSize / 1024.0):F2} KB";
-                                            }
-                                            @sizeStr &bull; @doc.UploadedAt.ToString("dd/MM/yyyy HH:mm") &bull; @doc.UploaderName
-                                        </div>
-                                    </td>
-                                    <td>@doc.Chapter</td>
-                                    <td class="status-cell" data-id="@doc.Id" data-processed="@doc.IsProcessed.ToString().ToLower()">
-                                        <div class="mb-1 processing-status">
-                                            @if (doc.IsProcessed)
-                                            {
-                                                <span class="status-badge status-processed">Vectorized</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="status-badge status-pending">Processing...</span>
-                                            }
-                                        </div>
-                                        <div>
-                                            @if (doc.IsApproved)
-                                            {
-                                                <span class="status-badge status-processed text-accent">Approved</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="status-badge status-pending">Pending</span>
-                                            }
-                                        </div>
-                                    </td>
-                                    <td style="text-align: right;">
-                                        <div class="d-flex justify-content-end gap-3 align-items-center">
-                                            
-                                            <!-- Nút view chunks hiển thị hoặc ẩn tùy theo trạng thái -->
-                                            <button type="button" class="zen-action-link btn-view-chunks" data-id="@doc.Id" title="Xem chunks" style="@(doc.IsProcessed ? "" : "display: none !important;")">
-                                                <i class="fa-solid fa-eye"></i>
-                                            </button>
-                                            
-                                            @if (!doc.IsApproved && Model.CanApprove)
-                                            {
-                                                <form method="post" asp-page-handler="Approve" class="d-inline">
-                                                    <input type="hidden" name="documentId" value="@doc.Id" />
-                                                    <button type="submit" class="zen-action-link" style="color: #28a745; background: none; border: none; padding: 0;" title="Duyệt">
-                                                        <i class="fa-solid fa-check"></i>
-                                                    </button>
-                                                </form>
-                                            }
+        <div class="@(Model.CanUpload ? "col-lg-8" : "col-12") mb-5 zen-list-item" id="documentListContainer">
+            @if (!Model.Documents.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <span class="hanko-seal mb-3 d-block mx-auto" style="opacity: 0.4; width: 48px; height: 48px; font-size: 1.4rem;">無</span>
+                    <div style="font-weight: 300;">Chưa có tài liệu nào được tải lên.</div>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-0">
+                    @foreach (var doc in Model.Documents)
+                    {
+                        <div class="doc-card zen-list-item">
+                            <!-- Hàng chính của card -->
+                            <div class="doc-card-main">
+                                <!-- Icon + Tên file + Meta -->
+                                <div class="doc-card-info">
+                                    <a href="@doc.StoragePath" target="_blank" class="doc-card-name">
+                                        <i class="fa-regular @(doc.FileName.EndsWith(".pdf") ? "fa-file-pdf" : "fa-file-word") me-2"></i>@doc.FileName
+                                    </a>
+                                    <div class="doc-card-meta">
+                                        @{
+                                            var sizeStr = doc.FileSize >= 1024 * 1024 ? $"{(doc.FileSize / 1024.0 / 1024.0):F2} MB" : $"{(doc.FileSize / 1024.0):F2} KB";
+                                        }
+                                        <span>@sizeStr</span>
+                                        <span class="doc-meta-sep">·</span>
+                                        <span>@doc.UploadedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                        <span class="doc-meta-sep">·</span>
+                                        <span>@doc.UploaderName</span>
+                                        @if (!string.IsNullOrEmpty(doc.Chapter))
+                                        {
+                                            <span class="doc-meta-sep">·</span>
+                                            <span class="doc-chapter-badge">@doc.Chapter</span>
+                                        }
+                                    </div>
+                                </div>
 
-                                            @if (Model.CanDelete || doc.UploadedBy == Model.CurrentUserId)
-                                            {
-                                                <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài liệu này?');">
-                                                    <input type="hidden" name="documentId" value="@doc.Id" />
-                                                    <button type="submit" class="zen-action-link danger" style="background: none; border: none; padding: 0;" title="Xóa">
-                                                        <i class="fa-solid fa-trash-can"></i>
-                                                    </button>
-                                                </form>
-                                            }
+                                <!-- Trạng thái + Hành động -->
+                                <div class="doc-card-actions">
+                                    <!-- Trạng thái -->
+                                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                                        <div class="status-cell" data-id="@doc.Id" data-processed="@doc.IsProcessed.ToString().ToLower()">
+                                            <span class="processing-status">
+                                                @if (doc.IsProcessed)
+                                                {
+                                                    <span class="status-badge status-processed">Vectorized</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="status-badge status-pending">Processing...</span>
+                                                }
+                                            </span>
                                         </div>
-                                    </td>
-                                </tr>
-                                
-                                <!-- Placeholder cho chunks (sẽ load bằng JS) -->
-                                <tr class="chunks-row" id="chunks-row-@doc.Id" style="display: none;">
-                                    <td colspan="4" class="py-3 px-4" style="background-color: rgba(0,0,0,0.01);">
-                                        <div style="border-left: 2px solid var(--text-sumi); padding-left: 20px;">
-                                            <h6 class="font-serif text-muted mb-3">Dữ liệu Vector (Chunks)</h6>
-                                            <div class="chunks-container" id="chunks-container-@doc.Id">
-                                                <div class="small text-muted"><span class="spinner-border spinner-border-sm text-secondary me-2"></span> Đang tải...</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
+                                        @if (doc.IsApproved)
+                                        {
+                                            <span class="status-badge status-processed text-accent">Approved</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-badge status-pending">Pending</span>
+                                        }
+                                    </div>
+
+                                    <!-- Nút hành động -->
+                                    <div class="d-flex gap-3 align-items-center">
+                                        <button type="button" class="zen-action-link btn-view-chunks" data-id="@doc.Id" title="Xem chunks" style="@(doc.IsProcessed ? "" : "display: none !important;")">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+
+                                        @if (!doc.IsApproved && Model.CanApprove)
+                                        {
+                                            <form method="post" asp-page-handler="Approve" class="d-inline">
+                                                <input type="hidden" name="documentId" value="@doc.Id" />
+                                                <button type="submit" class="zen-action-link" style="color: #28a745; background: none; border: none; padding: 0;" title="Duyệt">
+                                                    <i class="fa-solid fa-check"></i>
+                                                </button>
+                                            </form>
+                                        }
+
+                                        @if (Model.CanDelete || doc.UploadedBy == Model.CurrentUserId)
+                                        {
+                                            <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài liệu này?');">
+                                                <input type="hidden" name="documentId" value="@doc.Id" />
+                                                <button type="submit" class="zen-action-link danger" style="background: none; border: none; padding: 0;" title="Xóa">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chunks expandable row -->
+                            <div class="chunks-row" id="chunks-row-@doc.Id" style="display: none;">
+                                <div class="chunks-inner">
+                                    <h6 class="font-serif text-muted mb-3">Dữ liệu Vector (Chunks)</h6>
+                                    <div class="chunks-container" id="chunks-container-@doc.Id">
+                                        <div class="small text-muted"><span class="spinner-border spinner-border-sm text-secondary me-2"></span> Đang tải...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
         </div>
     </div>
 </div>
 
+
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <script>
         document.getElementById('uploadForm')?.addEventListener('submit', function() {
             const btn = document.getElementById('uploadBtn');
@@ -198,95 +199,135 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
+            var courseCode = '@Model.CourseCode';
+
             // Xem Chunks
-            document.querySelectorAll('.btn-view-chunks').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const docId = this.getAttribute('data-id');
-                    const row = document.getElementById('chunks-row-' + docId);
-                    const container = document.getElementById('chunks-container-' + docId);
+            function attachChunkEvents() {
+                document.querySelectorAll('.btn-view-chunks').forEach(btn => {
+                    // Tránh gắn sự kiện nhiều lần
+                    if (btn.hasAttribute('data-event-attached')) return;
+                    btn.setAttribute('data-event-attached', 'true');
                     
-                    if (row.style.display === 'none') {
-                        row.style.display = 'table-row';
-                        this.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+                    btn.addEventListener('click', function() {
+                        const docId = this.getAttribute('data-id');
+                        const row = document.getElementById('chunks-row-' + docId);
+                        const container = document.getElementById('chunks-container-' + docId);
                         
-                        // Fetch chunks
-                        fetch(`?handler=Chunks&id=${docId}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.length === 0) {
-                                    container.innerHTML = '<p class="text-muted small">Không tìm thấy phân mảnh.</p>';
-                                    return;
-                                }
-                                
-                                let html = '<div class="d-flex flex-column gap-3">';
-                                data.forEach(chunk => {
-                                    html += `
-                                        <div>
-                                            <span class="badge bg-secondary mb-1">#${chunk.chunkIndex}</span>
-                                            <div class="text-muted small" style="white-space: pre-line; line-height: 1.6;">
-                                                ${chunk.content}
+                        if (row.style.display === 'none') {
+                            row.style.display = 'block';
+                            this.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+                            
+                            // Fetch chunks
+                            fetch(`?handler=Chunks&id=${docId}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.length === 0) {
+                                        container.innerHTML = '<p class="text-muted small">Không tìm thấy phân mảnh.</p>';
+                                        return;
+                                    }
+                                    
+                                    let html = '<div class="d-flex flex-column gap-3">';
+                                    data.forEach(chunk => {
+                                        html += `
+                                            <div>
+                                                <span class="badge bg-secondary mb-1">#${chunk.chunkIndex}</span>
+                                                <div class="text-muted small" style="white-space: pre-line; line-height: 1.6;">
+                                                    ${chunk.content}
+                                                </div>
                                             </div>
-                                        </div>
-                                    `;
+                                        `;
+                                    });
+                                    html += '</div>';
+                                    container.innerHTML = html;
+                                })
+                                .catch(err => {
+                                    container.innerHTML = '<div class="text-danger small">Lỗi khi tải dữ liệu</div>';
                                 });
-                                html += '</div>';
-                                container.innerHTML = html;
-                            })
-                            .catch(err => {
-                                container.innerHTML = '<div class="text-danger small">Lỗi khi tải dữ liệu</div>';
-                            });
-                    } else {
-                        row.style.display = 'none';
-                        this.innerHTML = '<i class="fa-solid fa-eye"></i>';
-                    }
+                        } else {
+                            row.style.display = 'none';
+                            this.innerHTML = '<i class="fa-solid fa-eye"></i>';
+                        }
+                    });
                 });
+            }
+
+            attachChunkEvents(); // Gắn sự kiện lần đầu
+
+            // SignalR Connection
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/documentHub")
+                .configureLogging(signalR.LogLevel.Warning)
+                .build();
+
+            connection.on("DocumentChanged", function (code) {
+                if (code.toLowerCase() === courseCode.toLowerCase()) {
+                    syncDocumentStatuses();
+                }
             });
 
-            // AJAX Polling for Real-time Refresh
-            var courseCode = '@Model.CourseCode';
-            var pollInterval = null;
+            connection.start().then(function () {
+                connection.invoke("JoinCourseGroup", courseCode).catch(function (err) {
+                    console.error("SignalR Join error:", err.toString());
+                });
+            }).catch(function (err) {
+                console.error("SignalR Connect error:", err.toString());
+            });
 
-            function checkFileStatuses() {
-                var pendingCells = document.querySelectorAll('.status-cell[data-processed="false"]');
-                if (pendingCells.length === 0) {
-                    clearInterval(pollInterval);
-                    pollInterval = null;
-                    return;
-                }
-
+            function syncDocumentStatuses() {
                 fetch(`?handler=Status`)
                     .then(response => response.json())
                     .then(data => {
+                        var currentDocs = document.querySelectorAll('.status-cell');
+                        
+                        // Nếu số lượng file khác nhau (Thêm/Xóa) HOẶC có người vừa Approve -> load HTML thay thế DOM (SPA)
+                        let needHtmlReload = (currentDocs.length !== data.length);
+                        
+                        if (!needHtmlReload) {
+                            data.forEach(item => {
+                                var cell = document.querySelector(`.status-cell[data-id="${item.id}"]`);
+                                if (cell) {
+                                    var approvalBadge = cell.querySelector('.status-badge:not(.status-processed):not(.status-pending)') || cell.lastElementChild;
+                                    if (item.isApproved && approvalBadge && approvalBadge.textContent.includes('Pending')) {
+                                         needHtmlReload = true; 
+                                    }
+                                }
+                            });
+                        }
+
+                        if (needHtmlReload) {
+                            // Tải HTML của component document list và thay thế mượt mà
+                            fetch(window.location.href)
+                                .then(res => res.text())
+                                .then(html => {
+                                    const parser = new DOMParser();
+                                    const doc = parser.parseFromString(html, "text/html");
+                                    const newContainer = doc.getElementById('documentListContainer');
+                                    const currentContainer = document.getElementById('documentListContainer');
+                                    
+                                    if (newContainer && currentContainer) {
+                                        currentContainer.innerHTML = newContainer.innerHTML;
+                                        attachChunkEvents(); // Gắn lại event do DOM mới
+                                    }
+                                });
+                            return;
+                        }
+
+                        // Nếu chỉ là update trạng thái Processed (Chunk xong) -> Cập nhật DOM trực tiếp để không mất trạng thái xem chunks
                         data.forEach(item => {
                             var cell = document.querySelector(`.status-cell[data-id="${item.id}"]`);
-                            if (cell && cell.getAttribute('data-processed') === 'false' && item.isProcessed) {
-                                // Update status text
-                                cell.setAttribute('data-processed', 'true');
-                                var statusDiv = cell.querySelector('.processing-status');
-                                statusDiv.innerHTML = '<span class="status-badge status-processed">Vectorized</span>';
+                            if (cell) {
+                                if (cell.getAttribute('data-processed') === 'false' && item.isProcessed) {
+                                    cell.setAttribute('data-processed', 'true');
+                                    var processingStatusHtml = '<span class="status-badge status-processed">Vectorized</span>';
+                                    cell.querySelector('.processing-status').innerHTML = processingStatusHtml;
 
-                                // Show the View Chunks button
-                                var chunkBtn = document.querySelector(`.btn-view-chunks[data-id="${item.id}"]`);
-                                if (chunkBtn) {
-                                    chunkBtn.style.setProperty('display', 'inline-block', 'important');
+                                    var chunkBtn = document.querySelector(`.btn-view-chunks[data-id="${item.id}"]`);
+                                    if (chunkBtn) chunkBtn.style.setProperty('display', 'inline-block', 'important');
                                 }
                             }
                         });
-
-                        // Stop polling if no more pending files
-                        var remainingPending = document.querySelectorAll('.status-cell[data-processed="false"]');
-                        if (remainingPending.length === 0) {
-                            clearInterval(pollInterval);
-                            pollInterval = null;
-                        }
                     })
-                    .catch(err => console.error("Polling error: ", err));
-            }
-
-            // Start polling if there are pending files
-            var hasPending = document.querySelectorAll('.status-cell[data-processed="false"]').length > 0;
-            if (hasPending) {
-                pollInterval = setInterval(checkFileStatuses, 3000);
+                    .catch(err => console.error("Sync error: ", err));
             }
         });
     </script>
