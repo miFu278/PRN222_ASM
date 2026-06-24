@@ -80,7 +80,9 @@ namespace RAGChatBot.Infrastructure.Storage
                 var prompt = $"Bạn là một trợ lý giảng dạy AI hữu ích cho {courseIntro}. Hãy sử dụng ngữ cảnh dưới đây từ các tài liệu môn học đã được phê duyệt để trả lời câu hỏi của sinh viên. Trả lời một cách khoa học, rõ ràng và đầy đủ bằng tiếng Việt.\n\n" +
                              $"[NGỮ CẢNH TỪ TÀI LIỆU MÔN HỌC]:\n{contextText}\n\n" +
                              $"[CÂU HỎI CỦA SINH VIÊN]:\n{question}\n\n" +
-                             $"[LƯU Ý]: Nếu ngữ cảnh không chứa thông tin cần thiết để trả lời câu hỏi, hãy tự trả lời dựa trên kiến thức phổ thông/chuyên môn của bạn nhưng bắt buộc phải ghi rõ câu mở đầu: \"Lưu ý: Không tìm thấy thông tin này trực tiếp trong tài liệu môn học. Dưới đây là câu trả lời dựa trên kiến thức chung:\".\n\n" +
+                             $"[LƯU Ý QUAN TRỌNG]:\n" +
+                             $"- Nếu bạn lấy thông tin từ ngữ cảnh, LUÔN LUÔN trích dẫn NGUỒN TÀI LIỆU (Ví dụ: \"Theo tài liệu: tên_file.pdf\") ngay trong câu trả lời hoặc liệt kê ở cuối câu trả lời.\n" +
+                             $"- Nếu ngữ cảnh không chứa thông tin cần thiết để trả lời câu hỏi, hãy tự trả lời dựa trên kiến thức phổ thông/chuyên môn của bạn nhưng bắt buộc phải ghi rõ câu mở đầu: \"Lưu ý: Không tìm thấy thông tin này trực tiếp trong tài liệu môn học. Dưới đây là câu trả lời dựa trên kiến thức chung:\".\n\n" +
                              $"Trả lời:";
 
                 // 5. Gọi API hoàn thiện hội thoại (Chat Completion API)
