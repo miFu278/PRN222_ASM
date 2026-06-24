@@ -150,7 +150,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
 
             var isLecturer = User.IsInRole("Lecturer");
             var isAdmin = User.IsInRole("Admin");
-            CanUpload = isLecturer || isAdmin;
+            CanUpload = isLecturer; // Admin không được upload document
 
             var courses = await _courseService.GetAllCoursesAsync();
             var course = courses.FirstOrDefault(c => c.Code.Equals(CourseCode, StringComparison.OrdinalIgnoreCase));
