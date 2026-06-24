@@ -84,10 +84,7 @@ namespace RAGChatBot.Infrastructure.Storage
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Không thể tải tệp tin từ Storage Path: {Path}", document.StoragePath);
-                    // Đánh dấu là processed nhưng không tạo chunk để tránh vòng lặp lỗi vô hạn
-                    document.IsProcessed = true;
-                    await dbContext.SaveChangesAsync(stoppingToken);
-                    return;
+                    throw; // Rethrow để trigger khối catch bên dưới hoàn tác IsProcessed
                 }
 
                 using var memoryStream = new MemoryStream(fileBytes);
@@ -100,8 +97,6 @@ namespace RAGChatBot.Infrastructure.Storage
                 if (string.IsNullOrWhiteSpace(fullText))
                 {
                     _logger.LogWarning("Tài liệu '{FileName}' rỗng hoặc không có chữ để trích xuất.", document.FileName);
-                    document.IsProcessed = true;
-                    await dbContext.SaveChangesAsync(stoppingToken);
                     return;
                 }
 
@@ -142,7 +137,6 @@ namespace RAGChatBot.Infrastructure.Storage
                 }
 
                 // 6. Cập nhật trạng thái hoàn thành
-                document.IsProcessed = true;
                 await dbContext.SaveChangesAsync(stoppingToken);
                 _logger.LogInformation("Đã xử lý xong tài liệu: '{FileName}'", document.FileName);
             }
