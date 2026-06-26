@@ -1,0 +1,698 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;500;700&display=swap');
+
+:root {
+    --bg-washi: #fcfbf9;
+    --text-sumi: #2c2c2c;
+    --text-muted: #737373; /* Tối ưu hóa contrast ratio > 4.5:1 */
+    --accent-shu: #bf2a23;
+    --border-light: #eaeaea;
+    --font-serif: 'Noto Serif JP', serif;
+    --font-sans: 'Noto Sans JP', sans-serif;
+}
+
+html {
+    font-size: 16px;
+    background-color: var(--bg-washi);
+}
+
+body {
+    margin: 0;
+    background-color: var(--bg-washi) !important;
+    color: var(--text-sumi) !important;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, .font-serif {
+    font-family: var(--font-serif);
+    color: var(--text-sumi) !important;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+}
+
+/* Bảo vệ chân chữ cho tiêu đề in nghiêng (Descender Clearance) */
+h1 i, h2 i, h3 i, h4 i, h5 i, h6 i, .font-serif i,
+h1 em, h2 em, h3 em, h4 em, h5 em, h6 em, .font-serif em {
+    padding-bottom: 0.25rem;
+    display: inline-block;
+}
+
+p, .lead, li {
+    color: var(--text-sumi) !important;
+    line-height: 1.8;
+    font-weight: 300;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+.text-accent {
+    color: var(--accent-shu) !important;
+}
+
+a {
+    color: var(--text-sumi);
+    text-decoration: none;
+    transition: color 0.4s ease;
+}
+
+a:hover {
+    color: var(--accent-shu);
+}
+
+/* Hanko (Seal) Accent */
+.hanko-seal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background-color: var(--accent-shu);
+    color: var(--bg-washi);
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-family: var(--font-serif);
+    margin-right: 8px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+}
+
+/* Minimalist Button */
+.btn-zen {
+    background: transparent;
+    border: 1px solid var(--text-sumi);
+    color: var(--text-sumi) !important;
+    padding: 10px 28px;
+    font-family: var(--font-sans);
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    border-radius: 0;
+    display: inline-block;
+    white-space: nowrap; /* Kỷ luật cấm wrap CTA */
+}
+
+.btn-zen::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background-color: var(--text-sumi);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: -1;
+}
+
+.btn-zen:hover {
+    color: var(--bg-washi) !important;
+}
+
+.btn-zen:hover::after {
+    height: 100%;
+}
+
+.btn-zen.danger {
+    border-color: var(--accent-shu);
+    color: var(--accent-shu) !important;
+}
+.btn-zen.danger::after {
+    background-color: var(--accent-shu);
+}
+
+/* Zen Shoji Glass (Hiệu ứng kính mờ Shoji & Unboxed UI) */
+.zen-shoji-glass {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background-color: rgba(252, 251, 249, 0.75);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 12px 30px rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid var(--border-light);
+}
+
+/* Minimalist Input */
+.input-zen {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-light);
+    border-radius: 0;
+    padding: 12px 0;
+    color: var(--text-sumi);
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+    transition: border-color 0.4s ease;
+    width: 100%;
+}
+.input-zen:focus {
+    outline: none;
+    border-bottom-color: var(--text-sumi);
+    box-shadow: none;
+}
+.input-zen::placeholder {
+    color: var(--text-muted);
+    font-weight: 300;
+}
+
+.zen-menu-item-sm {
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-sumi);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+}
+.zen-menu-item-sm:hover {
+    color: var(--accent-shu);
+}
+
+/* Sleek Horizontal Scroll Menu */
+.zen-scroll-menu {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    scroll-behavior: smooth;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+    padding: 4px 0;
+    max-width: 55vw; /* Giới hạn chiều rộng để cuộn mượt mà không đẩy nút Login/Logout */
+}
+
+.zen-scroll-menu::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+}
+
+.zen-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-shrink: 0;
+}
+
+/* Minimalist Tables */
+.table-zen {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table-zen th {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    text-align: left;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--text-sumi);
+    color: var(--text-sumi);
+}
+.table-zen td {
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-sumi);
+    font-weight: 300;
+}
+.table-zen tr {
+    transition: background-color 0.4s ease;
+}
+.table-zen tr:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+/* Form controls overrides */
+.form-control, .form-select {
+    background: transparent !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: 0 !important;
+    color: var(--text-sumi) !important;
+    padding: 12px 16px !important;
+    box-shadow: none !important;
+    transition: border-color 0.4s ease;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--text-sumi) !important;
+    box-shadow: none !important;
+}
+
+/* Status Badges Zen */
+.status-badge {
+    font-size: 0.8rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    padding: 4px 0;
+    display: inline-flex;
+    align-items: center;
+}
+.status-badge::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+.status-pending { color: var(--text-muted); }
+.status-pending::before { background-color: var(--text-muted); }
+.status-processed { color: var(--text-sumi); }
+.status-processed::before { background-color: var(--text-sumi); }
+
+/* GSAP Defaults */
+.gsap-fade-up {
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+/* Hide scrollbar for a cleaner look */
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border-light);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Layout and Spacing */
+.zen-header {
+    padding: 20px 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+    gap: 2rem;
+}
+
+.zen-brand {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--text-sumi);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+}
+
+.zen-main {
+    flex: 1;
+    padding: 0 60px 60px 60px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.zen-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Chat Layout & Hero Section */
+.zen-chat-container {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 220px);
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.zen-hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    gap: 30px;
+    min-height: 30vh; /* Giảm từ 85vh để đẩy chat box lên cao hơn */
+    padding-top: 2rem;
+}
+
+.zen-hero-title {
+    flex: 1;
+    min-width: 300px;
+    position: relative;
+}
+
+.zen-hero-title h1 {
+    font-size: 3.5rem;
+    font-weight: 300;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin-bottom: 1.5rem;
+}
+
+.zen-hero-title .text-accent {
+    font-size: 0.85rem;
+    font-family: var(--font-sans);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.zen-hero-desc {
+    flex: 1;
+    min-width: 300px;
+    padding-top: 15px;
+    font-size: 1.15rem;
+    color: var(--text-muted) !important;
+    position: relative;
+}
+
+.zen-hero-desc::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 60px;
+    height: 1px;
+    background-color: var(--text-sumi);
+}
+
+.zen-input-area {
+    position: relative;
+    margin-bottom: 30px;
+    padding: 20px;
+    border-radius: 16px;
+}
+
+.zen-input-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+}
+
+.zen-send-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-sumi);
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding-bottom: 12px;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.zen-send-btn:hover:not(:disabled) {
+    opacity: 1;
+}
+
+.zen-send-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
+}
+
+.zen-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+    .zen-header {
+        padding: 15px 25px;
+        gap: 1rem;
+    }
+    .zen-scroll-menu {
+        max-width: 45vw;
+        gap: 1.5rem;
+    }
+    .zen-main {
+        padding: 0 25px 25px 25px;
+    }
+    .zen-hero {
+        margin-bottom: 20px;
+        gap: 20px;
+        min-height: auto;
+        padding-top: 2rem;
+    }
+    .zen-hero-title h1 {
+        font-size: 2.5rem;
+    }
+}
+
+/* Zen Toast Notifications */
+#zen-toast-container {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.zen-toast {
+    background-color: var(--text-sumi);
+    color: var(--bg-washi);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    padding: 14px 28px;
+    border-radius: 40px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+
+.zen-toast-success {
+    border-bottom: 2px solid #28a745;
+}
+
+.zen-toast-error {
+    border-bottom: 2px solid var(--accent-shu);
+}
+
+/* User Badge (Navbar) */
+.zen-user-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zen-user-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background-color: var(--text-sumi);
+    color: var(--bg-washi);
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-family: var(--font-serif);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.zen-user-name {
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--text-sumi);
+    letter-spacing: 0.02em;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Chat Messages */
+.zen-chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 420px;
+    overflow-y: scroll;       /* Luôn hiển thị scrollbar */
+    overflow-x: hidden;
+    margin-bottom: 16px;
+    padding: 4px 0 4px 4px;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain; /* Ngăn Lenis can thiệp vào phần tử con */
+}
+
+.zen-msg {
+    display: flex;
+    width: 100%;
+}
+
+.zen-msg-user {
+    justify-content: flex-end;
+}
+
+.zen-msg-bot {
+    justify-content: flex-start;
+}
+
+.zen-msg-bubble {
+    max-width: 72%;
+    padding: 14px 20px;
+    font-size: 1rem;
+    line-height: 1.7;
+    font-weight: 300;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.zen-msg-user .zen-msg-bubble {
+    background-color: var(--text-sumi);
+    color: var(--bg-washi);
+    border-radius: 20px 20px 4px 20px;
+}
+
+.zen-msg-bot .zen-msg-bubble {
+    background-color: transparent;
+    border: 1px solid var(--border-light);
+    border-radius: 20px 20px 20px 4px;
+    color: var(--text-sumi);
+}
+
+/* Typing Indicator */
+.zen-typing {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 20px !important;
+}
+
+.zen-typing span {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    background-color: var(--text-muted);
+    border-radius: 50%;
+    animation: zenTypingBounce 1.2s infinite;
+}
+
+.zen-typing span:nth-child(2) { animation-delay: 0.2s; }
+.zen-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes zenTypingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Suggestion Items */
+.zen-suggestion-item {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: opacity 0.3s ease;
+}
+
+.zen-suggestion-item:hover {
+    opacity: 0.7;
+}
+
+/* Document Card Layout */
+.doc-card {
+    border-bottom: 1px solid var(--border-light);
+    padding: 20px 0;
+    transition: background-color 0.3s ease;
+}
+
+.doc-card:first-child {
+    border-top: 1px solid var(--text-sumi);
+}
+
+.doc-card:hover {
+    background-color: rgba(0,0,0,0.01);
+}
+
+.doc-card-main {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.doc-card-info {
+    flex: 1;
+    min-width: 0; /* Bắt buộc để text-overflow hoạt động trong flexbox */
+}
+
+.doc-card-name {
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--accent-shu);
+    text-decoration: none;
+    word-break: break-word;     /* Cho phép tên file dài xuống dòng */
+    overflow-wrap: break-word;
+    display: block;
+    line-height: 1.5;
+    transition: opacity 0.3s ease;
+}
+
+.doc-card-name:hover {
+    opacity: 0.75;
+    color: var(--accent-shu);
+}
+
+.doc-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 300;
+}
+
+.doc-meta-sep {
+    opacity: 0.4;
+    margin: 0 2px;
+}
+
+.doc-chapter-badge {
+    background-color: rgba(0,0,0,0.05);
+    color: var(--text-sumi);
+    padding: 1px 8px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+}
+
+.doc-card-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.chunks-inner {
+    margin-top: 16px;
+    border-left: 2px solid var(--text-sumi);
+    padding-left: 20px;
+    padding-bottom: 8px;
+}
+
+@media (max-width: 576px) {
+    .doc-card-main {
+        flex-direction: column;
+    }
+    .doc-card-actions {
+        align-items: flex-start;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+}

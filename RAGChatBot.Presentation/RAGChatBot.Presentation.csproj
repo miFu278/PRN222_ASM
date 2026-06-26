@@ -1,14 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
-
   <ItemGroup>
-    <ProjectReference Include="..\RAGChatBot.Infrastructure\RAGChatBot.Infrastructure.csproj" />
+    <ProjectReference Include="..\RAGChatBot.Domain\RAGChatBot.Domain.csproj" />
     <ProjectReference Include="..\RAGChatBot.Application\RAGChatBot.Application.csproj" />
+    <ProjectReference Include="..\RAGChatBot.Infrastructure\RAGChatBot.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,8 +12,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.18.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.18.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
 
 </Project>

@@ -1,0 +1,169 @@
+@page "/"
+@model RAGChatBot.Presentation.Pages.IndexModel
+@{
+    ViewData["Title"] = "Trang chủ";
+}
+
+<div class="zen-chat-container">
+    <!-- Zen Hero Section -->
+    <div class="zen-hero">
+        <div class="zen-hero-title gsap-fade-up">
+            <span class="text-accent">悟 TRÍ TUỆ NHÂN TẠO TĨNH LẶNG</span>
+            <h1>Khám Phá Tri Thức Qua Góc Nhìn <i>Nhân Loại</i>.</h1>
+        </div>
+        <div class="zen-hero-desc gsap-fade-up">
+            Hệ thống trợ lý học tập thông minh ứng dụng kiến trúc RAG. Giảng viên chia sẻ tài liệu, AI tự động thấu hiểu và cùng sinh viên giải đáp mọi thắc mắc trong không gian trong trẻo, thanh lịch.
+        </div>
+    </div>
+
+    <!-- Chat Messages Display -->
+    <div class="zen-chat-messages gsap-fade-up" id="chatMessages" data-lenis-prevent></div>
+
+    <!-- Khu vực nhập liệu Chat -->
+    <div class="zen-input-area gsap-fade-up">
+        <div class="zen-input-wrapper">
+            <div class="flex-grow-1">
+                <input type="text" class="input-zen" placeholder="Hãy đặt câu hỏi về nội dung bài giảng hoặc tài liệu môn học..." id="chatInputField" autocomplete="off" />
+            </div>
+            <button class="zen-send-btn magnetic-btn" id="sendChatBtn" title="Gửi tin nhắn">
+                <i class="fa-solid fa-paper-plane" id="sendIcon"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Gợi ý câu hỏi -->
+    <div class="zen-suggestions gsap-fade-up" id="zenSuggestions">
+        <div class="zen-suggestion-item" data-question="Phân tích kiến trúc hệ thống RAG trong bài giảng">
+            <div>
+                <span class="small text-muted d-block mb-1" style="letter-spacing: 0.1em;">GỢI Ý CÂU HỎI</span>
+                <span class="text-sumi" style="font-size: 1.15rem; font-weight: 500;">Phân tích kiến trúc hệ thống RAG trong bài giảng</span>
+            </div>
+            <i class="fa-solid fa-arrow-right text-sumi"></i>
+        </div>
+
+        <div class="zen-suggestion-item" data-question="Các phương pháp tối ưu hóa Vector Database">
+            <div>
+                <span class="small text-muted d-block mb-1" style="letter-spacing: 0.1em;">GỢI Ý CÂU HỎI</span>
+                <span class="text-sumi" style="font-size: 1.15rem; font-weight: 500;">Các phương pháp tối ưu hóa Vector Database</span>
+            </div>
+            <i class="fa-solid fa-arrow-right text-sumi"></i>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const inputField = document.getElementById('chatInputField');
+    const sendBtn = document.getElementById('sendChatBtn');
+    const chatMessages = document.getElementById('chatMessages');
+    const suggestions = document.getElementById('zenSuggestions');
+    const sendIcon = document.getElementById('sendIcon');
+    let isLoading = false;
+
+    function appendMessage(role, text) {
+        const div = document.createElement('div');
+        div.className = role === 'user' ? 'zen-msg zen-msg-user' : 'zen-msg zen-msg-bot';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'zen-msg-bubble';
+        bubble.textContent = text;
+
+        div.appendChild(bubble);
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function appendTyping() {
+        const div = document.createElement('div');
+        div.className = 'zen-msg zen-msg-bot';
+        div.id = 'typingIndicator';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'zen-msg-bubble zen-typing';
+        bubble.innerHTML = '<span></span><span></span><span></span>';
+
+        div.appendChild(bubble);
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeTyping() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+    }
+
+    function setLoading(state) {
+        isLoading = state;
+        sendBtn.disabled = state;
+        inputField.disabled = state;
+        sendIcon.className = state ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-paper-plane';
+    }
+
+    async function sendMessage() {
+        const text = inputField.value.trim();
+        if (!text || isLoading) return;
+
+        // Ẩn gợi ý khi bắt đầu chat
+        suggestions.style.display = 'none';
+
+        appendMessage('user', text);
+        inputField.value = '';
+        setLoading(true);
+        appendTyping();
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+
+            removeTyping();
+
+            if (response.ok) {
+                const data = await response.json();
+                appendMessage('bot', data.reply ?? data.message ?? 'Không có phản hồi.');
+            } else {
+                appendMessage('bot', 'Xin lỗi, đã xảy ra lỗi khi xử lý yêu cầu. Vui lòng thử lại.');
+            }
+        } catch (err) {
+            removeTyping();
+            appendMessage('bot', 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+        } finally {
+            setLoading(false);
+            inputField.focus();
+        }
+    }
+
+    // Enter key handler
+    inputField.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    // Send button click handler
+    sendBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        sendMessage();
+    });
+
+    // Suggestion click handlers
+    document.querySelectorAll('.zen-suggestion-item').forEach(function (item) {
+        item.addEventListener('click', function () {
+            inputField.value = item.dataset.question;
+            sendMessage();
+        });
+    });
+
+    // Init magnetic buttons
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.zenInteract) {
+            window.zenInteract.initMagneticButtons();
+        }
+    });
+})();
+</script>
+}

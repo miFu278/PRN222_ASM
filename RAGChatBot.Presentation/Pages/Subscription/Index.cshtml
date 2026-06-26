@@ -1,0 +1,102 @@
+@page "/Subscription"
+@model RAGChatBot.Presentation.Pages.Subscription.IndexModel
+@{
+    ViewData["Title"] = "Gói Dịch Vụ";
+}
+
+<div class="zen-container">
+    <!-- Zen Hero Section tuân thủ Kỷ luật 1 Eyebrow / 3 Sections -->
+    <div class="zen-hero" style="min-height: auto; margin-bottom: 80px;">
+        <div class="zen-hero-title gsap-fade-up">
+            <span class="text-accent">悟 ĐẦU TƯ TRI THỨC</span>
+            <h1>Nâng Tầm Trải Nghiệm <i>Học Tập</i>.</h1>
+        </div>
+        <div class="zen-hero-desc gsap-fade-up">
+            Lựa chọn gói dịch vụ phù hợp nhất để tối ưu hóa khả năng phân tích học liệu của trợ lý AI. 
+            Gói Premium mở rộng dung lượng và tốc độ phản hồi vượt trội trong một không gian tĩnh lặng, không hộp ngột ngạt.
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Success))
+    {
+        <div class="mb-5" style="padding: 20px 0; border-bottom: 1px solid #10b981; color: #059669; font-weight: 500; font-size: 1.1rem;">
+            <i class="fa-solid fa-circle-check me-2"></i> @Model.Success
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.Error))
+    {
+        <div class="mb-5" style="padding: 20px 0; border-bottom: 1px solid var(--accent-shu); color: var(--accent-shu); font-weight: 500; font-size: 1.1rem;">
+            <i class="fa-solid fa-circle-exclamation me-2"></i> @Model.Error
+        </div>
+    }
+
+    <!-- Boxless Pricing Table (No Cards, No Boxes) -->
+    <div class="row pt-5" style="border-top: 1px solid var(--border-light);">
+        <!-- Gói Free (Cột 6) -->
+        <div class="col-lg-6 gsap-fade-up d-flex flex-column justify-content-between" style="padding-right: 60px; border-right: 1px solid var(--border-light);">
+            <div>
+                <div style="font-family: var(--font-serif); font-size: 2.5rem; color: var(--text-sumi); margin-bottom: 12px;">Gói Free</div>
+                <div style="font-size: 3.5rem; font-weight: 500; color: var(--text-sumi); margin-bottom: 40px; font-family: var(--font-serif);">0đ <span style="font-size: 1.1rem; color: var(--text-muted); font-family: var(--font-sans); font-weight: 300;">/ tháng</span></div>
+                
+                <ul style="list-style: none; padding: 0; margin: 0 0 60px 0; display: flex; flex-direction: column; gap: 24px;">
+                    <li style="font-size: 1.15rem; display: flex; align-items: center; color: var(--text-sumi); font-weight: 300;"><span class="hanko-seal" style="width: 24px; height: 24px; font-size: 0.75rem; margin-right: 18px;">✓</span> Dung lượng file tối đa: <b>5 MB</b></li>
+                    <li style="font-size: 1.15rem; display: flex; align-items: center; color: var(--text-sumi); font-weight: 300;"><span class="hanko-seal" style="width: 24px; height: 24px; font-size: 0.75rem; margin-right: 18px;">✓</span> Định dạng hỗ trợ: PDF, DOCX</li>
+                    <li style="font-size: 1.15rem; display: flex; align-items: center; color: var(--text-sumi); font-weight: 300;"><span class="hanko-seal" style="width: 24px; height: 24px; font-size: 0.75rem; margin-right: 18px;">✓</span> Không giới hạn số file tải lên</li>
+                    <li style="font-size: 1.15rem; display: flex; align-items: center; color: var(--text-muted) !important; text-decoration: line-through;"><span class="hanko-seal" style="width: 24px; height: 24px; font-size: 0.75rem; margin-right: 18px; background-color: var(--text-muted); opacity: 0.5;">✕</span> Tốc độ xử lý RAG ưu tiên</li>
+                    <li style="font-size: 1.15rem; display: flex; align-items: center; color: var(--text-muted) !important; text-decoration: line-through;"><span class="hanko-seal" style="width: 24px; height: 24px; font-size: 0.75rem; margin-right: 18px; background-color: var(--text-muted); opacity: 0.5;">✕</span> Dedicated Server</li>
+                </ul>
+            </div>
+
+            @if (Model.CurrentTier == "Free")
+            {
+                <button class="btn-zen w-100 justify-content-center" disabled style="opacity: 0.5; cursor: not-allowed;">Đang sử dụng</button>
+            }
+            else
+            {
+                <button class="btn-zen w-100 justify-content-center" disabled style="opacity: 0.5; cursor: not-allowed; font-size: 0.85rem;">Gói mặc định cho sinh viên mới</button>
+            }
+        </div>
+
+        <!-- Gói Premium Boxless (Cột 6) -->
+        <div class="col-lg-6 gsap-fade-up d-flex flex-column justify-content-between mt-5 mt-lg-0" style="padding-left: 60px;">
+            <div>
+                <span style="display: inline-block; background-color: var(--accent-shu); color: var(--bg-washi); font-family: var(--font-sans); font-size: 0.8rem; padding: 6px 20px; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 500; border-radius: 0; margin-bottom: 20px;">Khuyên dùng</span>
+                <div style="font-family: var(--font-serif); font-size: 2.5rem; color: var(--accent-shu); margin-bottom: 12px;">Gói Premium</div>
+                <div style="font-size: 3.5rem; font-weight: 500; color: var(--text-sumi); margin-bottom: 40px; font-family: var(--font-serif);">199.000đ <span style="font-size: 1.1rem; color: var(--text-muted); font-family: var(--font-sans); font-weight: 300;">/ tháng</span></div>
+                
+                <ul style="list-style: none; padding: 0; margin: 0 0 60px 0; display: flex; flex-direction: column; gap: 24px;">
+                    <li style="font-size: 1.15rem; display: flex; align-items: center; color: var(--text-sumi); font-weight: 300;"><span class="hanko-seal" style="width: 24px; height: 24px; font-size: 0.75rem; margin-right: 18px;">✓</span> Dung lượng file tối đa: <b>50 MB</b></li>
+                    <li style="font-size: 1.15rem; display: flex; align-items: center; color: var(--text-sumi); font-weight: 300;"><span class="hanko-seal" style="width: 24px; height: 24px; font-size: 0.75rem; margin-right: 18px;">✓</span> Định dạng hỗ trợ: PDF, DOCX, PPTX (Sắp có)</li>
+                    <li style="font-size: 1.15rem; display: flex; align-items: center; color: var(--text-sumi); font-weight: 300;"><span class="hanko-seal" style="width: 24px; height: 24px; font-size: 0.75rem; margin-right: 18px;">✓</span> Không giới hạn số file tải lên</li>
+                    <li style="font-size: 1.15rem; display: flex; align-items: center; color: var(--text-sumi); font-weight: 300;"><span class="hanko-seal" style="width: 24px; height: 24px; font-size: 0.75rem; margin-right: 18px;">✓</span> Tốc độ xử lý RAG cực nhanh</li>
+                    <li style="font-size: 1.15rem; display: flex; align-items: center; color: var(--text-sumi); font-weight: 300;"><span class="hanko-seal" style="width: 24px; height: 24px; font-size: 0.75rem; margin-right: 18px;">✓</span> Máy chủ ưu tiên (Dedicated Server)</li>
+                </ul>
+            </div>
+
+            <div>
+                @if (Model.CurrentTier == "Premium")
+                {
+                    <button class="btn-zen w-100 justify-content-center" disabled style="opacity: 0.5; cursor: not-allowed;">Đang sử dụng</button>
+                }
+                else
+                {
+                    <a href="/Subscription/Checkout" class="btn-zen primary w-100 d-flex justify-content-center align-items-center magnetic-btn" style="padding: 14px 28px; font-size: 1.1rem;">
+                        <span>Nâng Cấp Ngay</span>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.zenInteract !== 'undefined') {
+                window.zenInteract.initPageReveal();
+                window.zenInteract.initMagneticButtons();
+            }
+        });
+    </script>
+}

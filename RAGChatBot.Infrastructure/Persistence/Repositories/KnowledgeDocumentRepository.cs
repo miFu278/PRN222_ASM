@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
+using Pgvector.EntityFrameworkCore;
 using RAGChatBot.Application.Common.Interfaces;
 using RAGChatBot.Domain.Models;
 using System.Collections.Generic;
@@ -24,6 +26,7 @@ namespace RAGChatBot.Infrastructure.Persistence.Repositories
         public async Task<KnowledgeDocument?> GetByIdWithChunksAsync(System.Guid id)
         {
             return await _context.KnowledgeDocuments
+                .AsNoTracking()
                 .Include(d => d.Chunks)
                 .FirstOrDefaultAsync(d => d.Id == id);
         }
@@ -31,6 +34,7 @@ namespace RAGChatBot.Infrastructure.Persistence.Repositories
         public async Task<IEnumerable<KnowledgeDocument>> GetByCourseCodeAsync(string courseCode)
         {
             return await _context.KnowledgeDocuments
+                .AsNoTracking()
                 .Where(d => d.CourseCode == courseCode)
                 .ToListAsync();
         }
@@ -44,6 +48,16 @@ namespace RAGChatBot.Infrastructure.Persistence.Repositories
         {
             _context.KnowledgeDocuments.Remove(document);
             await Task.CompletedTask;
+        }
+        public async Task<IEnumerable<DocumentChunk>> SearchSimilarChunksAsync(string? courseCode, float[] queryEmbedding, int topK = 5)
+        {
+            var pgVector = new Pgvector.Vector(queryEmbedding);
+            return await _context.DocumentChunks
+                .Include(c => c.Document)
+                .Where(c => (string.IsNullOrEmpty(courseCode) || c.Document.CourseCode == courseCode) && c.Document.IsApproved && c.Document.IsProcessed)
+                .OrderBy(c => c.Embedding!.CosineDistance(pgVector))
+                .Take(topK)
+                .ToListAsync();
         }
 
         public async Task SaveChangesAsync()

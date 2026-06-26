@@ -9,7 +9,19 @@ using RAGChatBot.Infrastructure.Storage;
 using RAGChatBot.Infrastructure.Email;
 using RAGChatBot.Domain.Models;
 
+using RAGChatBot.Presentation.Services;
+using RAGChatBot.Presentation.Middlewares;
+using Serilog;
+
+Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("logs/ragchatbot-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog();
 
 // 1. Cấu hình EF Core với PostgreSQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -31,6 +43,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ClientId = googleAuthNSection["ClientId"];
         options.ClientSecret = googleAuthNSection["ClientSecret"];
     });
+
+builder.Services.AddCascadingAuthenticationState();
 
 // 3. Đăng ký Dependency Injection cho các tầng
 // Tầng Application Services
@@ -58,16 +72,29 @@ builder.Services.AddScoped<IKnowledgeDocumentRepository, KnowledgeDocumentReposi
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IWhitelistRepository, WhitelistRepository>();
 
-// Đăng ký dịch vụ RAG & AI (Tự động Chunking & Vector hóa)
+// Ä ăng ký dịch vụ RAG & AI (Tự động Chunking & Vector hóa)
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IChunkingService, ChunkingService>();
 builder.Services.AddScoped<ITextExtractor, TextExtractor>();
 builder.Services.AddHttpClient<IEmbeddingService, OpenAiEmbeddingService>();
+builder.Services.AddHttpClient<IChatService, OpenAiChatService>(); // Dịch vụ RAG Chatbot mới cho ASM02
 builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
 builder.Services.AddHostedService<DocumentProcessingWorker>();
 
-// 4. Thêm cấu hình MVC Controllers & Views
-builder.Services.AddControllersWithViews();
+// 4. Ä ăng ký Razor Pages
+builder.Services.AddRazorPages();
+
+// Ä ăng ký MVC Controllers (dành cho Authentication login/logout)
+builder.Services.AddControllers();
+
+// Ä ăng ký các dịch vụ HttpContextAccessor để hỗ trợ lấy thông tin User trong Blazor
+builder.Services.AddHttpContextAccessor();
+
+// Ä ăng ký Event Service cho Real-time UI updates
+builder.Services.AddSingleton<RAGChatBot.Application.Common.Interfaces.IDocumentEventService, DocumentEventService>();
+builder.Services.AddSingleton<DocumentEventService>(sp => (DocumentEventService)sp.GetRequiredService<RAGChatBot.Application.Common.Interfaces.IDocumentEventService>());
+
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -117,34 +144,76 @@ using (var scope = app.Services.CreateScope())
 
             context.Users.AddRange(testUsers);
             context.SaveChanges();
-            Console.WriteLine("[Database Seed] Đã tạo thành công các tài khoản thử nghiệm: lecturer_free, lecturer_premium, admin (mật khẩu chung: password123)");
+            Console.WriteLine("[Database Seed] Ä ã tạo thành công các tài khoản thử nghiệm: lecturer_free, lecturer_premium, admin (mật khẩu chung: password123)");
         }
     }
     catch (Exception ex)
     {
         Console.WriteLine($"[Database Error] Không thể kết nối hoặc khởi tạo dữ liệu PostgreSQL: {ex.Message}");
     }
+
+    // Kiểm tra kết nối AI API
+    try
+    {
+        var config = services.GetRequiredService<IConfiguration>();
+        var httpClientFactory = services.GetRequiredService<IHttpClientFactory>();
+        using var client = httpClientFactory.CreateClient();
+        
+        var baseUrl = config["AiSettings:BaseUrl"];
+        var apiKey = config["AiSettings:ApiKey"];
+        
+        if (!string.IsNullOrEmpty(baseUrl) && !string.IsNullOrEmpty(apiKey))
+        {
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+            // Ä ối với Google Gemini dùng OpenAI interface, thử lấy danh sách model
+            var response = await client.GetAsync($"{baseUrl.TrimEnd('/')}/models");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("[API Check] KẾT Ná» I THÀNH CÔNG TỚI AI API.");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[API Error] LỖI KẾT Ná» I AI API ({response.StatusCode}): {errorContent}");
+            }
+        }
+        else
+        {
+            Console.WriteLine("[API Check] Thiếu cấu hình AiSettings:BaseUrl hoặc AiSettings:ApiKey trong appsettings.json.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[API Error] Không thể kiểm tra kết nối AI API: {ex.Message}");
+    }
 }
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
-app.UseRouting();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// Thêm Middleware xác thực và phân quyền
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseHttpsRedirection();
+
 
 app.MapStaticAssets();
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+// Kích hoạt Middleware xác thực và phân quyền
+// Kích hoạt Middleware xác thực và phân quyá» n
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Ä ăng ký các controller định tuyến (AccountController)
+app.MapControllers();
+
+// Ä ăng ký các Razor Pages
+app.MapRazorPages();
+
+app.MapHub<RAGChatBot.Presentation.Hubs.DocumentHub>("/documentHub");
 
 app.Run();

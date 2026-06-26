@@ -1,0 +1,334 @@
+@page "/Courses/{CourseCode}/Documents"
+@model RAGChatBot.Presentation.Pages.Courses.DocumentsModel
+@{
+    ViewData["Title"] = $"Quản Lý Tài Liệu - {Model.CourseCode}";
+}
+
+<div class="zen-container py-4 gsap-fade-up">
+    <!-- Back to Courses -->
+    <div class="mb-4">
+        <a href="/Courses" class="zen-action-link text-muted small"><i class="fa-solid fa-arrow-left me-2"></i> Trở về</a>
+    </div>
+
+    <!-- Hero Header -->
+    <div class="zen-hero mb-5">
+        <div class="zen-hero-title">
+            <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">Quản lý tài liệu</div>
+            <h2 class="font-serif m-0" style="font-size: 2.5rem;">@Model.CourseCode - @Model.CourseName</h2>
+        </div>
+        <div class="zen-hero-desc">
+            @if (!string.IsNullOrEmpty(Model.CourseDescription))
+            {
+                <p class="text-muted m-0 mb-2">@Model.CourseDescription</p>
+            }
+            <div class="text-muted small" style="letter-spacing: 0.1em; text-transform: uppercase;">
+                Giám sát: @(Model.SubjectLeaderName ?? "Chưa phân công")
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <div asp-validation-summary="All" class="mb-0"></div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row mt-5">
+        <!-- Document Upload (Lecturer/Admin) -->
+        @if (Model.CanUpload)
+        {
+            <div class="col-lg-4 mb-5 pe-lg-5 zen-list-item">
+                <h4 class="font-serif mb-4 pb-2" style="border-bottom: 1px solid var(--text-sumi); display: inline-block;">Tải lên tài liệu</h4>
+                
+                <form method="post" asp-page-handler="Upload" enctype="multipart/form-data" id="uploadForm">
+                    <input type="hidden" asp-for="CourseCode" />
+                    
+                    <div class="mb-4 mt-2">
+                        <input asp-for="Chapter" class="form-inline-zen w-100" placeholder="Tên chương/phần tài liệu" required />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted small text-uppercase tracking-wider">Tệp đính kèm (.pdf, .docx):</label>
+                        <input type="file" asp-for="UploadedFile" class="form-inline-zen w-100" accept=".pdf,.docx" required style="padding: 0 !important; cursor: pointer;" />
+                        <div class="mt-2 small text-muted" style="font-weight: 300;">
+                            Giới hạn: @(Model.CurrentSubscriptionTier == "Premium" ? "50 MB (Premium)" : "5 MB (Free)")
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-zen magnetic-btn w-100 mt-2" id="uploadBtn">
+                        <span class="upload-text">Tải lên hệ thống</span>
+                        <span class="upload-spinner d-none">
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Đang xử lý...
+                        </span>
+                    </button>
+                </form>
+            </div>
+        }
+
+        <!-- Document List -->
+        <div class="@(Model.CanUpload ? "col-lg-8" : "col-12") mb-5 zen-list-item" id="documentListContainer">
+            @if (!Model.Documents.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <span class="hanko-seal mb-3 d-block mx-auto" style="opacity: 0.4; width: 48px; height: 48px; font-size: 1.4rem;">無</span>
+                    <div style="font-weight: 300;">Chưa có tài liệu nào được tải lên.</div>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-0">
+                    @foreach (var doc in Model.Documents)
+                    {
+                        <div class="doc-card zen-list-item">
+                            <!-- Hàng chính của card -->
+                            <div class="doc-card-main">
+                                <!-- Icon + Tên file + Meta -->
+                                <div class="doc-card-info">
+                                    <a href="@doc.StoragePath" target="_blank" class="doc-card-name">
+                                        <i class="fa-regular @(doc.FileName.EndsWith(".pdf") ? "fa-file-pdf" : "fa-file-word") me-2"></i>@doc.FileName
+                                    </a>
+                                    <div class="doc-card-meta">
+                                        @{
+                                            var sizeStr = doc.FileSize >= 1024 * 1024 ? $"{(doc.FileSize / 1024.0 / 1024.0):F2} MB" : $"{(doc.FileSize / 1024.0):F2} KB";
+                                        }
+                                        <span>@sizeStr</span>
+                                        <span class="doc-meta-sep">·</span>
+                                        <span>@doc.UploadedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                        <span class="doc-meta-sep">·</span>
+                                        <span>@doc.UploaderName</span>
+                                        @if (!string.IsNullOrEmpty(doc.Chapter))
+                                        {
+                                            <span class="doc-meta-sep">·</span>
+                                            <span class="doc-chapter-badge">@doc.Chapter</span>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Trạng thái + Hành động -->
+                                <div class="doc-card-actions">
+                                    <!-- Trạng thái -->
+                                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                                        <div class="status-cell" data-id="@doc.Id" data-processed="@doc.IsProcessed.ToString().ToLower()">
+                                            <span class="processing-status">
+                                                @if (doc.IsProcessed)
+                                                {
+                                                    <span class="status-badge status-processed">Vectorized</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="status-badge status-pending">Processing...</span>
+                                                }
+                                            </span>
+                                        </div>
+                                        @if (doc.IsApproved)
+                                        {
+                                            <span class="status-badge status-processed text-accent">Approved</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-badge status-pending">Pending</span>
+                                        }
+                                    </div>
+
+                                    <!-- Nút hành động -->
+                                    <div class="d-flex gap-3 align-items-center">
+                                        <button type="button" class="zen-action-link btn-view-chunks" data-id="@doc.Id" title="Xem chunks" style="@(doc.IsProcessed ? "" : "display: none !important;")">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+
+                                        @if (!doc.IsApproved && Model.CanApprove)
+                                        {
+                                            <form method="post" asp-page-handler="Approve" class="d-inline">
+                                                <input type="hidden" name="documentId" value="@doc.Id" />
+                                                <button type="submit" class="zen-action-link" style="color: #28a745; background: none; border: none; padding: 0;" title="Duyệt">
+                                                    <i class="fa-solid fa-check"></i>
+                                                </button>
+                                            </form>
+                                        }
+
+                                        @if (Model.CanDelete || doc.UploadedBy == Model.CurrentUserId)
+                                        {
+                                            <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài liệu này?');">
+                                                <input type="hidden" name="documentId" value="@doc.Id" />
+                                                <button type="submit" class="zen-action-link danger" style="background: none; border: none; padding: 0;" title="Xóa">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chunks expandable row -->
+                            <div class="chunks-row" id="chunks-row-@doc.Id" style="display: none;">
+                                <div class="chunks-inner">
+                                    <h6 class="font-serif text-muted mb-3">Dữ liệu Vector (Chunks)</h6>
+                                    <div class="chunks-container" id="chunks-container-@doc.Id">
+                                        <div class="small text-muted"><span class="spinner-border spinner-border-sm text-secondary me-2"></span> Đang tải...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        document.getElementById('uploadForm')?.addEventListener('submit', function() {
+            const btn = document.getElementById('uploadBtn');
+            btn.setAttribute('disabled', 'disabled');
+            btn.querySelector('.upload-text').classList.add('d-none');
+            btn.querySelector('.upload-spinner').classList.remove('d-none');
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var courseCode = '@Model.CourseCode';
+
+            // Xem Chunks
+            function attachChunkEvents() {
+                document.querySelectorAll('.btn-view-chunks').forEach(btn => {
+                    // Tránh gắn sự kiện nhiều lần
+                    if (btn.hasAttribute('data-event-attached')) return;
+                    btn.setAttribute('data-event-attached', 'true');
+                    
+                    btn.addEventListener('click', function() {
+                        const docId = this.getAttribute('data-id');
+                        const row = document.getElementById('chunks-row-' + docId);
+                        const container = document.getElementById('chunks-container-' + docId);
+                        
+                        if (row.style.display === 'none') {
+                            row.style.display = 'block';
+                            this.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+                            
+                            // Fetch chunks
+                            fetch(`?handler=Chunks&id=${docId}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.length === 0) {
+                                        container.innerHTML = '<p class="text-muted small">Không tìm thấy phân mảnh.</p>';
+                                        return;
+                                    }
+                                    
+                                    let html = '<div class="d-flex flex-column gap-3">';
+                                    data.forEach(chunk => {
+                                        html += `
+                                            <div>
+                                                <span class="badge bg-secondary mb-1">#${chunk.chunkIndex}</span>
+                                                <div class="text-muted small" style="white-space: pre-line; line-height: 1.6;">
+                                                    ${chunk.content}
+                                                </div>
+                                            </div>
+                                        `;
+                                    });
+                                    html += '</div>';
+                                    container.innerHTML = html;
+                                })
+                                .catch(err => {
+                                    container.innerHTML = '<div class="text-danger small">Lỗi khi tải dữ liệu</div>';
+                                });
+                        } else {
+                            row.style.display = 'none';
+                            this.innerHTML = '<i class="fa-solid fa-eye"></i>';
+                        }
+                    });
+                });
+            }
+
+            attachChunkEvents(); // Gắn sự kiện lần đầu
+
+            // SignalR Connection
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/documentHub")
+                .configureLogging(signalR.LogLevel.Warning)
+                .build();
+
+            connection.on("DocumentChanged", function (code) {
+                if (code.toLowerCase() === courseCode.toLowerCase()) {
+                    syncDocumentStatuses();
+                }
+            });
+
+            connection.start().then(function () {
+                connection.invoke("JoinCourseGroup", courseCode).catch(function (err) {
+                    console.error("SignalR Join error:", err.toString());
+                });
+            }).catch(function (err) {
+                console.error("SignalR Connect error:", err.toString());
+            });
+
+            function syncDocumentStatuses() {
+                fetch(`?handler=Status`)
+                    .then(response => response.json())
+                    .then(data => {
+                        var currentDocs = document.querySelectorAll('.status-cell');
+                        
+                        // Nếu số lượng file khác nhau (Thêm/Xóa) HOẶC có người vừa Approve -> load HTML thay thế DOM (SPA)
+                        let needHtmlReload = (currentDocs.length !== data.length);
+                        
+                        if (!needHtmlReload) {
+                            data.forEach(item => {
+                                var cell = document.querySelector(`.status-cell[data-id="${item.id}"]`);
+                                if (cell) {
+                                    var approvalBadge = cell.querySelector('.status-badge:not(.status-processed):not(.status-pending)') || cell.lastElementChild;
+                                    if (item.isApproved && approvalBadge && approvalBadge.textContent.includes('Pending')) {
+                                         needHtmlReload = true; 
+                                    }
+                                }
+                            });
+                        }
+
+                        if (needHtmlReload) {
+                            // Tải HTML của component document list và thay thế mượt mà
+                            fetch(window.location.href)
+                                .then(res => res.text())
+                                .then(html => {
+                                    const parser = new DOMParser();
+                                    const doc = parser.parseFromString(html, "text/html");
+                                    const newContainer = doc.getElementById('documentListContainer');
+                                    const currentContainer = document.getElementById('documentListContainer');
+                                    
+                                    if (newContainer && currentContainer) {
+                                        currentContainer.innerHTML = newContainer.innerHTML;
+                                        attachChunkEvents(); // Gắn lại event do DOM mới
+                                    }
+                                });
+                            return;
+                        }
+
+                        // Nếu chỉ là update trạng thái Processed (Chunk xong) -> Cập nhật DOM trực tiếp để không mất trạng thái xem chunks
+                        data.forEach(item => {
+                            var cell = document.querySelector(`.status-cell[data-id="${item.id}"]`);
+                            if (cell) {
+                                if (cell.getAttribute('data-processed') === 'false' && item.isProcessed) {
+                                    cell.setAttribute('data-processed', 'true');
+                                    var processingStatusHtml = '<span class="status-badge status-processed">Vectorized</span>';
+                                    cell.querySelector('.processing-status').innerHTML = processingStatusHtml;
+
+                                    var chunkBtn = document.querySelector(`.btn-view-chunks[data-id="${item.id}"]`);
+                                    if (chunkBtn) chunkBtn.style.setProperty('display', 'inline-block', 'important');
+                                }
+                            }
+                        });
+                    })
+                    .catch(err => console.error("Sync error: ", err));
+            }
+        });
+    </script>
+}

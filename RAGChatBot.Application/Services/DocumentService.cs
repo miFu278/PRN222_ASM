@@ -15,17 +15,20 @@ namespace RAGChatBot.Application.Services
         private readonly IKnowledgeDocumentRepository _documentRepository;
         private readonly ICourseRepository _courseRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IDocumentEventService _eventService;
 
         public DocumentService(
             IFileStorageService fileStorageService,
             IKnowledgeDocumentRepository documentRepository,
             ICourseRepository courseRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IDocumentEventService eventService)
         {
             _fileStorageService = fileStorageService;
             _documentRepository = documentRepository;
             _courseRepository = courseRepository;
             _userRepository = userRepository;
+            _eventService = eventService;
         }
 
         public async Task<DocumentDto> UploadDocumentAsync(
@@ -58,19 +61,11 @@ namespace RAGChatBot.Application.Services
             // 3. Save physical file in parallel / synchronously
             var relativePath = await _fileStorageService.SaveFileAsync(fileStream, fileName);
 
-            // 4. Check if the uploader is the Subject Leader or Admin -> auto approve
+            // 4. Auto-approve document so it can be viewed by students immediately
             var user = await _userRepository.GetByIdAsync(userId);
-            var isApproved = false;
-            
-            var courses = await _courseRepository.GetAllAsync();
-            var course = courses.FirstOrDefault(c => c.Code.Equals(courseCode, StringComparison.OrdinalIgnoreCase));
-            if (course != null)
-            {
-                if (userId == course.SubjectLeaderId || (user != null && user.Role == "Admin"))
-                {
-                    isApproved = true;
-                }
-            }
+            var isApproved = true;
+
+            var uploaderName = !string.IsNullOrWhiteSpace(user?.FullName) ? user.FullName : (user?.Username ?? "N/A");
 
             // 5. Save metadata to DB using repository
             var document = new KnowledgeDocument
@@ -81,8 +76,9 @@ namespace RAGChatBot.Application.Services
                 CourseCode = courseCode,
                 Chapter = chapter,
                 FileSize = fileSize,
-                UploadedAt = DateTime.UtcNow,
+                UploadedAt = DateTime.UtcNow.AddHours(7),
                 UploadedBy = userId,
+                UploaderName = uploaderName,
                 IsProcessed = false,
                 IsApproved = isApproved
             };
@@ -90,7 +86,9 @@ namespace RAGChatBot.Application.Services
             await _documentRepository.AddAsync(document);
             await _documentRepository.SaveChangesAsync();
 
-            var uploaderName = user?.Username ?? "N/A";
+            // Trigger SignalR event for real-time UI updates
+            _eventService.NotifyDocumentChanged(courseCode);
+
             var dto = MapToDto(document);
             dto.UploaderName = uploaderName;
             return dto;
@@ -100,7 +98,7 @@ namespace RAGChatBot.Application.Services
         {
             var docs = await _documentRepository.GetByCourseCodeAsync(courseCode);
             var users = await _userRepository.GetAllAsync();
-            var userMap = users.ToDictionary(u => u.Id, u => u.Username);
+            var userMap = users.ToDictionary(u => u.Id, u => !string.IsNullOrWhiteSpace(u.FullName) ? u.FullName : u.Username);
 
             return docs.Select(doc => new DocumentDto
             {
@@ -114,7 +112,9 @@ namespace RAGChatBot.Application.Services
                 UploadedBy = doc.UploadedBy,
                 IsProcessed = doc.IsProcessed,
                 IsApproved = doc.IsApproved,
-                UploaderName = userMap.TryGetValue(doc.UploadedBy, out var name) ? name : "N/A"
+                UploaderName = !string.IsNullOrWhiteSpace(doc.UploaderName) 
+                    ? doc.UploaderName 
+                    : (userMap.TryGetValue(doc.UploadedBy, out var name) ? name : "N/A")
             }).OrderByDescending(d => d.UploadedAt);
         }
 
@@ -146,6 +146,9 @@ namespace RAGChatBot.Application.Services
             // 2. Xóa bản ghi siêu dữ liệu trong DB
             await _documentRepository.DeleteAsync(document);
             await _documentRepository.SaveChangesAsync();
+            
+            // Trigger SignalR event
+            _eventService.NotifyDocumentChanged(document.CourseCode);
         }
 
         public async Task ApproveDocumentAsync(Guid id, Guid userId)
@@ -171,6 +174,54 @@ namespace RAGChatBot.Application.Services
 
             document.IsApproved = true;
             await _documentRepository.SaveChangesAsync();
+
+            // Trigger SignalR event
+            _eventService.NotifyDocumentChanged(document.CourseCode);
+        }
+
+        public async Task UpdateDocumentMetadataAsync(Guid id, string newFileName, string newChapter, Guid userId)
+        {
+            var document = await _documentRepository.GetByIdAsync(id);
+            if (document == null)
+            {
+                throw new KeyNotFoundException("Không tìm thấy tài liệu để cập nhật!");
+            }
+
+            var courses = await _courseRepository.GetAllAsync();
+            var course = courses.FirstOrDefault(c => c.Code.Equals(document.CourseCode, StringComparison.OrdinalIgnoreCase));
+            
+            // Allow update if user is the uploader, subject leader, or an admin
+            var user = await _userRepository.GetByIdAsync(userId);
+            bool isAdmin = user != null && user.Role == "Admin";
+            bool isSubjectLeader = course != null && course.SubjectLeaderId == userId;
+            bool isUploader = document.UploadedBy == userId;
+
+            if (!isAdmin && !isSubjectLeader && !isUploader)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền sửa thông tin tài liệu này!");
+            }
+
+            if (!string.IsNullOrWhiteSpace(newFileName))
+            {
+                // Ensure extension matches the original to avoid confusion
+                var oldExtension = Path.GetExtension(document.FileName);
+                var newExtension = Path.GetExtension(newFileName);
+                if (!string.Equals(oldExtension, newExtension, StringComparison.OrdinalIgnoreCase))
+                {
+                    newFileName += oldExtension;
+                }
+                document.FileName = newFileName;
+            }
+
+            if (!string.IsNullOrWhiteSpace(newChapter))
+            {
+                document.Chapter = newChapter;
+            }
+
+            await _documentRepository.SaveChangesAsync();
+
+            // Trigger SignalR event
+            _eventService.NotifyDocumentChanged(document.CourseCode);
         }
 
         public async Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId)
@@ -197,10 +248,12 @@ namespace RAGChatBot.Application.Services
             if (doc == null) return null;
 
             var users = await _userRepository.GetAllAsync();
-            var userMap = users.ToDictionary(u => u.Id, u => u.Username);
+            var userMap = users.ToDictionary(u => u.Id, u => !string.IsNullOrWhiteSpace(u.FullName) ? u.FullName : u.Username);
 
             var dto = MapToDto(doc);
-            dto.UploaderName = userMap.TryGetValue(doc.UploadedBy, out var name) ? name : "N/A";
+            dto.UploaderName = !string.IsNullOrWhiteSpace(doc.UploaderName) 
+                ? doc.UploaderName 
+                : (userMap.TryGetValue(doc.UploadedBy, out var name) ? name : "N/A");
             return dto;
         }
 

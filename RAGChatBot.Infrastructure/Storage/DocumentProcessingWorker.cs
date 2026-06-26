@@ -84,10 +84,7 @@ namespace RAGChatBot.Infrastructure.Storage
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Không thể tải tệp tin từ Storage Path: {Path}", document.StoragePath);
-                    // Đánh dấu là processed nhưng không tạo chunk để tránh vòng lặp lỗi vô hạn
-                    document.IsProcessed = true;
-                    await dbContext.SaveChangesAsync(stoppingToken);
-                    return;
+                    throw; // Rethrow để trigger khối catch bên dưới hoàn tác IsProcessed
                 }
 
                 using var memoryStream = new MemoryStream(fileBytes);
@@ -100,8 +97,6 @@ namespace RAGChatBot.Infrastructure.Storage
                 if (string.IsNullOrWhiteSpace(fullText))
                 {
                     _logger.LogWarning("Tài liệu '{FileName}' rỗng hoặc không có chữ để trích xuất.", document.FileName);
-                    document.IsProcessed = true;
-                    await dbContext.SaveChangesAsync(stoppingToken);
                     return;
                 }
 
@@ -114,6 +109,17 @@ namespace RAGChatBot.Infrastructure.Storage
                 for (int i = 0; i < textChunks.Count; i++)
                 {
                     var chunkText = textChunks[i];
+
+                    // Loại bỏ ký tự null byte (0x00) - PostgreSQL UTF-8 không chấp nhận ký tự này
+                    chunkText = chunkText.Replace("\0", string.Empty);
+
+                    // Bỏ qua chunk nếu sau khi làm sạch không còn nội dung
+                    if (string.IsNullOrWhiteSpace(chunkText))
+                    {
+                        _logger.LogWarning("Bỏ qua chunk {Index}/{Total} vì không có nội dung hợp lệ sau khi làm sạch.", i + 1, textChunks.Count);
+                        continue;
+                    }
+
                     _logger.LogInformation("Đang sinh vector cho chunk {Index}/{Total}...", i + 1, textChunks.Count);
                     
                     var vectorValues = await embeddingService.GenerateEmbeddingAsync(chunkText);
@@ -131,7 +137,6 @@ namespace RAGChatBot.Infrastructure.Storage
                 }
 
                 // 6. Cập nhật trạng thái hoàn thành
-                document.IsProcessed = true;
                 await dbContext.SaveChangesAsync(stoppingToken);
                 _logger.LogInformation("Đã xử lý xong tài liệu: '{FileName}'", document.FileName);
             }
@@ -142,6 +147,14 @@ namespace RAGChatBot.Infrastructure.Storage
                 // Ở đây ta đánh dấu true để hệ thống tiếp tục chạy các tài liệu khác.
                 document.IsProcessed = true;
                 await dbContext.SaveChangesAsync(stoppingToken);
+            }
+            finally
+            {
+                if (document.IsProcessed)
+                {
+                    var eventService = scope.ServiceProvider.GetService<IDocumentEventService>();
+                    eventService?.NotifyDocumentChanged(document.CourseCode);
+                }
             }
         }
     }

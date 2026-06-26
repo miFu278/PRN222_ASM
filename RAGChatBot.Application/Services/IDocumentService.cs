@@ -25,6 +25,8 @@ namespace RAGChatBot.Application.Services
 
         Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId);
 
+        Task UpdateDocumentMetadataAsync(Guid id, string newFileName, string newChapter, Guid userId);
+
         Task<DocumentDto?> GetDocumentByIdAsync(Guid id);
     }
 }

@@ -1,0 +1,181 @@
+@page "/Admin/Users"
+@model RAGChatBot.Presentation.Pages.Admin.UsersModel
+@{
+    ViewData["Title"] = "Quản lý Tài Khoản";
+}
+
+<div class="zen-container py-5 gsap-fade-up">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-end mb-5 flex-wrap gap-3">
+        <div>
+            <div class="text-accent mb-2" style="font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase;">
+                Admin Dashboard
+            </div>
+            <h1 class="font-serif m-0" style="font-size: 3rem;">Tài Khoản</h1>
+        </div>
+        <div class="d-flex gap-3">
+            <button type="button" class="btn-zen" style="background: var(--bg-washi); color: var(--text-sumi); border: 1px solid var(--border-light);" data-bs-toggle="modal" data-bs-target="#importUserModal">
+                <i class="fa-solid fa-file-import me-2"></i> Import Excel
+            </button>
+            <button type="button" class="btn-zen" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                <i class="fa-solid fa-plus me-2"></i> Cấp tài khoản
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="mb-4" style="color: #059669; padding: 15px 0; border-bottom: 1px solid #059669;">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="mb-4" style="color: var(--accent-shu); padding: 15px 0; border-bottom: 1px solid var(--accent-shu);">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <!-- Users Table -->
+    <div class="table-responsive">
+        <table class="table-zen w-100">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Họ và tên</th>
+                    <th style="width: 25%;">Email / Tên đăng nhập</th>
+                    <th style="width: 15%;">Vai trò</th>
+                    <th style="width: 15%;">Gói cước</th>
+                    <th style="width: 20%; text-align: right;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model.Users)
+                {
+                    <tr>
+                        <td style="font-weight: 500;">@(string.IsNullOrEmpty(user.FullName) ? "-" : user.FullName)</td>
+                        <td class="text-muted">@user.Username</td>
+                        <td>
+                            <span class="badge" style="background: @(user.Role == "Admin" ? "var(--accent-shu)" : (user.Role == "Lecturer" ? "#4f46e5" : "#64748b")); font-weight: 500; padding: 6px 12px; border-radius: 4px;">
+                                @user.Role
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="color: @(user.SubscriptionTier == "Premium" ? "var(--accent-shu)" : "var(--text-muted)"); font-weight: @(user.SubscriptionTier == "Premium" ? "600" : "400");">
+                                    @user.SubscriptionTier
+                                </span>
+                                @if (user.Role == "Student" || user.Role == "Lecturer")
+                                {
+                                    <form method="post" asp-page-handler="ToggleTier" class="m-0 p-0 d-inline-block">
+                                        <input type="hidden" name="id" value="@user.Id" />
+                                        <button type="submit" class="btn btn-link p-0 m-0 text-muted" title="Chuyển đổi gói" style="text-decoration: none;">
+                                            <i class="fa-solid fa-rotate"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                        <td style="text-align: right;">
+                            <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Xác nhận xóa tài khoản @user.Username?');">
+                                <input type="hidden" name="id" value="@user.Id" />
+                                <button type="submit" class="zen-action-link danger" style="padding: 0; background: none; border: none;">
+                                    Xóa bỏ
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Create User -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--bg-washi); border-radius: 0; border: 1px solid var(--border-light);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border-light);">
+                <h5 class="modal-title font-serif">Cấp Tài Khoản Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Create">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase">Họ và tên</label>
+                        <input type="text" asp-for="FullName" class="input-zen" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase">Tên đăng nhập (Email)</label>
+                        <input type="email" asp-for="Username" class="input-zen" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase">Mật khẩu</label>
+                        <input type="text" asp-for="Password" class="input-zen" required />
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <label class="form-label text-muted small text-uppercase">Vai trò</label>
+                            <select asp-for="Role" class="form-select input-zen">
+                                <option value="Student">Học viên</option>
+                                <option value="Lecturer">Giảng viên</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small text-uppercase">Gói cước</label>
+                            <select asp-for="SubscriptionTier" class="form-select input-zen">
+                                <option value="Free">Free</option>
+                                <option value="Premium">Premium</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: none;">
+                    <button type="button" class="zen-action-link me-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn-zen">Khởi tạo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Import Excel -->
+<div class="modal fade" id="importUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--bg-washi); border-radius: 0; border: 1px solid var(--border-light);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border-light);">
+                <h5 class="modal-title font-serif">Import Danh Sách Từ Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Import" enctype="multipart/form-data">
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-4">
+                        Tải lên file Excel (.xlsx) với các cột: <strong>Email</strong>, <strong>Họ tên</strong>. <br />
+                        Hệ thống sẽ tự động tạo tài khoản Học viên gói Free và cấp mật khẩu ngẫu nhiên cho những người dùng mới (chưa có trong CSDL). Mật khẩu sẽ được gửi tự động qua email (thông qua SendGrid/Smtp).
+                    </p>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small text-uppercase">Chọn file Excel</label>
+                        <input type="file" asp-for="ImportFile" class="input-zen" accept=".xlsx, .xls" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase">Mật khẩu mặc định (nếu không tạo ngẫu nhiên)</label>
+                        <input type="text" asp-for="DefaultPassword" class="input-zen" value="Welcome@2026" />
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: none;">
+                    <button type="button" class="zen-action-link me-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn-zen">Thực hiện Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            gsap.to(".gsap-fade-up", { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" });
+        });
+    </script>
+}
