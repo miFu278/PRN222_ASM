@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using RAGChatBot.Application.Common.Interfaces;
 using RAGChatBot.Application.Services;
@@ -8,6 +9,8 @@ using RAGChatBot.Infrastructure.Security;
 using RAGChatBot.Infrastructure.Storage;
 using RAGChatBot.Infrastructure.Email;
 using RAGChatBot.Domain.Models;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 
 using RAGChatBot.Presentation.Services;
 
@@ -15,8 +18,8 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Cấu hình EF Core với PostgreSQL
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Host=localhost;Database=rag_chatbot_db;Username=postgres;Password=your_password";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:DefaultConnection in configuration.");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString, x => x.UseVector()));
 
@@ -48,8 +51,10 @@ builder.Services.AddScoped<IWhitelistService, WhitelistService>();
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 
 // Đăng ký Supabase Client
-var supabaseUrl = builder.Configuration["Supabase:Url"] ?? "https://dssylnlnvftebqsodsnk.supabase.co";
-var supabaseKey = builder.Configuration["Supabase:AnonKey"] ?? "your-anon-key";
+var supabaseUrl = builder.Configuration["Supabase:Url"]
+    ?? throw new InvalidOperationException("Missing Supabase:Url in configuration.");
+var supabaseKey = builder.Configuration["Supabase:AnonKey"]
+    ?? throw new InvalidOperationException("Missing Supabase:AnonKey in configuration.");
 builder.Services.AddSingleton(provider => new Supabase.Client(supabaseUrl, supabaseKey, new Supabase.SupabaseOptions
 {
     AutoConnectRealtime = false
@@ -87,6 +92,29 @@ builder.Services.AddSingleton<DocumentEventService>(sp => (DocumentEventService)
 
 builder.Services.AddSignalR();
 
+// 6. Cấu hình Rate Limiting chống spam AI Chat
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("StudentChatLimit", context =>
+    {
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        if (userRole == "Student")
+        {
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? context.Connection.RemoteIpAddress?.ToString()
+                         ?? "anonymous";
+            return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+        }
+        return RateLimitPartition.GetNoLimiter("unlimited");
+    });
+});
+
 var app = builder.Build();
 
 // 5. Tự động chạy Migration & Seed dữ liệu thử nghiệm khi khởi động
@@ -104,6 +132,8 @@ using (var scope = app.Services.CreateScope())
         if (!context.Users.Any())
         {
             var hasher = services.GetRequiredService<IPasswordHasher>();
+            var seedPassword = Environment.GetEnvironmentVariable("SEED_ADMIN_PASSWORD")
+                               ?? Guid.NewGuid().ToString();
             
             var testUsers = new List<User>
             {
@@ -111,7 +141,7 @@ using (var scope = app.Services.CreateScope())
                 {
                     Id = Guid.NewGuid(),
                     Username = "lecturer_free",
-                    PasswordHash = hasher.Hash("password123"),
+                    PasswordHash = hasher.Hash(seedPassword),
                     Role = "Lecturer",
                     SubscriptionTier = "Free"
                 },
@@ -119,7 +149,7 @@ using (var scope = app.Services.CreateScope())
                 {
                     Id = Guid.NewGuid(),
                     Username = "lecturer_premium",
-                    PasswordHash = hasher.Hash("password123"),
+                    PasswordHash = hasher.Hash(seedPassword),
                     Role = "Lecturer",
                     SubscriptionTier = "Premium"
                 },
@@ -127,7 +157,7 @@ using (var scope = app.Services.CreateScope())
                 {
                     Id = Guid.NewGuid(),
                     Username = "admin",
-                    PasswordHash = hasher.Hash("password123"),
+                    PasswordHash = hasher.Hash(seedPassword),
                     Role = "Admin",
                     SubscriptionTier = "Premium"
                 }
@@ -135,7 +165,7 @@ using (var scope = app.Services.CreateScope())
 
             context.Users.AddRange(testUsers);
             context.SaveChanges();
-            Console.WriteLine("[Database Seed] Ä ã tạo thành công các tài khoản thử nghiệm: lecturer_free, lecturer_premium, admin (mật khẩu chung: password123)");
+            Console.WriteLine($"[Database Seed] Đã tạo tài khoản thử nghiệm: lecturer_free, lecturer_premium, admin (mật khẩu: {(Environment.GetEnvironmentVariable("SEED_ADMIN_PASSWORD") != null ? "[from SEED_ADMIN_PASSWORD]" : seedPassword)})");
         }
     }
     catch (Exception ex)
@@ -192,8 +222,8 @@ app.UseHttpsRedirection();
 
 app.MapStaticAssets();
 
-// Kích hoạt Middleware xác thực và phân quyền
-// Kích hoạt Middleware xác thực và phân quyá» n
+// Kích hoạt Middleware
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

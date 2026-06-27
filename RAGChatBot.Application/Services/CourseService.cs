@@ -182,5 +182,14 @@ namespace RAGChatBot.Application.Services
             // Xóa môn học
             await _courseRepository.DeleteAsync(course);
         }
+
+        public async Task<IEnumerable<CourseDto>> GetCoursesBySubjectLeaderAsync(Guid userId)
+        {
+            var courses = await _courseRepository.GetBySubjectLeaderIdAsync(userId);
+            var users = await _userRepository.GetAllAsync();
+            var userMap = users.ToDictionary(u => u.Id, u => !string.IsNullOrEmpty(u.FullName) ? u.FullName : u.Username);
+
+            return courses.Select(c => MapToDto(c, userMap));
+        }
     }
 }

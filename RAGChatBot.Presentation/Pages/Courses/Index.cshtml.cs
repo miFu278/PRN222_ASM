@@ -44,7 +44,17 @@ namespace RAGChatBot.Presentation.Pages.Courses
 
         public async Task<IActionResult> OnGetAsync()
         {
-            Courses = await _courseService.GetAllCoursesAsync();
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Guid.TryParse(userIdStr, out var currentUserId);
+
+            if (User.IsInRole("Lecturer"))
+            {
+                Courses = await _courseService.GetCoursesBySubjectLeaderAsync(currentUserId);
+            }
+            else
+            {
+                Courses = await _courseService.GetAllCoursesAsync();
+            }
 
             if (!string.IsNullOrEmpty(Search))
             {
