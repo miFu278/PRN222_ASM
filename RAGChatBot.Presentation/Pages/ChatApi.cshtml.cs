@@ -3,10 +3,14 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
 using RAGChatBot.Application.Common.Interfaces;
 
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+
 namespace RAGChatBot.Presentation.Pages
 {
+    [Authorize]
     [IgnoreAntiforgeryToken]
-    [EnableRateLimiting("StudentChatLimit")]
+    [EnableRateLimiting("ChatPolicy")]
     public class ChatApiModel : PageModel
     {
         private readonly IChatService _chatService;

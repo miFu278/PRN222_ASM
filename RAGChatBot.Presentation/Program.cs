@@ -13,9 +13,18 @@ using System.Security.Claims;
 using System.Threading.RateLimiting;
 
 using RAGChatBot.Presentation.Services;
+using RAGChatBot.Presentation.Middlewares;
+using Serilog;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("logs/ragchatbot-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog();
 
 // 1. Cấu hình EF Core với PostgreSQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -216,6 +225,8 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
