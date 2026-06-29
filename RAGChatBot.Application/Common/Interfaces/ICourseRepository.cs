@@ -12,5 +12,6 @@ namespace RAGChatBot.Application.Common.Interfaces
         Task<Course?> GetByIdAsync(System.Guid id);
         Task UpdateAsync(Course course);
         Task DeleteAsync(Course course);
+        Task<IEnumerable<Course>> GetBySubjectLeaderIdAsync(System.Guid userId);
     }
 }

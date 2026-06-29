@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using RAGChatBot.Application.Common.Interfaces;
 
 using Microsoft.AspNetCore.Authorization;

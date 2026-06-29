@@ -11,5 +11,6 @@ namespace RAGChatBot.Application.Services
         Task UpdateSubjectLeaderAsync(Guid courseId, Guid subjectLeaderId);
         Task UpdateCourseAsync(CourseDto courseDto);
         Task DeleteCourseAsync(Guid id);
+        Task<IEnumerable<CourseDto>> GetCoursesBySubjectLeaderAsync(Guid userId);
     }
 }

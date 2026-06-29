@@ -57,6 +57,7 @@ project.lock.json
 
 # Local Development Settings & Secrets
 appsettings.json
+appsettings.Development.json
 appsettings.local.json
 secrets.json
 .microsoft/usersecrets/

@@ -55,5 +55,13 @@ namespace RAGChatBot.Infrastructure.Persistence.Repositories
             _context.Courses.Remove(course);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<IEnumerable<Course>> GetBySubjectLeaderIdAsync(System.Guid userId)
+        {
+            return await _context.Courses
+                .Where(c => c.SubjectLeaderId == userId)
+                .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+        }
     }
 }

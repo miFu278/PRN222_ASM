@@ -137,6 +137,11 @@ namespace RAGChatBot.Presentation.Pages.Courses
 
         public async Task<IActionResult> OnGetChunksAsync(Guid id)
         {
+            if (User.IsInRole("Student"))
+            {
+                return Forbid();
+            }
+
             var chunks = await _documentService.GetDocumentChunksAsync(id);
             return new JsonResult(chunks);
         }
