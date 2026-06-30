@@ -1,5 +1,7 @@
 using System;
 
+using RAGChatBot.Domain.Enums;
+
 namespace RAGChatBot.Application.DTOs
 {
     public class DocumentDto
@@ -12,7 +14,7 @@ namespace RAGChatBot.Application.DTOs
         public long FileSize { get; set; }
         public DateTime UploadedAt { get; set; }
         public Guid UploadedBy { get; set; }
-        public bool IsProcessed { get; set; }
+        public DocumentStatus Status { get; set; }
         public bool IsApproved { get; set; }
         public string? UploaderName { get; set; }
     }

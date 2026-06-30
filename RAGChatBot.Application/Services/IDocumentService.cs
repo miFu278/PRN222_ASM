@@ -23,6 +23,8 @@ namespace RAGChatBot.Application.Services
 
         Task ApproveDocumentAsync(Guid id, Guid userId);
 
+        Task RetryDocumentAsync(Guid id, Guid userId);
+
         Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId);
 
         Task UpdateDocumentMetadataAsync(Guid id, string newFileName, string newChapter, Guid userId);

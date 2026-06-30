@@ -12,7 +12,7 @@
 | Database & Vector DB | PostgreSQL + pgvector (Supabase Cloud) |
 | Lưu trữ file | Supabase Storage |
 | Trích xuất PDF | UglyToad.PdfPig |
-| AI Embedding & Chat | Google Gemini / 9router / GitHub Models (chuẩn OpenAI) |
+| AI Embedding & Chat | Ollama (Local AI) / Google Gemini / GitHub Models |
 | Gửi email | Brevo (Sendinblue) |
 | Xác thực | Cookie Auth + Google OAuth 2.0 |
 | Mã hóa mật khẩu | BCrypt.Net-Next |
@@ -27,7 +27,7 @@
   - Storage bucket tên `raw-documents`
 - (Tùy chọn) Google Cloud Console project để dùng Google OAuth
 - (Tùy chọn) Tài khoản [Brevo](https://brevo.com) để gửi email chào mừng
-- AI API key (Google Gemini, 9router, hoặc GitHub Models)
+- AI API key (Google Gemini, GitHub Models) hoặc cài đặt **Docker** để chạy Local AI bằng **Ollama**.
 
 ---
 
@@ -114,6 +114,24 @@ copy RAGChatBot.Presentation\appsettings.Example.json RAGChatBot.Presentation\ap
 1. Đăng ký tại [brevo.com](https://brevo.com) → **SMTP & API → API Keys → Generate**
 2. Điền API key vào `EmailSettings:ApiKey`
 3. `SenderEmail` phải là email đã xác minh trong Brevo
+
+#### 5. Ollama Local AI (Dành cho môi trường nội bộ)
+Dự án đã tích hợp sẵn môi trường chạy AI cục bộ bằng Docker:
+- Mở Terminal tại thư mục gốc của dự án.
+- Chạy lệnh `docker-compose up -d` để tải về và chạy Engine **Ollama** kèm theo 2 models mặc định: `llama3.2:1b` (Chat) và `nomic-embed-text` (Embedding).
+- Cập nhật `AiSettings:BaseUrl` thành `http://localhost:11434/v1` và cập nhật tên Model tương ứng.
+
+> **Lưu ý với GPU Nvidia**: Container Ollama đã được cấu hình tự động nhận diện GPU Nvidia (`deploy: resources: reservations: devices: driver: nvidia`). Hãy đảm bảo bạn đã cài Docker Desktop hỗ trợ WSL2 hoặc Nvidia Container Toolkit.
+
+---
+
+## Tính Năng Nổi Bật (Backend Core)
+- **Kiến trúc RAG Thực thụ**: Kết hợp giữa CSDL Vector (pgvector) và sức mạnh của các LLMs.
+- **Xử lý Ngầm Bền bỉ (Background Worker)**:
+  - Tài liệu tải lên sẽ được đưa vào hàng đợi với 4 trạng thái rõ ràng: `Pending`, `Processing`, `Success`, và `Failed`.
+  - Nếu API AI bị quá tải (Timeout), tài liệu sẽ chuyển sang trạng thái `Failed`. Giảng viên có thể bấm **Thử lại (Retry)** ngay trên giao diện mà không cần tải lại file.
+- **Global Error Handling**: Middleware thông minh bắt toàn bộ Exception, tránh crash ứng dụng và trả về giao diện thân thiện cho người dùng cuối.
+- **Chat UI Tương tác cao**: Hỗ trợ bôi đậm, in nghiêng, và định dạng Code (Markdown parser tích hợp) với hiệu ứng thị giác ấn tượng.
 
 ---
 

@@ -10,7 +10,7 @@ namespace RAGChatBot.Presentation.Pages
 {
     [Authorize]
     [IgnoreAntiforgeryToken]
-    [EnableRateLimiting("ChatPolicy")]
+    [EnableRateLimiting("StudentChatLimit")]
     public class ChatApiModel : PageModel
     {
         private readonly IChatService _chatService;

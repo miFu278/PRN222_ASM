@@ -61,13 +61,29 @@
     const sendIcon = document.getElementById('sendIcon');
     let isLoading = false;
 
+    function formatMarkdown(text) {
+        if (!text) return '';
+        return text
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;') // Prevent XSS
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+            .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+            .replace(/`(.*?)`/g, '<code style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px;">$1</code>') // Inline code
+            .replace(/\n/g, '<br>'); // New lines
+    }
+
     function appendMessage(role, text) {
         const div = document.createElement('div');
         div.className = role === 'user' ? 'zen-msg zen-msg-user' : 'zen-msg zen-msg-bot';
 
         const bubble = document.createElement('div');
         bubble.className = 'zen-msg-bubble';
-        bubble.textContent = text;
+        
+        if (role === 'bot') {
+            bubble.innerHTML = formatMarkdown(text);
+        } else {
+            bubble.textContent = text;
+        }
 
         div.appendChild(bubble);
         chatMessages.appendChild(div);
