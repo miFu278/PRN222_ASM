@@ -54,7 +54,7 @@ namespace RAGChatBot.Infrastructure.Persistence.Repositories
             var pgVector = new Pgvector.Vector(queryEmbedding);
             return await _context.DocumentChunks
                 .Include(c => c.Document)
-                .Where(c => (string.IsNullOrEmpty(courseCode) || c.Document.CourseCode == courseCode) && c.Document.IsApproved && c.Document.IsProcessed)
+                .Where(c => (string.IsNullOrEmpty(courseCode) || c.Document.CourseCode == courseCode) && c.Document.IsApproved && c.Document.Status == RAGChatBot.Domain.Enums.DocumentStatus.Success)
                 .OrderBy(c => c.Embedding!.CosineDistance(pgVector))
                 .Take(topK)
                 .ToListAsync();

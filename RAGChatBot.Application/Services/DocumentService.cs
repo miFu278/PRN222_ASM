@@ -1,5 +1,6 @@
 using RAGChatBot.Application.Common.Interfaces;
 using RAGChatBot.Application.DTOs;
+using RAGChatBot.Domain.Enums;
 using RAGChatBot.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -79,7 +80,7 @@ namespace RAGChatBot.Application.Services
                 UploadedAt = DateTime.UtcNow.AddHours(7),
                 UploadedBy = userId,
                 UploaderName = uploaderName,
-                IsProcessed = false,
+                Status = DocumentStatus.Pending,
                 IsApproved = isApproved
             };
 
@@ -110,7 +111,7 @@ namespace RAGChatBot.Application.Services
                 FileSize = doc.FileSize,
                 UploadedAt = doc.UploadedAt,
                 UploadedBy = doc.UploadedBy,
-                IsProcessed = doc.IsProcessed,
+                Status = doc.Status,
                 IsApproved = doc.IsApproved,
                 UploaderName = !string.IsNullOrWhiteSpace(doc.UploaderName) 
                     ? doc.UploaderName 
@@ -176,6 +177,44 @@ namespace RAGChatBot.Application.Services
             await _documentRepository.SaveChangesAsync();
 
             // Trigger SignalR event
+            _eventService.NotifyDocumentChanged(document.CourseCode);
+        }
+
+        public async Task RetryDocumentAsync(Guid id, Guid userId)
+        {
+            var document = await _documentRepository.GetByIdAsync(id);
+            if (document == null)
+            {
+                throw new KeyNotFoundException("Không tìm thấy tài liệu cần thử lại!");
+            }
+
+            var courses = await _courseRepository.GetAllAsync();
+            var course = courses.FirstOrDefault(c => c.Code.Equals(document.CourseCode, StringComparison.OrdinalIgnoreCase));
+            if (course == null)
+            {
+                throw new KeyNotFoundException("Không tìm thấy môn học liên quan đến tài liệu!");
+            }
+
+            // Chỉ Trưởng bộ môn hoặc người upload mới được thử lại
+            var user = await _userRepository.GetByIdAsync(userId);
+            bool isAdmin = user != null && user.Role == "Admin";
+            bool isSubjectLeader = course.SubjectLeaderId == userId;
+            bool isUploader = document.UploadedBy == userId;
+
+            if (!isAdmin && !isSubjectLeader && !isUploader)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền thử lại tài liệu này!");
+            }
+
+            if (document.Status != DocumentStatus.Failed)
+            {
+                throw new InvalidOperationException("Chỉ có thể thử lại các tài liệu bị lỗi (Failed)!");
+            }
+
+            document.Status = DocumentStatus.Pending;
+            await _documentRepository.SaveChangesAsync();
+
+            // Kích hoạt Worker bằng cách thay đổi trạng thái và báo SignalR
             _eventService.NotifyDocumentChanged(document.CourseCode);
         }
 
@@ -269,7 +308,7 @@ namespace RAGChatBot.Application.Services
                 FileSize = doc.FileSize,
                 UploadedAt = doc.UploadedAt,
                 UploadedBy = doc.UploadedBy,
-                IsProcessed = doc.IsProcessed,
+                Status = doc.Status,
                 IsApproved = doc.IsApproved
             };
         }

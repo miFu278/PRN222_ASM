@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RAGChatBot.Application.Common.Interfaces;
+using RAGChatBot.Domain.Enums;
 using RAGChatBot.Domain.Models;
 using RAGChatBot.Infrastructure.Persistence;
 using System;
@@ -56,7 +57,7 @@ namespace RAGChatBot.Infrastructure.Storage
 
             // 1. Quét tìm tài liệu chưa được xử lý VÀ đã được phê duyệt
             var document = dbContext.KnowledgeDocuments
-                .Where(d => !d.IsProcessed && d.IsApproved)
+                .Where(d => d.Status == DocumentStatus.Pending && d.IsApproved)
                 .OrderBy(d => d.UploadedAt)
                 .FirstOrDefault();
 
@@ -69,6 +70,10 @@ namespace RAGChatBot.Infrastructure.Storage
 
             try
             {
+                // Cập nhật trạng thái sang Processing
+                document.Status = DocumentStatus.Processing;
+                await dbContext.SaveChangesAsync(stoppingToken);
+
                 var textExtractor = scope.ServiceProvider.GetRequiredService<ITextExtractor>();
                 var chunkingService = scope.ServiceProvider.GetRequiredService<IChunkingService>();
                 var embeddingService = scope.ServiceProvider.GetRequiredService<IEmbeddingService>();
@@ -84,7 +89,7 @@ namespace RAGChatBot.Infrastructure.Storage
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Không thể tải tệp tin từ Storage Path: {Path}", document.StoragePath);
-                    throw; // Rethrow để trigger khối catch bên dưới hoàn tác IsProcessed
+                    throw; // Rethrow để khối catch bên dưới cập nhật trạng thái Failed
                 }
 
                 using var memoryStream = new MemoryStream(fileBytes);
@@ -137,20 +142,20 @@ namespace RAGChatBot.Infrastructure.Storage
                 }
 
                 // 6. Cập nhật trạng thái hoàn thành
+                document.Status = DocumentStatus.Success;
                 await dbContext.SaveChangesAsync(stoppingToken);
                 _logger.LogInformation("Đã xử lý xong tài liệu: '{FileName}'", document.FileName);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi xảy ra trong quá trình xử lý tài liệu '{FileName}'", document.FileName);
-                // Đánh dấu true để tránh loop kẹt, hoặc có thể lưu log lỗi riêng. 
-                // Ở đây ta đánh dấu true để hệ thống tiếp tục chạy các tài liệu khác.
-                document.IsProcessed = true;
+                // Đánh dấu Failed để tránh loop kẹt và cho phép Retry
+                document.Status = DocumentStatus.Failed;
                 await dbContext.SaveChangesAsync(stoppingToken);
             }
             finally
             {
-                if (document.IsProcessed)
+                if (document.Status == DocumentStatus.Success || document.Status == DocumentStatus.Failed)
                 {
                     var eventService = scope.ServiceProvider.GetService<IDocumentEventService>();
                     eventService?.NotifyDocumentChanged(document.CourseCode);

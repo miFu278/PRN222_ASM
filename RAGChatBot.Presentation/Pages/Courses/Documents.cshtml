@@ -119,15 +119,23 @@
                                 <div class="doc-card-actions">
                                     <!-- Trạng thái -->
                                     <div class="d-flex gap-2 align-items-center flex-wrap">
-                                        <div class="status-cell" data-id="@doc.Id" data-processed="@doc.IsProcessed.ToString().ToLower()">
+                                        <div class="status-cell" data-id="@doc.Id" data-status="@doc.Status.ToString().ToLower()">
                                             <span class="processing-status">
-                                                @if (doc.IsProcessed)
+                                                @if (doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Success)
                                                 {
                                                     <span class="status-badge status-processed">Vectorized</span>
                                                 }
+                                                else if (doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Failed)
+                                                {
+                                                    <span class="status-badge status-failed" style="background: #dc3545; color: white;">Failed</span>
+                                                }
+                                                else if (doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Processing)
+                                                {
+                                                    <span class="status-badge status-processing" style="background: #17a2b8; color: white;">Processing...</span>
+                                                }
                                                 else
                                                 {
-                                                    <span class="status-badge status-pending">Processing...</span>
+                                                    <span class="status-badge status-pending">Pending...</span>
                                                 }
                                             </span>
                                         </div>
@@ -143,9 +151,19 @@
 
                                     <!-- Nút hành động -->
                                     <div class="d-flex gap-3 align-items-center">
-                                        <button type="button" class="zen-action-link btn-view-chunks" data-id="@doc.Id" title="Xem chunks" style="@(doc.IsProcessed ? "" : "display: none !important;")">
+                                        <button type="button" class="zen-action-link btn-view-chunks" data-id="@doc.Id" title="Xem chunks" style="@(doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Success ? "" : "display: none !important;")">
                                             <i class="fa-solid fa-eye"></i>
                                         </button>
+
+                                        @if (doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Failed && (Model.CanApprove || doc.UploadedBy == Model.CurrentUserId))
+                                        {
+                                            <form method="post" asp-page-handler="Retry" class="d-inline">
+                                                <input type="hidden" name="documentId" value="@doc.Id" />
+                                                <button type="submit" class="zen-action-link" style="color: #007bff; background: none; border: none; padding: 0;" title="Thử lại">
+                                                    <i class="fa-solid fa-rotate-right"></i>
+                                                </button>
+                                            </form>
+                                        }
 
                                         @if (!doc.IsApproved && Model.CanApprove)
                                         {
@@ -312,17 +330,34 @@
                             return;
                         }
 
-                        // Nếu chỉ là update trạng thái Processed (Chunk xong) -> Cập nhật DOM trực tiếp để không mất trạng thái xem chunks
+                        // Nếu chỉ là update trạng thái -> Cập nhật DOM trực tiếp để không mất trạng thái xem chunks
+                        // Nếu có liên quan đến Retry button (từ Failed sang Pending hoặc ngược lại), thì cờ needHtmlReload đã tự được set true ở trên nếu ta check thêm, 
+                        // Nhưng để đơn giản, chỉ cần DOM có sẵn ta cập nhật HTML badge. Nút xem chunks được toggle.
                         data.forEach(item => {
                             var cell = document.querySelector(`.status-cell[data-id="${item.id}"]`);
                             if (cell) {
-                                if (cell.getAttribute('data-processed') === 'false' && item.isProcessed) {
-                                    cell.setAttribute('data-processed', 'true');
-                                    var processingStatusHtml = '<span class="status-badge status-processed">Vectorized</span>';
-                                    cell.querySelector('.processing-status').innerHTML = processingStatusHtml;
+                                var oldStatus = cell.getAttribute('data-status');
+                                if (oldStatus !== item.status) {
+                                    // Nếu trạng thái cũ hoặc mới là failed -> cần reload để update nút Retry
+                                    if (oldStatus === 'failed' || item.status === 'failed') {
+                                        window.location.reload();
+                                        return;
+                                    }
 
-                                    var chunkBtn = document.querySelector(`.btn-view-chunks[data-id="${item.id}"]`);
-                                    if (chunkBtn) chunkBtn.style.setProperty('display', 'inline-block', 'important');
+                                    cell.setAttribute('data-status', item.status);
+                                    var processingStatusHtml = '';
+                                    if (item.status === 'success') {
+                                        processingStatusHtml = '<span class="status-badge status-processed">Vectorized</span>';
+                                        var chunkBtn = document.querySelector(`.btn-view-chunks[data-id="${item.id}"]`);
+                                        if (chunkBtn) chunkBtn.style.setProperty('display', 'inline-block', 'important');
+                                    } else if (item.status === 'failed') {
+                                        processingStatusHtml = '<span class="status-badge status-failed" style="background: #dc3545; color: white;">Failed</span>';
+                                    } else if (item.status === 'processing') {
+                                        processingStatusHtml = '<span class="status-badge status-processing" style="background: #17a2b8; color: white;">Processing...</span>';
+                                    } else {
+                                        processingStatusHtml = '<span class="status-badge status-pending">Pending...</span>';
+                                    }
+                                    cell.querySelector('.processing-status').innerHTML = processingStatusHtml;
                                 }
                             }
                         });

@@ -123,13 +123,28 @@ namespace RAGChatBot.Presentation.Pages.Courses
             return RedirectToPage(new { CourseCode });
         }
 
+        public async Task<IActionResult> OnPostRetryAsync(Guid documentId)
+        {
+            await LoadCourseDetails();
+            try
+            {
+                await _documentService.RetryDocumentAsync(documentId, CurrentUserId);
+                TempData["SuccessMessage"] = "Đã yêu cầu thử lại tài liệu.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Lỗi: {ex.Message}";
+            }
+            return RedirectToPage(new { CourseCode });
+        }
+
         public async Task<IActionResult> OnGetStatusAsync()
         {
             var documents = await _documentService.GetDocumentsByCourseAsync(CourseCode);
             var statusList = documents.Select(d => new
             {
                 id = d.Id,
-                isProcessed = d.IsProcessed,
+                status = d.Status.ToString().ToLower(),
                 isApproved = d.IsApproved
             });
             return new JsonResult(statusList);
