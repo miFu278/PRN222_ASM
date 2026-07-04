@@ -2,12 +2,11 @@
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using RAGChatBot.Infrastructure.Interfaces;
-using RAGChatBot.Application.Services;
-using RAGChatBot.Infrastructure.Persistence;
-using RAGChatBot.Infrastructure.Persistence.Repositories;
-using RAGChatBot.Infrastructure.Security;
-using RAGChatBot.Infrastructure.Storage;
-using RAGChatBot.Infrastructure.Email;
+using RAGChatBot.Application.ServiceInterfaces;
+using RAGChatBot.Application.BusinessComponents;
+using RAGChatBot.Infrastructure.DataAccess;
+using RAGChatBot.Infrastructure.DataAccess.Repositories;
+using RAGChatBot.Infrastructure.ServiceAgents;
 using RAGChatBot.Infrastructure.Models;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
