@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace RAGChatBot.Presentation.Services
 {
-    public class DocumentEventService : RAGChatBot.Application.Common.Interfaces.IDocumentEventService
+    public class DocumentEventService : RAGChatBot.Infrastructure.Interfaces.IDocumentEventService
     {
         private readonly IHubContext<DocumentHub> _hubContext;
         

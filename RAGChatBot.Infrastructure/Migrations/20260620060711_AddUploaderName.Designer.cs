@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
-using RAGChatBot.Infrastructure.Persistence;
+using RAGChatBot.Infrastructure.DataAccess;
 
 #nullable disable
 

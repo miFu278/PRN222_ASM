@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using RAGChatBot.Application.Services;
+using RAGChatBot.Application.ServiceInterfaces;
 using System;
 using System.Linq;
 using System.Security.Claims;

@@ -1,0 +1,17 @@
+﻿using RAGChatBot.Application.BusinessEntities;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+
+namespace RAGChatBot.Application.ServiceInterfaces
+{
+    public interface IWhitelistService
+    {
+        Task<bool> IsEmailWhitelistedAsync(string email);
+        Task<IEnumerable<WhitelistEmailDto>> GetAllAsync();
+        Task AddAsync(string email, string? fullName, string? studentId);
+        Task DeleteAsync(Guid id);
+        Task<int> ImportFromExcelAsync(Stream excelStream);
+    }
+}

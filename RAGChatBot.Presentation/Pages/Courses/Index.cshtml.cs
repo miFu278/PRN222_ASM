@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using RAGChatBot.Application.Common.Interfaces;
-using RAGChatBot.Application.Services;
-using RAGChatBot.Application.DTOs;
+using RAGChatBot.Infrastructure.Interfaces;
+using RAGChatBot.Application.ServiceInterfaces;
+using RAGChatBot.Application.BusinessEntities;
 using System.Security.Claims;
 
 namespace RAGChatBot.Presentation.Pages.Courses

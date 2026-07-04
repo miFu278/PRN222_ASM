@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RAGChatBot.Domain\RAGChatBot.Domain.csproj" />
+    <ProjectReference Include="..\RAGChatBot.Infrastructure\RAGChatBot.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

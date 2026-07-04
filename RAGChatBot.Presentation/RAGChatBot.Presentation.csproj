@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
-    <ProjectReference Include="..\RAGChatBot.Domain\RAGChatBot.Domain.csproj" />
     <ProjectReference Include="..\RAGChatBot.Application\RAGChatBot.Application.csproj" />
-    <ProjectReference Include="..\RAGChatBot.Infrastructure\RAGChatBot.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
