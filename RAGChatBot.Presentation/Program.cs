@@ -1,13 +1,12 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using RAGChatBot.Infrastructure.Interfaces;
-using RAGChatBot.Application.ServiceInterfaces;
-using RAGChatBot.Application.BusinessComponents;
-using RAGChatBot.Infrastructure.DataAccess;
-using RAGChatBot.Infrastructure.DataAccess.Repositories;
-using RAGChatBot.Infrastructure.ServiceAgents;
-using RAGChatBot.Infrastructure.Models;
+using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.BLL.Services;
+using RAGChatBot.DAL.Context;
+using RAGChatBot.DAL.Repositories;
+using RAGChatBot.DAL.Services;
+using RAGChatBot.DAL.Entities;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 
@@ -95,8 +94,8 @@ builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 
 // Ä ăng ký Event Service cho Real-time UI updates
-builder.Services.AddSingleton<RAGChatBot.Infrastructure.Interfaces.IDocumentEventService, DocumentEventService>();
-builder.Services.AddSingleton<DocumentEventService>(sp => (DocumentEventService)sp.GetRequiredService<RAGChatBot.Infrastructure.Interfaces.IDocumentEventService>());
+builder.Services.AddSingleton<RAGChatBot.DAL.Interfaces.IDocumentEventService, DocumentEventService>();
+builder.Services.AddSingleton<DocumentEventService>(sp => (DocumentEventService)sp.GetRequiredService<RAGChatBot.DAL.Interfaces.IDocumentEventService>());
 
 builder.Services.AddSignalR();
 

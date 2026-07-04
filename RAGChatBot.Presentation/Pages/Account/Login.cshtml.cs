@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using RAGChatBot.Application.BusinessEntities;
-using RAGChatBot.Application.ServiceInterfaces;
+using RAGChatBot.BLL.DTOs;
+using RAGChatBot.BLL.Services;
 using System.Security.Claims;
 
 namespace RAGChatBot.Presentation.Pages.Account

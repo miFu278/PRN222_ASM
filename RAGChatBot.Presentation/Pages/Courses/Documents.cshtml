@@ -121,15 +121,15 @@
                                     <div class="d-flex gap-2 align-items-center flex-wrap">
                                         <div class="status-cell" data-id="@doc.Id" data-status="@doc.Status.ToString().ToLower()">
                                             <span class="processing-status">
-                                                @if (doc.Status == RAGChatBot.Infrastructure.Enums.DocumentStatus.Success)
+                                                @if (doc.Status == RAGChatBot.DAL.Enums.DocumentStatus.Success)
                                                 {
                                                     <span class="status-badge status-processed">Vectorized</span>
                                                 }
-                                                else if (doc.Status == RAGChatBot.Infrastructure.Enums.DocumentStatus.Failed)
+                                                else if (doc.Status == RAGChatBot.DAL.Enums.DocumentStatus.Failed)
                                                 {
                                                     <span class="status-badge status-failed" style="background: #dc3545; color: white;">Failed</span>
                                                 }
-                                                else if (doc.Status == RAGChatBot.Infrastructure.Enums.DocumentStatus.Processing)
+                                                else if (doc.Status == RAGChatBot.DAL.Enums.DocumentStatus.Processing)
                                                 {
                                                     <span class="status-badge status-processing" style="background: #17a2b8; color: white;">Processing...</span>
                                                 }
@@ -151,11 +151,11 @@
 
                                     <!-- Nút hành động -->
                                     <div class="d-flex gap-3 align-items-center">
-                                        <button type="button" class="zen-action-link btn-view-chunks" data-id="@doc.Id" title="Xem chunks" style="@(doc.Status == RAGChatBot.Infrastructure.Enums.DocumentStatus.Success ? "" : "display: none !important;")">
+                                        <button type="button" class="zen-action-link btn-view-chunks" data-id="@doc.Id" title="Xem chunks" style="@(doc.Status == RAGChatBot.DAL.Enums.DocumentStatus.Success ? "" : "display: none !important;")">
                                             <i class="fa-solid fa-eye"></i>
                                         </button>
 
-                                        @if (doc.Status == RAGChatBot.Infrastructure.Enums.DocumentStatus.Failed && (Model.CanApprove || doc.UploadedBy == Model.CurrentUserId))
+                                        @if (doc.Status == RAGChatBot.DAL.Enums.DocumentStatus.Failed && (Model.CanApprove || doc.UploadedBy == Model.CurrentUserId))
                                         {
                                             <form method="post" asp-page-handler="Retry" class="d-inline">
                                                 <input type="hidden" name="documentId" value="@doc.Id" />

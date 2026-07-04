@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using RAGChatBot.Application.ServiceInterfaces;
+using RAGChatBot.BLL.Services;
 using System.Security.Claims;
 
 namespace RAGChatBot.Presentation.Pages.Subscription
