@@ -15,6 +15,7 @@ namespace RAGChatBot.DAL.Context
         public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
         public DbSet<WhitelistEmail> WhitelistEmails => Set<WhitelistEmail>();
         public DbSet<PerformanceBenchmark> PerformanceBenchmarks => Set<PerformanceBenchmark>();
+        public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
