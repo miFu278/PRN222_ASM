@@ -14,6 +14,7 @@ namespace RAGChatBot.DAL.Context
         public DbSet<Course> Courses => Set<Course>();
         public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
         public DbSet<WhitelistEmail> WhitelistEmails => Set<WhitelistEmail>();
+        public DbSet<PerformanceBenchmark> PerformanceBenchmarks => Set<PerformanceBenchmark>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
