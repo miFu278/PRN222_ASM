@@ -1,9 +1,6 @@
-using RAGChatBot.Domain.Models;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using RAGChatBot.Infrastructure.Models;
 
-namespace RAGChatBot.Application.Common.Interfaces
+namespace RAGChatBot.Infrastructure.Interfaces
 {
     public interface IUserRepository
     {

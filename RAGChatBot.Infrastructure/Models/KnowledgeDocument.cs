@@ -1,6 +1,7 @@
-namespace RAGChatBot.Domain.Models
+using RAGChatBot.Infrastructure.Enums;
+
+namespace RAGChatBot.Infrastructure.Models
 {
-    using Enums;
     public class KnowledgeDocument
     {
         public Guid Id { get; set; }

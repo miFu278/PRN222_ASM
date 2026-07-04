@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using RAGChatBot.Domain.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using RAGChatBot.Infrastructure.Models;
 
 namespace RAGChatBot.Infrastructure.Persistence
 {

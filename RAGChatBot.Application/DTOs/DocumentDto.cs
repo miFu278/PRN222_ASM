@@ -1,6 +1,6 @@
-using System;
+﻿using System;
 
-using RAGChatBot.Domain.Enums;
+using RAGChatBot.Infrastructure.Enums;
 
 namespace RAGChatBot.Application.DTOs
 {

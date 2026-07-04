@@ -1,4 +1,4 @@
-using RAGChatBot.Application.Common.Interfaces;
+﻿using RAGChatBot.Infrastructure.Interfaces;
 
 namespace RAGChatBot.Infrastructure.Security
 {

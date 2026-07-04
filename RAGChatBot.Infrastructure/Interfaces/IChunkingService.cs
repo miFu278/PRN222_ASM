@@ -1,6 +1,4 @@
-using System.Collections.Generic;
-
-namespace RAGChatBot.Application.Common.Interfaces
+namespace RAGChatBot.Infrastructure.Interfaces
 {
     public interface IChunkingService
     {

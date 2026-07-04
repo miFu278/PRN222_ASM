@@ -1,6 +1,4 @@
-using System;
-
-namespace RAGChatBot.Domain.Models
+namespace RAGChatBot.Infrastructure.Models
 {
     public class WhitelistEmail
     {

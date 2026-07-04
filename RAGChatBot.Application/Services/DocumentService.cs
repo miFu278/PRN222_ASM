@@ -1,7 +1,7 @@
-using RAGChatBot.Application.Common.Interfaces;
+﻿using RAGChatBot.Infrastructure.Interfaces;
 using RAGChatBot.Application.DTOs;
-using RAGChatBot.Domain.Enums;
-using RAGChatBot.Domain.Models;
+using RAGChatBot.Infrastructure.Enums;
+using RAGChatBot.Infrastructure.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;

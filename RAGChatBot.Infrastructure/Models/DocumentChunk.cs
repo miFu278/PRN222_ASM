@@ -1,6 +1,4 @@
-using System;
-
-namespace RAGChatBot.Domain.Models
+namespace RAGChatBot.Infrastructure.Models
 {
     public class DocumentChunk
     {
@@ -9,7 +7,7 @@ namespace RAGChatBot.Domain.Models
         public KnowledgeDocument Document { get; set; } = null!;
         public string Content { get; set; } = string.Empty;
         public int ChunkIndex { get; set; }
-        
+
         // Kiểu dữ liệu Vector của pgvector (sẽ sử dụng lớp Vector của thư viện Pgvector)
         public Pgvector.Vector? Embedding { get; set; }
     }

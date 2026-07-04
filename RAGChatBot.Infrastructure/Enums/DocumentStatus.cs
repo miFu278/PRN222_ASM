@@ -1,4 +1,4 @@
-namespace RAGChatBot.Domain.Enums
+namespace RAGChatBot.Infrastructure.Enums
 {
     public enum DocumentStatus
     {

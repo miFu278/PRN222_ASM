@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using RAGChatBot.Application.Common.Interfaces;
+using RAGChatBot.Infrastructure.Interfaces;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;

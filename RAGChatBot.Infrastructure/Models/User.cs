@@ -1,4 +1,4 @@
-namespace RAGChatBot.Domain.Models
+namespace RAGChatBot.Infrastructure.Models
 {
     public class User
     {
@@ -10,4 +10,3 @@ namespace RAGChatBot.Domain.Models
         public string FullName { get; set; } = string.Empty;
     }
 }
-

@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-using RAGChatBot.Application.Common.Interfaces;
-using RAGChatBot.Domain.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using RAGChatBot.Infrastructure.Interfaces;
+using RAGChatBot.Infrastructure.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

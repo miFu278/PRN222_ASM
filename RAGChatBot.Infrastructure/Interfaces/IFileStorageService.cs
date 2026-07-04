@@ -1,7 +1,4 @@
-using System.IO;
-using System.Threading.Tasks;
-
-namespace RAGChatBot.Application.Common.Interfaces
+namespace RAGChatBot.Infrastructure.Interfaces
 {
     public interface IFileStorageService
     {
