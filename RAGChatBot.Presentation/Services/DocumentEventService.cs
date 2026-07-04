@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using RAGChatBot.Presentation.Hubs;
 using System;
 using System.Threading.Tasks;
 
 namespace RAGChatBot.Presentation.Services
 {
-    public class DocumentEventService : RAGChatBot.Infrastructure.Interfaces.IDocumentEventService
+    public class DocumentEventService : RAGChatBot.DAL.Interfaces.IDocumentEventService
     {
         private readonly IHubContext<DocumentHub> _hubContext;
         

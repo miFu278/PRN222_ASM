@@ -8,9 +8,8 @@ WORKDIR /src
 
 # Copy toàn bộ solution và các project files để restore (Tận dụng cache của Docker)
 COPY ["RAGChatBot.Presentation/RAGChatBot.Presentation.csproj", "RAGChatBot.Presentation/"]
-COPY ["RAGChatBot.Application/RAGChatBot.Application.csproj", "RAGChatBot.Application/"]
-COPY ["RAGChatBot.Domain/RAGChatBot.Domain.csproj", "RAGChatBot.Domain/"]
-COPY ["RAGChatBot.Infrastructure/RAGChatBot.Infrastructure.csproj", "RAGChatBot.Infrastructure/"]
+COPY ["RAGChatBot.BLL/RAGChatBot.BLL.csproj", "RAGChatBot.BLL/"]
+COPY ["RAGChatBot.DAL/RAGChatBot.DAL.csproj", "RAGChatBot.DAL/"]
 
 RUN dotnet restore "RAGChatBot.Presentation/RAGChatBot.Presentation.csproj"
 

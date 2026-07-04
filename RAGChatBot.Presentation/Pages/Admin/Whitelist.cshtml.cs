@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using RAGChatBot.Application.BusinessEntities;
-using RAGChatBot.Application.ServiceInterfaces;
+using RAGChatBot.BLL.DTOs;
+using RAGChatBot.BLL.Services;
 
 namespace RAGChatBot.Presentation.Pages.Admin
 {
