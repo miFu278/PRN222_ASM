@@ -60,6 +60,21 @@ namespace RAGChatBot.DAL.Context
                       .HasForeignKey(e => e.DocumentId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
+            modelBuilder.Entity<PerformanceBenchmark>(entity =>
+{
+    entity.HasKey(e => e.Id);
+    entity.HasIndex(e => e.OperationType);
+    entity.HasIndex(e => e.MeasuredAt);
+});
+
+modelBuilder.Entity<ChatSession>(entity =>
+{
+    entity.HasKey(e => e.Id);
+    entity.HasIndex(e => e.UserId);
+    entity.HasIndex(e => e.CreatedAt);
+});
+
         }
     }
 }
