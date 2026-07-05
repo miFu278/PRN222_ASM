@@ -1,37 +1,20 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RAGChatBot.BLL.Services;
-using System;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace RAGChatBot.Presentation.Pages.Subscription
 {
     [Authorize]
     public class CheckoutModel : PageModel
     {
-        private readonly IAuthService _authService;
+        private readonly IVnPayService _vnPayService;
 
-        public CheckoutModel(IAuthService authService)
+        public CheckoutModel(IVnPayService vnPayService)
         {
-            _authService = authService;
+            _vnPayService = vnPayService;
         }
-
-        [BindProperty]
-        public string CardHolderName { get; set; } = string.Empty;
-
-        [BindProperty]
-        public string CardNumber { get; set; } = string.Empty;
-
-        [BindProperty]
-        public string ExpiryDate { get; set; } = string.Empty;
-
-        [BindProperty]
-        public string Cvv { get; set; } = string.Empty;
 
         public string? ErrorMessage { get; set; }
 
@@ -46,7 +29,7 @@ namespace RAGChatBot.Presentation.Pages.Subscription
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        public IActionResult OnPost()
         {
             var userTier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
             if (userTier == "Premium")
@@ -61,38 +44,10 @@ namespace RAGChatBot.Presentation.Pages.Subscription
                 return Page();
             }
 
-            // Nghiệp vụ nâng cấp gói cước
-            var success = await _authService.UpgradeToPremiumAsync(userId);
-            if (!success)
-            {
-                ErrorMessage = "Có lỗi xảy ra trong quá trình xử lý nâng cấp gói cước.";
-                return Page();
-            }
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "127.0.0.1";
+            var paymentUrl = _vnPayService.CreatePaymentUrl(userId, ipAddress);
 
-            // Cập nhật lại Claims trong Cookie
-            var currentClaims = User.Claims.ToList();
-            var tierClaim = currentClaims.FirstOrDefault(c => c.Type == "SubscriptionTier");
-            if (tierClaim != null)
-            {
-                currentClaims.Remove(tierClaim);
-            }
-            currentClaims.Add(new Claim("SubscriptionTier", "Premium"));
-
-            var claimsIdentity = new ClaimsIdentity(currentClaims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2)
-            };
-
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme, 
-                new ClaimsPrincipal(claimsIdentity), 
-                authProperties
-            );
-
-            TempData["SuccessMessage"] = "Chúc mừng! Bạn đã nâng cấp thành công lên gói Premium (Hạn mức 50MB/file).";
-            return RedirectToPage("/Subscription/Index");
+            return Redirect(paymentUrl);
         }
     }
 }

@@ -2,8 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
 using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.BLL.Services;
+using RAGChatBot.DAL.Entities;
 
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace RAGChatBot.Presentation.Pages
 {
@@ -13,11 +16,19 @@ namespace RAGChatBot.Presentation.Pages
     public class ChatApiModel : PageModel
     {
         private readonly IChatService _chatService;
+        private readonly ICreditService _creditService;
+        private readonly IChatTrackerLogRepository _chatLogRepository;
         private readonly ILogger<ChatApiModel> _logger;
 
-        public ChatApiModel(IChatService chatService, ILogger<ChatApiModel> logger)
+        public ChatApiModel(
+            IChatService chatService,
+            ICreditService creditService,
+            IChatTrackerLogRepository chatLogRepository,
+            ILogger<ChatApiModel> logger)
         {
             _chatService = chatService;
+            _creditService = creditService;
+            _chatLogRepository = chatLogRepository;
             _logger = logger;
         }
 
@@ -28,10 +39,43 @@ namespace RAGChatBot.Presentation.Pages
                 return new JsonResult(new { reply = "Vui lòng nhập câu hỏi." });
             }
 
+            // Lấy userId từ claims
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdStr, out var userId))
+            {
+                return new JsonResult(new { reply = "Phiên đăng nhập không hợp lệ." }) { StatusCode = 401 };
+            }
+
+            // Kiểm tra và khấu trừ credit
+            var (allowed, remaining) = await _creditService.CheckAndDeductCreditAsync(userId);
+            if (!allowed)
+            {
+                return new JsonResult(new
+                {
+                    reply = "Bạn đã hết lượt hỏi miễn phí hôm nay (10 lượt/ngày). Nâng cấp Premium để chat không giới hạn!",
+                    outOfCredits = true,
+                    remaining = 0
+                });
+            }
+
             try
             {
                 var reply = await _chatService.GetChatResponseAsync(request.Message, request.CourseCode);
-                return new JsonResult(new { reply });
+
+                // Ghi log vào ChatTrackerLogs
+                var log = new ChatTrackerLog
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    Question = request.Message,
+                    Answer = reply.Length > 2000 ? reply[..2000] : reply, // Giới hạn log answer
+                    CourseCode = request.CourseCode,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _chatLogRepository.AddAsync(log);
+                await _chatLogRepository.SaveChangesAsync();
+
+                return new JsonResult(new { reply, remaining });
             }
             catch (Exception ex)
             {

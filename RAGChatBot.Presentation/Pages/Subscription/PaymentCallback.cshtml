@@ -1,0 +1,87 @@
+@page "/Subscription/PaymentCallback"
+@model RAGChatBot.Presentation.Pages.Subscription.PaymentCallbackModel
+@{
+    ViewData["Title"] = Model.IsSuccess ? "Thanh Toán Thành Công" : "Thanh Toán Thất Bại";
+}
+
+<div class="zen-container">
+    <div class="zen-hero" style="min-height: auto; margin-bottom: 60px;">
+        <div class="zen-hero-title gsap-fade-up">
+            @if (Model.IsSuccess)
+            {
+                <span class="text-accent">悟 HOÀN TẤT</span>
+                <h1>Thanh Toán <i>Thành Công</i>!</h1>
+            }
+            else
+            {
+                <span class="text-accent" style="color: var(--accent-shu);">悟 LỖI GIAO DỊCH</span>
+                <h1>Thanh Toán <i>Thất Bại</i></h1>
+            }
+        </div>
+    </div>
+
+    <div class="gsap-fade-up" style="border-top: 1px solid var(--border-light); padding-top: 40px; max-width: 600px; margin: 0 auto;">
+        @if (Model.IsSuccess)
+        {
+            <div style="text-align: center; margin-bottom: 40px;">
+                <div style="width: 80px; height: 80px; border-radius: 50%; background: #10b981; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                    <i class="fa-solid fa-check" style="font-size: 2rem; color: white;"></i>
+                </div>
+                <div style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 12px; color: #059669;">
+                    Chúc mừng! Bạn đã nâng cấp thành công lên gói Premium.
+                </div>
+                <div style="font-weight: 300; color: var(--text-muted);">
+                    Gói Premium có hiệu lực trong 30 ngày. Bạn có thể chat không giới hạn và upload file lên đến 50MB.
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 40px;">
+                <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-light);">
+                    <span style="font-weight: 300;">Mã giao dịch VNPay</span>
+                    <span style="font-weight: 500;">@Model.TransactionNo</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-light);">
+                    <span style="font-weight: 300;">Số tiền</span>
+                    <span style="font-weight: 500;">@Model.Amount.ToString("N0")đ</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div style="text-align: center; margin-bottom: 40px;">
+                <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--accent-shu); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                    <i class="fa-solid fa-xmark" style="font-size: 2rem; color: white;"></i>
+                </div>
+                <div style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 12px; color: var(--accent-shu);">
+                    @Model.Message
+                </div>
+                <div style="font-weight: 300; color: var(--text-muted);">
+                    Bạn có thể thử lại hoặc liên hệ hỗ trợ nếu cần giúp đỡ.
+                </div>
+            </div>
+        }
+
+        <div class="d-flex gap-3 justify-content-center">
+            <a href="/" class="btn-zen magnetic-btn" style="padding: 14px 28px;">
+                <i class="fa-solid fa-home me-2"></i> Trang chủ
+            </a>
+            @if (!Model.IsSuccess)
+            {
+                <a href="/Subscription/Checkout" class="btn-zen primary magnetic-btn" style="padding: 14px 28px;">
+                    <i class="fa-solid fa-rotate-right me-2"></i> Thử lại
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.zenInteract !== 'undefined') {
+                window.zenInteract.initPageReveal();
+                window.zenInteract.initMagneticButtons();
+            }
+        });
+    </script>
+}

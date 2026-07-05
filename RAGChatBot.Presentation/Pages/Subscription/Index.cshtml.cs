@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,9 +26,29 @@ namespace RAGChatBot.Presentation.Pages.Subscription
 
         public string CurrentTier { get; set; } = "Free";
 
-        public void OnGet()
+        public async Task OnGetAsync()
         {
-            CurrentTier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(userIdStr, out var userId))
+            {
+                var userDto = await _authService.GetUserByIdAsync(userId);
+                if (userDto != null)
+                {
+                    // Kiểm tra hết hạn gói Premium
+                    if (userDto.SubscriptionTier == "Premium" &&
+                        userDto.SubscriptionExpiresAt.HasValue &&
+                        userDto.SubscriptionExpiresAt.Value < DateTime.UtcNow)
+                    {
+                        CurrentTier = "Free";
+                    }
+                    else
+                    {
+                        CurrentTier = userDto.SubscriptionTier;
+                    }
+                    return;
+                }
+            }
+            CurrentTier = User.FindFirst("SubscriptionTier")?.Value ?? "Free"; // fallback
         }
 
         public async Task<IActionResult> OnPostUpgradeAsync()
