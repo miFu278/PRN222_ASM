@@ -14,6 +14,8 @@ namespace RAGChatBot.DAL.Context
         public DbSet<Course> Courses => Set<Course>();
         public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
         public DbSet<WhitelistEmail> WhitelistEmails => Set<WhitelistEmail>();
+        public DbSet<PerformanceBenchmark> PerformanceBenchmarks => Set<PerformanceBenchmark>();
+        public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -58,6 +60,21 @@ namespace RAGChatBot.DAL.Context
                       .HasForeignKey(e => e.DocumentId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
+            modelBuilder.Entity<PerformanceBenchmark>(entity =>
+{
+    entity.HasKey(e => e.Id);
+    entity.HasIndex(e => e.OperationType);
+    entity.HasIndex(e => e.MeasuredAt);
+});
+
+modelBuilder.Entity<ChatSession>(entity =>
+{
+    entity.HasKey(e => e.Id);
+    entity.HasIndex(e => e.UserId);
+    entity.HasIndex(e => e.CreatedAt);
+});
+
         }
     }
 }
