@@ -141,5 +141,69 @@ window.zenInteract = {
         container.id = 'zen-toast-container';
         document.body.appendChild(container);
         return container;
+    },
+
+    initChatDrawer: function () {
+        const toggleBtn = document.querySelector('.zen-drawer-toggle');
+        const closeBtn = document.querySelector('.zen-drawer-close');
+        const drawer = document.querySelector('.zen-chat-drawer');
+        if (!toggleBtn || !drawer) return;
+
+        const toggle = () => {
+            const isActive = drawer.classList.contains('active');
+            if (isActive) {
+                // Đóng drawer bằng GSAP
+                gsap.to(drawer, {
+                    width: 0,
+                    duration: 0.5,
+                    ease: "power3.inOut",
+                    onComplete: () => {
+                        drawer.classList.remove('active');
+                        drawer.style.borderRight = '0px solid var(--border-light)';
+                    }
+                });
+            } else {
+                // Mở drawer bằng GSAP
+                drawer.classList.add('active');
+                drawer.style.borderRight = '1px solid var(--border-light)';
+                gsap.fromTo(drawer, 
+                    { width: 0 },
+                    { width: 320, duration: 0.6, ease: "power3.out" }
+                );
+                // Hoạt ảnh trồi lên tuần tự cho các đoạn chat cũ
+                gsap.fromTo('.zen-thread-item', 
+                    { opacity: 0, x: -20 },
+                    { opacity: 1, x: 0, duration: 0.4, stagger: 0.05, ease: "power2.out", delay: 0.1 }
+                );
+            }
+        };
+
+        toggleBtn.addEventListener('click', toggle);
+        if (closeBtn) {
+            closeBtn.addEventListener('click', toggle);
+        }
+    },
+
+    initWashiSkeleton: function () {
+        const dots = document.querySelectorAll('.washi-ink-dot');
+        if (dots.length === 0) return;
+
+        // Vô hiệu hóa hoạt ảnh nếu prefers-reduced-motion bật
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            gsap.set(dots, { opacity: 0.6 });
+            return;
+        }
+
+        gsap.to(dots, {
+            y: -6,
+            opacity: 1,
+            duration: 0.6,
+            stagger: {
+                each: 0.2,
+                repeat: -1,
+                yoyo: true
+            },
+            ease: "power1.inOut"
+        });
     }
 };

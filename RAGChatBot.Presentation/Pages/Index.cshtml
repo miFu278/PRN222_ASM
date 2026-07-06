@@ -16,37 +16,84 @@
         </div>
     </div>
 
-    <!-- Chat Messages Display -->
-    <div class="zen-chat-messages gsap-fade-up" id="chatMessages" data-lenis-prevent></div>
-
-    <!-- Khu vực nhập liệu Chat -->
-    <div class="zen-input-area gsap-fade-up">
-        <div class="zen-input-wrapper">
-            <div class="flex-grow-1">
-                <input type="text" class="input-zen" placeholder="Hãy đặt câu hỏi về nội dung bài giảng hoặc tài liệu môn học..." id="chatInputField" autocomplete="off" />
+    <!-- Cấu trúc Flexbox ngăn kéo và chat chính -->
+    <div class="zen-chat-layout">
+        <!-- Ngăn kéo Lịch sử (Left Drawer) -->
+        <aside class="zen-chat-drawer gsap-fade-up">
+            <div class="zen-chat-drawer-inner">
+                <div class="zen-drawer-title">
+                    <span>Lịch Sử Chat</span>
+                    <button class="zen-drawer-close" title="Đóng lịch sử"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="zen-threads-list">
+                    <div class="zen-thread-item" data-thread-title="Ôn tập kiến trúc Vector DB">
+                        <span><i class="fa-regular fa-comment thread-icon"></i> Ôn tập kiến trúc Vector DB</span>
+                        <i class="fa-solid fa-angle-right small text-muted"></i>
+                    </div>
+                    <div class="zen-thread-item" data-thread-title="Tìm hiểu về NLP & Transformers">
+                        <span><i class="fa-regular fa-comment thread-icon"></i> Tìm hiểu về NLP & Transformers</span>
+                        <i class="fa-solid fa-angle-right small text-muted"></i>
+                    </div>
+                    <div class="zen-thread-item" data-thread-title="Phân biệt các cấu hình Chunking">
+                        <span><i class="fa-regular fa-comment thread-icon"></i> Phân biệt các cấu hình Chunking</span>
+                        <i class="fa-solid fa-angle-right small text-muted"></i>
+                    </div>
+                </div>
             </div>
-            <button class="zen-send-btn magnetic-btn" id="sendChatBtn" title="Gửi tin nhắn">
-                <i class="fa-solid fa-paper-plane" id="sendIcon"></i>
+        </aside>
+
+        <!-- Khung chat chính (Right Main Area) -->
+        <div class="zen-chat-main-area">
+            <!-- Nút mở Lịch sử -->
+            <button class="zen-drawer-toggle magnetic-btn gsap-fade-up" title="Lịch sử trò chuyện">
+                <i class="fa-solid fa-bars-staggered"></i>
             </button>
-        </div>
-    </div>
 
-    <!-- Gợi ý câu hỏi -->
-    <div class="zen-suggestions gsap-fade-up" id="zenSuggestions">
-        <div class="zen-suggestion-item" data-question="Phân tích kiến trúc hệ thống RAG trong bài giảng">
-            <div>
-                <span class="small text-muted d-block mb-1" style="letter-spacing: 0.1em;">GỢI Ý CÂU HỎI</span>
-                <span class="text-sumi" style="font-size: 1.15rem; font-weight: 500;">Phân tích kiến trúc hệ thống RAG trong bài giảng</span>
-            </div>
-            <i class="fa-solid fa-arrow-right text-sumi"></i>
-        </div>
+            <!-- Chat Messages Display -->
+            <div class="zen-chat-messages gsap-fade-up" id="chatMessages" data-lenis-prevent></div>
 
-        <div class="zen-suggestion-item" data-question="Các phương pháp tối ưu hóa Vector Database">
-            <div>
-                <span class="small text-muted d-block mb-1" style="letter-spacing: 0.1em;">GỢI Ý CÂU HỎI</span>
-                <span class="text-sumi" style="font-size: 1.15rem; font-weight: 500;">Các phương pháp tối ưu hóa Vector Database</span>
+            <!-- Loading Skeleton (Washi Ink dots) ẩn mặc định -->
+            <div class="zen-washi-skeleton" id="washiSkeleton">
+                <div class="washi-ink-dot"></div>
+                <div class="washi-ink-dot"></div>
+                <div class="washi-ink-dot"></div>
             </div>
-            <i class="fa-solid fa-arrow-right text-sumi"></i>
+
+            <!-- Bộ đếm Credit còn lại -->
+            <div class="zen-credit-counter gsap-fade-up">
+                <i class="fa-solid fa-bolt"></i> <span>15 / 20 lượt hỏi còn lại hôm nay</span>
+            </div>
+
+            <!-- Khu vực nhập liệu Chat -->
+            <div class="zen-input-area gsap-fade-up">
+                <div class="zen-input-wrapper">
+                    <div class="flex-grow-1">
+                        <input type="text" class="input-zen" placeholder="Hãy đặt câu hỏi về nội dung bài giảng hoặc tài liệu môn học..." id="chatInputField" autocomplete="off" />
+                    </div>
+                    <button class="zen-send-btn magnetic-btn" id="sendChatBtn" title="Gửi tin nhắn">
+                        <i class="fa-solid fa-paper-plane" id="sendIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Gợi ý câu hỏi -->
+            <div class="zen-suggestions gsap-fade-up" id="zenSuggestions">
+                <div class="zen-suggestion-item" data-question="Phân tích kiến trúc hệ thống RAG trong bài giảng">
+                    <div>
+                        <span class="small text-muted d-block mb-1" style="letter-spacing: 0.1em;">GỢI Ý CÂU HỎI</span>
+                        <span class="text-sumi" style="font-size: 1.15rem; font-weight: 500;">Phân tích kiến trúc hệ thống RAG trong bài giảng</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right text-sumi"></i>
+                </div>
+
+                <div class="zen-suggestion-item" data-question="Các phương pháp tối ưu hóa Vector Database">
+                    <div>
+                        <span class="small text-muted d-block mb-1" style="letter-spacing: 0.1em;">GỢI Ý CÂU HỎI</span>
+                        <span class="text-sumi" style="font-size: 1.15rem; font-weight: 500;">Các phương pháp tối ưu hóa Vector Database</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right text-sumi"></i>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -59,6 +106,7 @@
     const chatMessages = document.getElementById('chatMessages');
     const suggestions = document.getElementById('zenSuggestions');
     const sendIcon = document.getElementById('sendIcon');
+    const washiSkeleton = document.getElementById('washiSkeleton');
     let isLoading = false;
 
     function formatMarkdown(text) {
@@ -91,22 +139,16 @@
     }
 
     function appendTyping() {
-        const div = document.createElement('div');
-        div.className = 'zen-msg zen-msg-bot';
-        div.id = 'typingIndicator';
-
-        const bubble = document.createElement('div');
-        bubble.className = 'zen-msg-bubble zen-typing';
-        bubble.innerHTML = '<span></span><span></span><span></span>';
-
-        div.appendChild(bubble);
-        chatMessages.appendChild(div);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        if (washiSkeleton) {
+            washiSkeleton.style.display = 'flex';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
     }
 
     function removeTyping() {
-        const indicator = document.getElementById('typingIndicator');
-        if (indicator) indicator.remove();
+        if (washiSkeleton) {
+            washiSkeleton.style.display = 'none';
+        }
     }
 
     function setLoading(state) {
@@ -174,10 +216,27 @@
         });
     });
 
-    // Init magnetic buttons
+    // Thread item click interops
+    document.querySelectorAll('.zen-thread-item').forEach(function (item) {
+        item.addEventListener('click', function () {
+            const threadTitle = item.dataset.threadTitle;
+            if (window.zenInteract && window.zenInteract.showToast) {
+                window.zenInteract.showToast("Đang mở: " + threadTitle);
+            }
+            // Mẫu: Xóa tin nhắn cũ và tải tin nhắn lịch sử giả định
+            chatMessages.innerHTML = '';
+            suggestions.style.display = 'none';
+            appendMessage('user', 'Hãy mở lại lịch sử: ' + threadTitle);
+            appendMessage('bot', 'Đã tải thành công phiên thảo luận cũ về "' + threadTitle + '". Bạn có câu hỏi nào thêm không?');
+        });
+    });
+
+    // Initialize interops on load
     document.addEventListener("DOMContentLoaded", function () {
         if (window.zenInteract) {
             window.zenInteract.initMagneticButtons();
+            window.zenInteract.initChatDrawer();
+            window.zenInteract.initWashiSkeleton();
         }
     });
 })();

@@ -695,4 +695,174 @@ a:hover {
         flex-wrap: wrap;
         gap: 12px;
     }
+}
+
+/* --- Phase 1: Core Chatbot UX Redesign (Zen Minimalist Drawer & Skeleton) --- */
+
+.zen-chat-layout {
+    display: flex;
+    width: 100%;
+    min-height: calc(100vh - 220px);
+    position: relative;
+    overflow: hidden;
+    gap: 0;
+}
+
+.zen-chat-drawer {
+    width: 0px;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    border-right: 0px solid var(--border-light);
+    background-color: var(--bg-washi);
+    flex-shrink: 0;
+    transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-right-width 0.4s ease;
+}
+
+.zen-chat-drawer.active {
+    width: 320px;
+    border-right: 1px solid var(--border-light);
+}
+
+.zen-chat-drawer-inner {
+    width: 320px;
+    padding: 20px 20px 20px 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.zen-drawer-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 24px;
+    color: var(--text-sumi);
+    letter-spacing: 0.05em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.zen-drawer-close {
+    font-size: 1.1rem;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    color: var(--text-sumi);
+    opacity: 0.6;
+    transition: opacity 0.3s;
+    padding: 4px;
+}
+
+.zen-drawer-close:hover {
+    opacity: 1;
+    color: var(--accent-shu);
+}
+
+.zen-threads-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    flex-grow: 1;
+    padding-right: 4px;
+}
+
+.zen-thread-item {
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    color: var(--text-sumi);
+    padding: 12px 16px 12px 0;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+    transition: color 0.3s ease, border-bottom-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    word-break: break-word;
+    white-space: normal;
+}
+
+.zen-thread-item:hover {
+    color: var(--accent-shu);
+    border-bottom-color: var(--accent-shu);
+}
+
+.zen-thread-item .thread-icon {
+    font-size: 0.85rem;
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+.zen-chat-main-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding-left: 20px;
+    box-sizing: border-box;
+}
+
+/* Nút Toggle mở Drawer */
+.zen-drawer-toggle {
+    background: transparent;
+    border: 1px solid var(--text-sumi);
+    color: var(--text-sumi);
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    margin-bottom: 24px;
+    border-radius: 0;
+    flex-shrink: 0;
+}
+
+.zen-drawer-toggle:hover {
+    color: var(--bg-washi);
+    background-color: var(--text-sumi);
+}
+
+/* Credit Display */
+.zen-credit-counter {
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 400;
+}
+
+.zen-credit-counter i {
+    color: var(--accent-shu);
+}
+
+/* Washi Ink Skeleton Loading Indicator */
+.zen-washi-skeleton {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    border: 1px solid var(--border-light);
+    border-radius: 20px 20px 20px 4px;
+    background-color: transparent;
+    max-width: 120px;
+    margin-bottom: 16px;
+    justify-content: center;
+}
+
+.washi-ink-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--text-sumi);
+    border-radius: 50%;
+    opacity: 0.3;
 }

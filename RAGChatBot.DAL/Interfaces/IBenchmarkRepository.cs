@@ -1,10 +1,11 @@
+using RAGChatBot.DAL.Entities;
+
 namespace RAGChatBot.DAL.Interfaces
 {
-    public interface IChatSessionRepository
+    public interface IBenchmarkRepository
     {
-        Task<int> CountByMonthAsync(int year, int month);
-        Task<int> CountByQuarterAsync(int year, int quarter);
-        Task<int> CountByYearAsync(int year);
-        Task IncrementAsync(Guid userId, string courseCode);
+        Task AddAsync(PerformanceBenchmark benchmark);
+        Task<List<PerformanceBenchmark>> GetRecentAsync(int count = 100);
+        Task<Dictionary<string, double>> GetAveragesByTypeAsync();
     }
 }
