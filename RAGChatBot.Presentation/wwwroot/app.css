@@ -865,4 +865,23 @@ a:hover {
     background-color: var(--text-sumi);
     border-radius: 50%;
     opacity: 0.3;
-}
+}
+
+/* --- 3D Hover Tilt Effects Extension --- */
+
+.zen-3d-wrapper {
+    perspective: 1000px;
+}
+
+.zen-3d-active {
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
+.zen-scroll-flip {
+    transform-style: preserve-3d;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+}
+
+
