@@ -74,6 +74,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IKnowledgeDocumentRepository, KnowledgeDocumentRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IWhitelistRepository, WhitelistRepository>();
+builder.Services.AddScoped<IChatTrackerLogRepository, ChatTrackerLogRepository>();
+builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
 
 // Ä ăng ký dịch vụ RAG & AI (Tự động Chunking & Vector hóa)
 builder.Services.AddHttpClient();
@@ -82,10 +84,22 @@ builder.Services.AddScoped<ITextExtractor, TextExtractor>();
 builder.Services.AddHttpClient<IEmbeddingService, OpenAiEmbeddingService>();
 builder.Services.AddHttpClient<IChatService, OpenAiChatService>(); // Dịch vụ RAG Chatbot mới cho ASM02
 builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
-builder.Services.AddHostedService<DocumentProcessingWorker>();
 
-// 4. Ä ăng ký Razor Pages
+// Dịch vụ Credit & Thanh toán
+builder.Services.AddScoped<ICreditService, CreditService>();
+builder.Services.AddSingleton<IVnPayService, VnPayService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddHostedService<DocumentProcessingWorker>();
+builder.Services.AddHostedService<DailyCreditResetService>();
+
+// 4. Đăng ký Razor Pages
 builder.Services.AddRazorPages();
+
+// Cấu hình BackgroundService không crash host khi TaskCanceledException xảy ra lúc shutdown
+builder.Services.Configure<HostOptions>(options =>
+{
+    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+});
 
 // Ä ăng ký MVC Controllers (dành cho Authentication login/logout)
 builder.Services.AddControllers();
