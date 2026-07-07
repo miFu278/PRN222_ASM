@@ -84,6 +84,10 @@ builder.Services.AddHttpClient<IChatService, OpenAiChatService>(); // Dịch v�
 builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
 builder.Services.AddHostedService<DocumentProcessingWorker>();
 
+// Dashboard & Benchmark services
+builder.Services.AddScoped<IBenchmarkRepository, BenchmarkRepository>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
 // 4. Ä ăng ký Razor Pages
 builder.Services.AddRazorPages();
 
