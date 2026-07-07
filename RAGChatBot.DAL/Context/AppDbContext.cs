@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RAGChatBot.DAL.Entities;
 
 namespace RAGChatBot.DAL.Context
@@ -16,6 +16,10 @@ namespace RAGChatBot.DAL.Context
         public DbSet<WhitelistEmail> WhitelistEmails => Set<WhitelistEmail>();
         public DbSet<PerformanceBenchmark> PerformanceBenchmarks => Set<PerformanceBenchmark>();
         public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
+        public DbSet<QuestionBank> QuestionBanks => Set<QuestionBank>();
+        public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
+        public DbSet<ChatThread> ChatThreads => Set<ChatThread>();
+        public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -74,6 +78,42 @@ modelBuilder.Entity<ChatSession>(entity =>
     entity.HasIndex(e => e.UserId);
     entity.HasIndex(e => e.CreatedAt);
 });
+
+            modelBuilder.Entity<QuestionBank>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.DocumentId);
+                entity.HasIndex(e => e.CourseCode);
+                entity.HasOne(e => e.Document)
+                      .WithMany()
+                      .HasForeignKey(e => e.DocumentId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<QuizAttempt>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.CourseCode);
+            });
+
+            modelBuilder.Entity<ChatThread>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.CourseCode);
+            });
+
+            modelBuilder.Entity<ChatMessage>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.ThreadId);
+                entity.HasIndex(e => e.SentAt);
+                entity.HasOne(e => e.Thread)
+                      .WithMany(t => t.Messages)
+                      .HasForeignKey(e => e.ThreadId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
 
         }
     }

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RAGChatBot.DAL.Interfaces;
@@ -105,9 +105,9 @@ namespace RAGChatBot.DAL.Services
                     return;
                 }
 
-                // 4. Chia nhỏ văn bản thành các Chunk (mặc định 500 ký tự, overlap 50)
-                _logger.LogInformation("Đang chia nhỏ văn bản (Chunking)...");
-                var textChunks = chunkingService.ChunkText(fullText, chunkSize: 500, overlap: 50);
+                // 4. Chia nhỏ văn bản thành các Chunk sử dụng cấu hình từ database
+                _logger.LogInformation("Đang chia nhỏ văn bản (Chunking) với chiến lược={Strategy}, size={Size}, overlap={Overlap}...", document.ChunkingStrategy, document.ChunkSize, document.Overlap);
+                var textChunks = chunkingService.ChunkText(fullText, document.ChunkingStrategy, document.ChunkSize, document.Overlap);
                 _logger.LogInformation("Tài liệu được chia thành {Count} chunks.", textChunks.Count);
 
                 // 5. Tạo vector nhúng và lưu vào database
@@ -145,6 +145,17 @@ namespace RAGChatBot.DAL.Services
                 document.Status = DocumentStatus.Success;
                 await dbContext.SaveChangesAsync(stoppingToken);
                 _logger.LogInformation("Đã xử lý xong tài liệu: '{FileName}'", document.FileName);
+
+                // Tự động sinh quiz cho tài liệu mới
+                try
+                {
+                    var quizService = scope.ServiceProvider.GetRequiredService<IQuizService>();
+                    await quizService.GenerateQuizForDocumentAsync(document.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi xảy ra khi sinh Quiz tự động cho tài liệu ID={DocId}", document.Id);
+                }
             }
             catch (Exception ex)
             {

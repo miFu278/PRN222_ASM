@@ -1,4 +1,4 @@
-﻿using RAGChatBot.DAL.Enums;
+using RAGChatBot.DAL.Enums;
 
 namespace RAGChatBot.DAL.Entities
 {
@@ -15,6 +15,9 @@ namespace RAGChatBot.DAL.Entities
         public string UploaderName { get; set; } = string.Empty; // Store name so it persists even if user is deleted
         public DocumentStatus Status { get; set; } = DocumentStatus.Pending;
         public bool IsApproved { get; set; } = false; // Mặc định là chưa duyệt
+        public string ChunkingStrategy { get; set; } = "Character"; // Character | Word | Paragraph
+        public int ChunkSize { get; set; } = 500;
+        public int Overlap { get; set; } = 50;
 
         // Liên kết một-nhiều tới các Chunks văn bản đã vector hóa
         public ICollection<DocumentChunk> Chunks { get; set; } = new List<DocumentChunk>();
