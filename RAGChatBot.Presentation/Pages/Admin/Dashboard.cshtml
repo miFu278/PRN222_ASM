@@ -1,0 +1,582 @@
+@page
+@model RAGChatBot.Presentation.Pages.Admin.DashboardModel
+@{
+    ViewData["Title"] = "Dashboard Quản Trị";
+}
+
+@section Styles {
+<style>
+    /* ===== Dashboard Zen Styles ===== */
+    .dash-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 24px;
+        margin-bottom: 40px;
+    }
+
+    .dash-card {
+        padding: 28px 24px;
+        border: 1px solid var(--border-light);
+        position: relative;
+        overflow: hidden;
+        transition: box-shadow 0.4s ease, transform 0.3s ease;
+    }
+
+    .dash-card:hover {
+        box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+        transform: translateY(-2px);
+    }
+
+    .dash-card-label {
+        font-family: var(--font-sans);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+
+    .dash-card-value {
+        font-family: var(--font-serif);
+        font-size: 2.2rem;
+        font-weight: 500;
+        color: var(--text-sumi);
+        line-height: 1.1;
+    }
+
+    .dash-card-icon {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        font-size: 1.4rem;
+        opacity: 0.15;
+        color: var(--text-sumi);
+    }
+
+    /* Section headers */
+    .dash-section-title {
+        font-family: var(--font-serif);
+        font-size: 1.3rem;
+        font-weight: 500;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--text-sumi);
+        letter-spacing: 0.03em;
+    }
+
+    /* Filter bar */
+    .dash-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+    }
+
+    .dash-filter-bar select,
+    .dash-filter-bar input {
+        background: transparent;
+        border: 1px solid var(--border-light);
+        padding: 8px 16px;
+        font-family: var(--font-sans);
+        font-size: 0.9rem;
+        color: var(--text-sumi);
+        min-width: 120px;
+    }
+
+    .dash-filter-bar select:focus,
+    .dash-filter-bar input:focus {
+        outline: none;
+        border-color: var(--text-sumi);
+    }
+
+    /* Chart containers */
+    .chart-container {
+        border: 1px solid var(--border-light);
+        padding: 24px;
+        margin-bottom: 32px;
+        position: relative;
+    }
+
+    .chart-canvas-wrapper {
+        position: relative;
+        height: 320px;
+    }
+
+    /* Git contributors table */
+    .git-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 32px;
+    }
+
+    .git-table th {
+        font-family: var(--font-serif);
+        font-weight: 500;
+        text-align: left;
+        padding: 16px 12px;
+        border-bottom: 1px solid var(--text-sumi);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-sumi);
+    }
+
+    .git-table td {
+        padding: 16px 12px;
+        border-bottom: 1px solid var(--border-light);
+        font-weight: 300;
+        font-size: 0.95rem;
+    }
+
+    .git-table tr:hover {
+        background-color: rgba(0,0,0,0.015);
+    }
+
+    .git-bar {
+        height: 6px;
+        background-color: var(--text-sumi);
+        border-radius: 3px;
+        min-width: 4px;
+        transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .git-bar-added {
+        background-color: #2d6a4f;
+    }
+
+    .git-bar-deleted {
+        background-color: var(--accent-shu);
+    }
+
+    /* Benchmark avg cards */
+    .bench-avg-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .bench-avg-card {
+        border: 1px solid var(--border-light);
+        padding: 20px;
+        text-align: center;
+    }
+
+    .bench-avg-type {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+
+    .bench-avg-value {
+        font-family: var(--font-serif);
+        font-size: 1.8rem;
+        font-weight: 500;
+        color: var(--text-sumi);
+    }
+
+    .bench-avg-unit {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 300;
+    }
+
+    /* Two-column layout */
+    .dash-two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+    }
+
+    @@media (max-width: 768px) {
+        .dash-two-col {
+            grid-template-columns: 1fr;
+        }
+        .dash-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+}
+
+<div style="padding-top: 2rem;">
+    <!-- Page Header -->
+    <div style="margin-bottom: 32px;">
+        <p class="text-accent" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 500; margin-bottom: 8px;">
+            管理 — QUẢN TRỊ
+        </p>
+        <h1 style="font-size: 2.5rem; font-weight: 300; margin-bottom: 8px;">Dashboard</h1>
+        <p class="text-muted" style="font-weight: 300;">Tổng quan hệ thống RAG Chatbot</p>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="dash-filter-bar">
+        <label style="font-size: 0.85rem; font-weight: 400; letter-spacing: 0.05em;">Chu kỳ:</label>
+        <select id="periodFilter">
+            <option value="Month" selected="@(Model.Period == "Month" ? "selected" : null)">Tháng</option>
+            <option value="Quarter" selected="@(Model.Period == "Quarter" ? "selected" : null)">Quý</option>
+            <option value="Year" selected="@(Model.Period == "Year" ? "selected" : null)">Năm</option>
+        </select>
+        <label style="font-size: 0.85rem; font-weight: 400; letter-spacing: 0.05em;">Năm:</label>
+        <input type="number" id="yearFilter" value="@Model.Year" min="2020" max="2030" style="width: 90px;" />
+        <button class="btn-zen" id="applyFilter" style="padding: 8px 20px; font-size: 0.8rem;">
+            Áp dụng
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="dash-grid" id="statsCards">
+        <div class="dash-card">
+            <div class="dash-card-icon"><i class="fas fa-users"></i></div>
+            <div class="dash-card-label">Tổng người dùng</div>
+            <div class="dash-card-value" id="statTotalUsers">@Model.Stats.TotalUsers</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-card-icon"><i class="fas fa-crown"></i></div>
+            <div class="dash-card-label">Người dùng Premium</div>
+            <div class="dash-card-value" id="statPremiumUsers">@Model.Stats.PremiumUsers</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-card-icon"><i class="fas fa-file-alt"></i></div>
+            <div class="dash-card-label">Tài liệu đã xử lý</div>
+            <div class="dash-card-value" id="statTotalDocs">@Model.Stats.TotalDocuments</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-card-icon"><i class="fas fa-comments"></i></div>
+            <div class="dash-card-label">Lượt chat</div>
+            <div class="dash-card-value" id="statTotalChats">@Model.Stats.TotalChatSessions</div>
+        </div>
+    </div>
+
+    <!-- Revenue Chart -->
+    <div>
+        <h2 class="dash-section-title">Doanh thu & Hoạt động</h2>
+        <div class="chart-container">
+            <div class="chart-canvas-wrapper">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Column: Benchmarks -->
+    <div class="dash-two-col">
+        <!-- Benchmark Averages -->
+        <div>
+            <h2 class="dash-section-title">Hiệu năng trung bình</h2>
+            <div class="bench-avg-grid" id="benchAvgGrid">
+                @foreach (var avg in Model.BenchmarkAverages)
+                {
+                    <div class="bench-avg-card">
+                        <div class="bench-avg-type">@avg.OperationType</div>
+                        <div class="bench-avg-value">@avg.AvgMs</div>
+                        <div class="bench-avg-unit">ms</div>
+                    </div>
+                }
+                @if (!Model.BenchmarkAverages.Any())
+                {
+                    <div class="bench-avg-card" style="grid-column: 1 / -1;">
+                        <div class="bench-avg-type">Chưa có dữ liệu</div>
+                        <div class="bench-avg-value" style="font-size: 1rem; font-weight: 300;">
+                            Benchmark sẽ xuất hiện khi xử lý tài liệu
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Benchmark Timeline Chart -->
+        <div>
+            <h2 class="dash-section-title">Biến thiên hiệu năng</h2>
+            <div class="chart-container">
+                <div class="chart-canvas-wrapper">
+                    <canvas id="benchmarkChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Git Contributions -->
+    <div style="margin-top: 8px;">
+        <h2 class="dash-section-title">Đóng góp GitHub</h2>
+        @if (Model.GitContributions.Any())
+        {
+            var maxCommits = Model.GitContributions.Max(c => c.CommitCount);
+            var maxLines = Model.GitContributions.Max(c => c.LinesAdded + c.LinesDeleted);
+            if (maxLines == 0) maxLines = 1;
+
+            <table class="git-table">
+                <thead>
+                    <tr>
+                        <th>Tác giả</th>
+                        <th style="text-align: center;">Commits</th>
+                        <th>Dòng thêm (+)</th>
+                        <th>Dòng xóa (−)</th>
+                        <th>Hoạt động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.GitContributions.OrderByDescending(x => x.CommitCount))
+                    {
+                        var barWidth = maxCommits > 0 ? (int)((double)c.CommitCount / maxCommits * 100) : 0;
+                        <tr>
+                            <td style="font-weight: 400;">@c.Author</td>
+                            <td style="text-align: center; font-family: var(--font-serif); font-weight: 500;">
+                                @c.CommitCount
+                            </td>
+                            <td style="color: #2d6a4f;">+@c.LinesAdded.ToString("N0")</td>
+                            <td style="color: var(--accent-shu);">−@c.LinesDeleted.ToString("N0")</td>
+                            <td style="width: 200px;">
+                                <div class="git-bar git-bar-added" style="width: @(barWidth)%;"></div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="text-muted" style="font-weight: 300;">Không thể lấy dữ liệu Git. Đảm bảo ứng dụng chạy trong thư mục có .git repository.</p>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
+        // ===== Dữ liệu từ server =====
+        @{
+            var jsonOptions = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+        }
+        const revenueData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueChart, jsonOptions));
+        const benchmarkData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RecentBenchmarks, jsonOptions));
+
+        // ===== Chart.js Zen Theme =====
+        const zenColors = {
+            sumi: '#2c2c2c',
+            shu: '#bf2a23',
+            muted: '#737373',
+            border: '#eaeaea',
+            washi: '#fcfbf9',
+            green: '#2d6a4f',
+            blue: '#2563eb',
+            amber: '#d97706',
+            purple: '#7c3aed'
+        };
+
+        const zenFont = { family: "'Noto Sans JP', sans-serif", weight: 300 };
+
+        Chart.defaults.font.family = zenFont.family;
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = zenColors.muted;
+
+        // ===== 1. Revenue Chart (Bar + Line combo) =====
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: revenueData.map(d => d.label),
+                datasets: [
+                    {
+                        label: 'Doanh thu (VNĐ)',
+                        data: revenueData.map(d => d.revenue),
+                        backgroundColor: zenColors.sumi + '18',
+                        borderColor: zenColors.sumi,
+                        borderWidth: 1,
+                        yAxisID: 'y',
+                        order: 2
+                    },
+                    {
+                        label: 'Tài liệu',
+                        data: revenueData.map(d => d.documentCount),
+                        type: 'line',
+                        borderColor: zenColors.shu,
+                        backgroundColor: zenColors.shu + '20',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: zenColors.shu,
+                        tension: 0.3,
+                        fill: true,
+                        yAxisID: 'y1',
+                        order: 1
+                    },
+                    {
+                        label: 'Lượt chat',
+                        data: revenueData.map(d => d.chatCount),
+                        type: 'line',
+                        borderColor: zenColors.green,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: zenColors.green,
+                        borderDash: [4, 4],
+                        tension: 0.3,
+                        yAxisID: 'y1',
+                        order: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: { boxWidth: 12, padding: 20, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        backgroundColor: zenColors.sumi,
+                        titleFont: { weight: 500 },
+                        padding: 12,
+                        cornerRadius: 0,
+                        callbacks: {
+                            label: function(ctx) {
+                                if (ctx.dataset.label.includes('Doanh thu')) {
+                                    return ctx.dataset.label + ': ' +
+                                        new Intl.NumberFormat('vi-VN').format(ctx.raw) + ' ₫';
+                                }
+                                return ctx.dataset.label + ': ' + ctx.raw;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { color: zenColors.border }
+                    },
+                    y: {
+                        position: 'left',
+                        grid: { color: zenColors.border + '80' },
+                        border: { display: false },
+                        ticks: {
+                            callback: v => new Intl.NumberFormat('vi-VN', {
+                                notation: 'compact'
+                            }).format(v) + ' ₫'
+                        }
+                    },
+                    y1: {
+                        position: 'right',
+                        grid: { display: false },
+                        border: { display: false },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // ===== 2. Benchmark Scatter Chart =====
+        const benchCtx = document.getElementById('benchmarkChart').getContext('2d');
+        const opTypes = [...new Set(benchmarkData.map(b => b.operationType))];
+        const benchColors = [zenColors.sumi, zenColors.shu, zenColors.green, zenColors.blue,
+                             zenColors.amber, zenColors.purple];
+
+        const benchmarkChart = new Chart(benchCtx, {
+            type: 'scatter',
+            data: {
+                datasets: opTypes.map((type, i) => ({
+                    label: type,
+                    data: benchmarkData
+                        .filter(b => b.operationType === type)
+                        .map(b => ({
+                            x: new Date(b.measuredAt).getTime(),
+                            y: b.durationMs
+                        })),
+                    backgroundColor: (benchColors[i % benchColors.length]) + '60',
+                    borderColor: benchColors[i % benchColors.length],
+                    borderWidth: 1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: { boxWidth: 10, padding: 16, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        backgroundColor: zenColors.sumi,
+                        cornerRadius: 0,
+                        padding: 12,
+                        callbacks: {
+                            title: ctx => new Date(ctx[0].raw.x).toLocaleString('vi-VN'),
+                            label: ctx => ctx.dataset.label + ': ' + ctx.raw.y.toFixed(1) + ' ms'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        grid: { display: false },
+                        border: { color: zenColors.border },
+                        ticks: {
+                            callback: v => new Date(v).toLocaleDateString('vi-VN', {
+                                day: '2-digit', month: '2-digit'
+                            })
+                        }
+                    },
+                    y: {
+                        grid: { color: zenColors.border + '80' },
+                        border: { display: false },
+                        ticks: { callback: v => v + ' ms' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // ===== AJAX Filter =====
+        document.getElementById('applyFilter').addEventListener('click', async () => {
+            const period = document.getElementById('periodFilter').value;
+            const year = document.getElementById('yearFilter').value;
+
+            // Fetch revenue data
+            const revRes = await fetch(
+                `/Admin/Dashboard?handler=RevenueData&period=${period}&year=${year}`);
+            const revData = await revRes.json();
+
+            revenueChart.data.labels = revData.map(d => d.label);
+            revenueChart.data.datasets[0].data = revData.map(d => d.revenue);
+            revenueChart.data.datasets[1].data = revData.map(d => d.documentCount);
+            revenueChart.data.datasets[2].data = revData.map(d => d.chatCount);
+            revenueChart.update();
+
+            // Fetch stats data
+            const statsRes = await fetch(
+                `/Admin/Dashboard?handler=StatsData&period=${period}&year=${year}`);
+            const stats = await statsRes.json();
+
+            document.getElementById('statTotalUsers').textContent = stats.totalUsers;
+            document.getElementById('statPremiumUsers').textContent = stats.premiumUsers;
+            document.getElementById('statTotalDocs').textContent = stats.totalDocuments;
+            document.getElementById('statTotalChats').textContent = stats.totalChatSessions;
+        });
+
+        // ===== GSAP Entrance Animations =====
+        if (window.gsap) {
+            gsap.from('.dash-card', {
+                y: 20, opacity: 0, duration: 0.6,
+                stagger: 0.1,
+                ease: 'power2.out'
+            });
+            gsap.from('.chart-container', {
+                y: 30, opacity: 0, duration: 0.7,
+                delay: 0.3,
+                ease: 'power2.out'
+            });
+            gsap.from('.git-table tr', {
+                x: -15, opacity: 0, duration: 0.4,
+                stagger: 0.05,
+                delay: 0.5,
+                ease: 'power2.out'
+            });
+        }
+    </script>
+}
