@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RAGChatBot.BLL.Services;
@@ -40,6 +40,15 @@ namespace RAGChatBot.Presentation.Pages.Courses
         [BindProperty]
         public IFormFile? UploadedFile { get; set; }
 
+        [BindProperty]
+        public string ChunkingStrategy { get; set; } = "Character";
+
+        [BindProperty]
+        public int ChunkSize { get; set; } = 500;
+
+        [BindProperty]
+        public int Overlap { get; set; } = 50;
+
         public async Task<IActionResult> OnGetAsync()
         {
             await LoadCourseDetails();
@@ -79,7 +88,10 @@ namespace RAGChatBot.Presentation.Pages.Courses
                     CourseCode,
                     Chapter,
                     CurrentUserId,
-                    CurrentSubscriptionTier
+                    CurrentSubscriptionTier,
+                    ChunkingStrategy,
+                    ChunkSize,
+                    Overlap
                 );
 
                 TempData["SuccessMessage"] = "Đã tải lên tài liệu thành công.";

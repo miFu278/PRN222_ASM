@@ -1,4 +1,4 @@
-﻿using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.DAL.Interfaces;
 using RAGChatBot.BLL.Services;
 using RAGChatBot.BLL.DTOs;
 using RAGChatBot.DAL.Enums;
@@ -40,7 +40,10 @@ namespace RAGChatBot.BLL.Services
             string courseCode,
             string chapter,
             Guid userId,
-            string userSubscriptionTier)
+            string userSubscriptionTier,
+            string chunkingStrategy = "Character",
+            int chunkSize = 500,
+            int overlap = 50)
         {
             // 1. Validate file extension
             var extension = Path.GetExtension(fileName).ToLower();
@@ -82,7 +85,10 @@ namespace RAGChatBot.BLL.Services
                 UploadedBy = userId,
                 UploaderName = uploaderName,
                 Status = DocumentStatus.Pending,
-                IsApproved = isApproved
+                IsApproved = isApproved,
+                ChunkingStrategy = chunkingStrategy,
+                ChunkSize = chunkSize,
+                Overlap = overlap
             };
 
             await _documentRepository.AddAsync(document);
@@ -116,7 +122,10 @@ namespace RAGChatBot.BLL.Services
                 IsApproved = doc.IsApproved,
                 UploaderName = !string.IsNullOrWhiteSpace(doc.UploaderName) 
                     ? doc.UploaderName 
-                    : (userMap.TryGetValue(doc.UploadedBy, out var name) ? name : "N/A")
+                    : (userMap.TryGetValue(doc.UploadedBy, out var name) ? name : "N/A"),
+                ChunkingStrategy = doc.ChunkingStrategy,
+                ChunkSize = doc.ChunkSize,
+                Overlap = doc.Overlap
             }).OrderByDescending(d => d.UploadedAt);
         }
 
@@ -310,7 +319,10 @@ namespace RAGChatBot.BLL.Services
                 UploadedAt = doc.UploadedAt,
                 UploadedBy = doc.UploadedBy,
                 Status = doc.Status,
-                IsApproved = doc.IsApproved
+                IsApproved = doc.IsApproved,
+                ChunkingStrategy = doc.ChunkingStrategy,
+                ChunkSize = doc.ChunkSize,
+                Overlap = doc.Overlap
             };
         }
     }
