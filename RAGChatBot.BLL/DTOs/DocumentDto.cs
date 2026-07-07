@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 using RAGChatBot.DAL.Enums;
 
@@ -17,5 +17,8 @@ namespace RAGChatBot.BLL.DTOs
         public DocumentStatus Status { get; set; }
         public bool IsApproved { get; set; }
         public string? UploaderName { get; set; }
+        public string ChunkingStrategy { get; set; } = "Character";
+        public int ChunkSize { get; set; } = 500;
+        public int Overlap { get; set; } = 50;
     }
 }

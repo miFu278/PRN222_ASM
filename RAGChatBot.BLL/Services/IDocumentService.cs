@@ -1,4 +1,4 @@
-﻿using RAGChatBot.BLL.DTOs;
+using RAGChatBot.BLL.DTOs;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +15,10 @@ namespace RAGChatBot.BLL.Services
             string courseCode, 
             string chapter, 
             Guid userId, 
-            string userSubscriptionTier);
+            string userSubscriptionTier,
+            string chunkingStrategy = "Character",
+            int chunkSize = 500,
+            int overlap = 50);
 
         Task<IEnumerable<DocumentDto>> GetDocumentsByCourseAsync(string courseCode);
 

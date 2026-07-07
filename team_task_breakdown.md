@@ -1,51 +1,73 @@
-# 📋 Bảng Phân Chia Công Việc (Team 4 Người)
+# 📋 Bảng Phân Chia Công Việc - Đồ Án Cuối Kỳ (Week 9 - Team 4 Người)
 
-Dựa trên khối lượng công việc còn lại để dự án đạt chuẩn **Production Ready**, mình đã chia đều các task thành 4 nhóm (Roles) cân bằng nhau về độ khó và chuyên môn. Các bạn có thể thảo luận để nhận vai trò phù hợp với thế mạnh của từng người.
-
----
-
-## 👨‍💻 Thành viên 1: Chuyên trách Real-time & Giao diện luồng (Real-time & Flow)
-*Nhiệm vụ: Đảm bảo dữ liệu được cập nhật tức thời trên UI mà không cần tải lại trang.*
-
-- [ ] **Thêm SignalR Hub**: Cấu hình `AddSignalR` và map Hub trong `Program.cs`.
-- [ ] **Real-time Course Addition**: Gọi SignalR event khi Admin tạo mới môn học (trong Service/Controller).
-- [ ] **UI SignalR Client**: Tích hợp `signalr.js` vào Razor Pages để lắng nghe sự kiện và tự động cập nhật danh sách môn học cho Giảng viên.
-- [ ] **Real-time Document Status (Bonus)**: Cập nhật trạng thái xử lý tài liệu (Processing -> Success) realtime lên UI mà không cần F5.
+Tài liệu này phân chia chi tiết các đầu việc cho 4 thành viên để hoàn thiện **Đồ án cuối kỳ RAGChatBot** theo mô hình kiến trúc 3 lớp (3-Layers) và các yêu cầu nghiệp vụ chuyên sâu.
 
 ---
 
-## 🕵️‍♂️ Thành viên 2: Chuyên trách Bảo mật & Phân quyền (Security & Auth)
-*Nhiệm vụ: Vá các lỗ hổng bảo mật và phân quyền truy cập chặt chẽ.*
+## 👨‍💻 Thành Viên 1: Backend Developer - Hệ Thống AI & Nghiệp Vụ
+*Nhiệm vụ: Tập trung phát triển các logic nghiệp vụ AI cốt lõi (Chunking, Conversation Memory) và tự động sinh câu hỏi trắc nghiệm.*
 
-- [ ] **Lọc môn học**: Sửa logic lấy danh sách môn học để Giảng viên chỉ xem được môn mình phụ trách (`SubjectLeaderId`).
-- [ ] **Chặn học sinh xem Chunks**: Chặn truy cập endpoint trả về dữ liệu thô (Chunks) trong `Documents.cshtml.cs` đối với Role `Student`.
-- [ ] **Rate Limiting (Chống Spam)**: Cấu hình `AspNetCore.RateLimiting` để chặn Học sinh gọi API AI Chat quá nhiều lần trong 1 phút.
-- [ ] **Bảo mật Config**: Dọn dẹp mật khẩu Admin hardcode (`password123`) trong source code. Quản lý các Secret Keys (OpenAI, Supabase) an toàn bằng Environment Variables hoặc User Secrets.
-
----
-
-## ⚙️ Thành viên 3: Chuyên trách Kiến trúc & Background Worker (Backend/System Core)
-*Nhiệm vụ: Đảm bảo hệ thống chạy ngầm ổn định, không bị treo khi có lỗi từ AI API.*
-
-- [ ] **Nâng cấp DocumentProcessingWorker**: Đổi logic `IsProcessed` thành các trạng thái: `Pending`, `Processing`, `Success`, `Failed`.
-- [ ] **Cơ chế Retry (Thử lại)**: Bắt các Exception như Timeout của OpenAI và cho phép xử lý lại (Retry) các Document bị `Failed`.
-- [ ] **Global Error Handling**: Thêm Middleware bắt mọi lỗi (Global Exception Handler) thay vì văng trang lỗi mặc định.
-- [ ] **Tích hợp Serilog**: Cài đặt Serilog để lưu toàn bộ log (kể cả lỗi Background Worker) ra file `.txt` hoặc JSON, giúp truy vết lỗi dễ dàng khi sập Server.
+*   **1. Cấu hình Chunking động (BLL & DAL)**:
+    *   [x] Bổ sung trường cấu hình vào database (`KnowledgeDocument`: `ChunkingStrategy`, `ChunkSize`, `Overlap`).
+    *   [x] Nâng cấp `ChunkingService.cs` hỗ trợ 3 chiến lược cắt đoạn: **Paragraph** (theo đoạn văn `\n\n`), **Word** (theo từ), và **Character** (theo ký tự).
+    *   [x] Cập nhật `DocumentProcessingWorker.cs` để đọc đúng cấu hình chunking đã lưu trong database của từng file tài liệu khi xử lý nền.
+*   **2. Ngân hàng câu hỏi & AI Quiz Generator (BLL & AI)**:
+    *   [x] Tạo các thực thể database: `QuestionBank` (lưu trữ câu hỏi ôn tập) và `QuizAttempts` (lưu kết quả thi).
+    *   [x] Viết service gọi API LLM (Gemini/OpenAI) đọc nội dung các chunks tài liệu để **tự động sinh ra bộ 5 - 10 câu hỏi trắc nghiệm** (kèm đáp án đúng).
+*   **3. Bộ nhớ hội thoại Chatbot (BLL & AI)**:
+    *   [x] Thiết lập lưu trữ tin nhắn chat vào database (`ChatMessages` liên kết với `ChatThreads`).
+    *   [x] Nâng cấp `OpenAiChatService.cs` gửi kèm lịch sử tin nhắn trước đó (context) trong cuộc trò chuyện lên LLM để hỗ trợ chat liên tục nhiều lượt (Multi-turn Conversation).
 
 ---
 
-## 🎨 Thành viên 4: Chuyên trách Trải nghiệm người dùng (UX) & Triển khai (DevOps)
-*Nhiệm vụ: Chăm chút giao diện cuối cùng và chuẩn bị gói dự án để đưa lên Server.*
-
-- [ ] **UI Loaders/Skeletons**: Thêm hiệu ứng Loading (Spinner/Skeleton) khi người dùng bấm Upload File hoặc khi đang chờ AI gõ câu trả lời (Typing indicator).
-- [ ] **Mobile Responsive**: Rà soát lại CSS của trang Chat và trang Quản lý tài liệu để hiển thị đẹp trên màn hình điện thoại.
-- [ ] **Viết Dockerfile**: Tạo `Dockerfile` để đóng gói toàn bộ ứng dụng ASP.NET Core Razor Pages.
-- [ ] **Viết docker-compose.yml**: Đóng gói thêm PostgreSQL + PgVector vào Docker để quá trình cài đặt server Production chỉ mất 1 dòng lệnh (`docker-compose up -d`).
+## 🛡️ Thành Viên 2: Backend Developer - Thanh Toán, Credits & Bảo Mật
+*Nhiệm vụ: Chịu trách nhiệm quản lý dòng tiền, giới hạn Credit cho thành viên và vá các lỗ hổng bảo mật.*
+ 
+*   **1. Quản lý hạn mức Credit & Logs (BLL & DAL)**:
+    *   [x] Bổ sung trường `DailyCredits` (mặc định 10) và `SubscriptionExpiresAt` vào thực thể `User`.
+    *   [x] Tạo bảng ghi nhật ký sử dụng chatbot `ChatTrackerLogs` để lưu vết các lượt hỏi đáp.
+    *   [x] Cập nhật logic `ChatApi.cshtml.cs` kiểm tra và khấu trừ 1 credit của sinh viên sau mỗi câu hỏi; ngăn sinh viên chat tiếp khi hết credit.
+    *   [x] Viết background service tự động reset `DailyCredits = 10` cho toàn bộ sinh viên Free lúc **00:00 hàng ngày**.
+*   **2. Tích hợp thanh toán PayOS (BLL & DAL)**:
+    *   [x] Tạo bảng lưu trữ giao dịch nạp tiền `PaymentTransactions`.
+    *   [x] Tích hợp SDK/API cổng thanh toán **VNPay** tạo link thanh toán QR động.
+    *   [x] Xây dựng Webhook/Callback endpoint đón nhận dữ liệu giao dịch thành công từ VNPay ➡️ Nâng cấp gói cước thành `Premium` và ghi nhận log giao dịch.
+*   **3. Phân quyền và Đối soát giao dịch (BLL & Presentation)**:
+    *   [x] Thiết lập trang quản trị giao dịch thanh toán `/Admin/Payments` chỉ cho phép vai trò `Admin` truy cập để xem lịch sử nạp tiền của toàn hệ thống.
 
 ---
 
-### 💡 Gợi ý quy trình làm việc chung (Workflow):
-1. **Chia nhánh (Branching)**: Mỗi bạn nên tạo một branch riêng (VD: `feature/realtime`, `feature/security`) để tránh conflict code khi làm việc chung.
-2. **Hỗ trợ chéo**: Phần của **Thành viên 1** và **Thành viên 4** khá sát với UI, trong khi **Thành viên 2** và **Thành viên 3** thiên về Backend/Database. Các bạn có thể pair-programming với nhau ở những điểm giao nhau.
+## 🎨 Thành Viên 3: Frontend Developer - Giao Diện Người Dùng & UX/UI
+*Nhiệm vụ: Xây dựng các trang web giao diện cao cấp, trực quan và xử lý tương tác phía client (CSS, Razor Pages, Javascript).*
 
-Các bạn xem qua và điền tên vào bảng phân công nhé! Sau khi chọn xong, bạn muốn mình đóng vai (hỗ trợ) thành viên nào để code chức năng đó trước?
+*   **1. UI Quản lý tài liệu & Cấu hình Chunking (Presentation)**:
+    *   [ ] Nâng cấp trang `/Courses/Documents.cshtml`: Thêm biểu mẫu (Form) cho phép giảng viên tùy chọn cấu hình chunking (phương thức cắt, kích thước chunk, overlap) trước khi nhấn Upload.
+*   **2. UI Làm bài tập trắc nghiệm & Kết quả Quiz (Presentation)**:
+    *   [ ] Thiết kế giao diện sinh viên ôn luyện trực tuyến: hiển thị danh sách câu hỏi trắc nghiệm, thanh tiến trình thời gian đếm ngược, nút nộp bài và popup chấm điểm tự động.
+*   **3. UI Chatbot thông minh & Chat History (Presentation)**:
+    *   [ ] Tái thiết kế giao diện chat: Thêm thanh bên trái (Sidebar) hiển thị danh sách các phiên trò chuyện cũ (Chat Threads) như giao diện ChatGPT.
+    *   [ ] Thêm khu vực hiển thị số credit còn lại trong ngày của sinh viên và hiệu ứng loading (Typing indicator/Skeleton) khi chờ phản hồi AI.
+*   **4. UI Lịch sử giao dịch thanh toán (Presentation)**:
+    *   [ ] Trang lịch sử thanh toán cá nhân cho sinh viên/giảng viên và trang quản lý đối soát giao dịch cho Admin.
+
+---
+
+## 📊 Thành Viên 4: Fullstack Developer - Thống Kê, Báo Cáo & Benchmarks
+*Nhiệm vụ: Phát triển dashboard phân tích số liệu tài chính/hệ thống, đo lường benchmarks kỹ thuật và triển khai DevOps.*
+
+*   **1. Dashboard Báo cáo & Thống kê doanh thu (BLL & Presentation)**:
+    *   [ ] Xây dựng trang báo cáo hệ thống `/Admin/Dashboard` trực quan bằng biểu đồ (Chart.js).
+    *   [ ] Triển khai các hàm tính toán doanh thu, số tài liệu xử lý, số lượt chat trong lớp BLL, hỗ trợ lọc theo **Tháng (Month)**, **Quý (Quarter)**, **Năm (Year)**.
+*   **2. Technical Benchmarks & Đồ thị hiệu năng (DAL & Presentation)**:
+    *   [ ] Tạo bảng `PerformanceBenchmarks` lưu trữ thời gian xử lý kỹ thuật.
+    *   [ ] Đo lường thời gian (dùng `Stopwatch`): thời gian trích xuất text file, thời gian sinh vector embedding, thời gian LLM sinh phản hồi, tốc độ query cosine của PostgreSQL.
+    *   [ ] Thiết kế giao diện đồ thị so sánh hiệu năng các chỉ số kỹ thuật trên trang Admin.
+*   **3. Triển khai & Container hóa (DevOps)**:
+    *   [x] Tối ưu hóa `Dockerfile` và `docker-compose.yml` để hệ thống tự động chạy Migration cơ sở dữ liệu và Seeding tài khoản mặc định ngay khi khởi chạy docker container.
+
+---
+
+### 💡 Quy tắc phối hợp chung (Workflow Rules)
+1.  **Giao tiếp thông qua Interface**: Lớp `Presentation` và `BLL` chỉ tương tác thông qua các interface trong `BLL.Services` và `DAL.Interfaces`. Các thành viên Backend phải định nghĩa và tạo trước các file interface để Frontend có thể code mock dữ liệu mà không cần chờ Backend hoàn thiện.
+2.  **Chia nhánh Git**: Mỗi thành viên làm việc trên nhánh riêng mang tên nhiệm vụ (Ví dụ: `feat/chunk-config`, `feat/payos-payment`).
+3.  **Tích hợp sớm**: Thực hiện Merge code định kỳ mỗi 2-3 ngày về nhánh chung `refactor` hoặc `develop` để phát hiện xung đột sớm và chạy `dotnet build` xác thực tính tương thích.

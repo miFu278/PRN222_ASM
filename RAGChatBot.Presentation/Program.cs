@@ -53,6 +53,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IWhitelistService, WhitelistService>();
+builder.Services.AddScoped<IQuizService, QuizService>();
 
 // Tầng Infrastructure Services
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
@@ -74,30 +75,44 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IKnowledgeDocumentRepository, KnowledgeDocumentRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IWhitelistRepository, WhitelistRepository>();
+builder.Services.AddScoped<IChatTrackerLogRepository, ChatTrackerLogRepository>();
+builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
 
-// Ä ăng ký dịch vụ RAG & AI (Tự động Chunking & Vector hóa)
+// Đăng ký dịch vụ RAG & AI (Tự động Chunking & Vector hóa)
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IChunkingService, ChunkingService>();
 builder.Services.AddScoped<ITextExtractor, TextExtractor>();
 builder.Services.AddHttpClient<IEmbeddingService, OpenAiEmbeddingService>();
 builder.Services.AddHttpClient<IChatService, OpenAiChatService>(); // Dịch vụ RAG Chatbot mới cho ASM02
 builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
+
+// Dịch vụ Credit & Thanh toán
+builder.Services.AddScoped<ICreditService, CreditService>();
+builder.Services.AddSingleton<IVnPayService, VnPayService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddHostedService<DocumentProcessingWorker>();
+builder.Services.AddHostedService<DailyCreditResetService>();
 
 // Dashboard & Benchmark services
 builder.Services.AddScoped<IBenchmarkRepository, BenchmarkRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 
-// 4. Ä ăng ký Razor Pages
+// 4. Đăng ký Razor Pages
 builder.Services.AddRazorPages();
 
-// Ä ăng ký MVC Controllers (dành cho Authentication login/logout)
+// Cấu hình BackgroundService không crash host khi TaskCanceledException xảy ra lúc shutdown
+builder.Services.Configure<HostOptions>(options =>
+{
+    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+});
+
+// Đăng ký MVC Controllers (dành cho Authentication login/logout)
 builder.Services.AddControllers();
-
-// Ä ăng ký các dịch vụ HttpContextAccessor để hỗ trợ lấy thông tin User trong Blazor
+ 
+// Đăng ký các dịch vụ HttpContextAccessor để hỗ trợ lấy thông tin User trong Blazor
 builder.Services.AddHttpContextAccessor();
-
-// Ä ăng ký Event Service cho Real-time UI updates
+ 
+// Đăng ký Event Service cho Real-time UI updates
 builder.Services.AddSingleton<RAGChatBot.DAL.Interfaces.IDocumentEventService, DocumentEventService>();
 builder.Services.AddSingleton<DocumentEventService>(sp => (DocumentEventService)sp.GetRequiredService<RAGChatBot.DAL.Interfaces.IDocumentEventService>());
 
@@ -197,17 +212,17 @@ using (var scope = app.Services.CreateScope())
         if (!string.IsNullOrEmpty(baseUrl) && !string.IsNullOrEmpty(apiKey))
         {
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-            // Ä ối với Google Gemini dùng OpenAI interface, thử lấy danh sách model
+            // Đối với Google Gemini dùng OpenAI interface, thử lấy danh sách model
             var response = await client.GetAsync($"{baseUrl.TrimEnd('/')}/models");
             
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine("[API Check] KẾT Ná» I THÀNH CÔNG TỚI AI API.");
+                Console.WriteLine("[API Check] KẾT NỐI THÀNH CÔNG TỚI AI API.");
             }
             else
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"[API Error] LỖI KẾT Ná» I AI API ({response.StatusCode}): {errorContent}");
+                Console.WriteLine($"[API Error] LỖI KẾT NỐI AI API ({response.StatusCode}): {errorContent}");
             }
         }
         else
@@ -240,10 +255,10 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Ä ăng ký các controller định tuyến (AccountController)
+// Đăng ký các controller định tuyến (AccountController)
 app.MapControllers();
-
-// Ä ăng ký các Razor Pages
+ 
+// Đăng ký các Razor Pages
 app.MapRazorPages();
 
 app.MapHub<RAGChatBot.Presentation.Hubs.DocumentHub>("/documentHub");

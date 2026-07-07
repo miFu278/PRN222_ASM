@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RAGChatBot.DAL.Entities;
 
 namespace RAGChatBot.DAL.Context
@@ -16,6 +16,10 @@ namespace RAGChatBot.DAL.Context
         public DbSet<WhitelistEmail> WhitelistEmails => Set<WhitelistEmail>();
         public DbSet<PerformanceBenchmark> PerformanceBenchmarks => Set<PerformanceBenchmark>();
         public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
+        public DbSet<QuestionBank> QuestionBanks => Set<QuestionBank>();
+        public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
+        public DbSet<ChatThread> ChatThreads => Set<ChatThread>();
+        public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

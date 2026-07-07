@@ -1,4 +1,6 @@
-﻿namespace RAGChatBot.DAL.Entities
+using System;
+
+namespace RAGChatBot.DAL.Entities
 {
     public class User
     {
@@ -8,5 +10,6 @@
         public string Role { get; set; } = "Lecturer"; // Lecturer, Admin
         public string SubscriptionTier { get; set; } = "Free"; // Free, Premium
         public string FullName { get; set; } = string.Empty;
+        public DateTime? SubscriptionExpiresAt { get; set; }
     }
 }

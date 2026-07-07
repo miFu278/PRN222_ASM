@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RAGChatBot.DAL.Interfaces;
 using System;
@@ -9,6 +9,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using RAGChatBot.DAL.Context;
 
 namespace RAGChatBot.DAL.Services
 {
@@ -17,6 +19,7 @@ namespace RAGChatBot.DAL.Services
         private readonly HttpClient _httpClient;
         private readonly IEmbeddingService _embeddingService;
         private readonly IKnowledgeDocumentRepository _documentRepository;
+        private readonly AppDbContext _db;
         private readonly ILogger<OpenAiChatService> _logger;
         private readonly string _baseUrl;
         private readonly string _apiKey;
@@ -26,13 +29,15 @@ namespace RAGChatBot.DAL.Services
             HttpClient httpClient,
             IEmbeddingService embeddingService,
             IKnowledgeDocumentRepository documentRepository,
+            AppDbContext db,
             IConfiguration configuration,
-            ILogger<OpenAiChatService> logger)
+            ILogger<OpenAiChatService> _loggerVal)
         {
             _httpClient = httpClient;
             _embeddingService = embeddingService;
             _documentRepository = documentRepository;
-            _logger = logger;
+            _db = db;
+            _logger = _loggerVal;
 
             var section = configuration.GetSection("AiSettings");
             _baseUrl = section["BaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta/openai";
@@ -44,7 +49,7 @@ namespace RAGChatBot.DAL.Services
                 _logger.LogWarning("AI API Key cho Chatbot chưa được cấu hình tại mục AiSettings:ApiKey!");
             }
         }
-        public async Task<string> GetChatResponseAsync(string question, string? courseCode)
+        public async Task<string> GetChatResponseAsync(string question, string? courseCode, Guid? threadId = null)
         {
             if (string.IsNullOrWhiteSpace(question))
             {
@@ -75,30 +80,56 @@ namespace RAGChatBot.DAL.Services
                     contextText = "Không có tài liệu môn học nào được phê duyệt hoặc phù hợp với câu hỏi này.";
                 }
 
-                // 4. Tạo prompt với cấu trúc RAG
+                // 4. Tạo prompt hệ thống với cấu trúc RAG
                 string courseIntro = string.IsNullOrEmpty(courseCode) ? "toàn bộ các môn học" : $"môn học có mã {courseCode}";
-                var prompt = $"Bạn là một trợ lý giảng dạy AI hữu ích cho {courseIntro}. Hãy sử dụng ngữ cảnh dưới đây từ các tài liệu môn học đã được phê duyệt để trả lời câu hỏi của sinh viên. Trả lời một cách khoa học, rõ ràng và đầy đủ bằng tiếng Việt.\n\n" +
-                             $"[NGỮ CẢNH TỪ TÀI LIỆU MÔN HỌC]:\n{contextText}\n\n" +
-                             $"[CÂU HỎI CỦA SINH VIÊN]:\n{question}\n\n" +
-                             $"[LƯU Ý QUAN TRỌNG]:\n" +
-                             $"- Nếu bạn lấy thông tin từ ngữ cảnh, LUÔN LUÔN trích dẫn NGUỒN TÀI LIỆU (Ví dụ: \"Theo tài liệu: tên_file.pdf\") ngay trong câu trả lời hoặc liệt kê ở cuối câu trả lời.\n" +
-                             $"- Nếu ngữ cảnh không chứa thông tin cần thiết để trả lời câu hỏi, hãy tự trả lời dựa trên kiến thức phổ thông/chuyên môn của bạn nhưng bắt buộc phải ghi rõ câu mở đầu: \"Lưu ý: Không tìm thấy thông tin này trực tiếp trong tài liệu môn học. Dưới đây là câu trả lời dựa trên kiến thức chung:\".\n\n" +
-                             $"Trả lời:";
+                var systemPrompt = $"Bạn là một trợ lý giảng dạy AI hữu ích cho {courseIntro}. Hãy sử dụng ngữ cảnh dưới đây từ các tài liệu môn học đã được phê duyệt để trả lời câu hỏi của sinh viên. Trả lời một cách khoa học, rõ ràng và đầy đủ bằng tiếng Việt.\n\n" +
+                                   $"[NGỮ CẢNH TỪ TÀI LIỆU MÔN HỌC]:\n{contextText}\n\n" +
+                                   $"[LƯU Ý QUAN TRỌNG]:\n" +
+                                   $"- Nếu bạn lấy thông tin từ ngữ cảnh, LUÔN LUÔN trích dẫn NGUỒN TÀI LIỆU (Ví dụ: \"Theo tài liệu: tên_file.pdf\") ngay trong câu trả lời hoặc liệt kê ở cuối câu trả lời.\n" +
+                                   $"- Nếu ngữ cảnh không chứa thông tin cần thiết để trả lời câu hỏi, hãy tự trả lời dựa trên kiến thức phổ thông/chuyên môn của bạn nhưng bắt buộc phải ghi rõ câu mở đầu: \"Lưu ý: Không tìm thấy thông tin này trực tiếp trong tài liệu môn học. Dưới đây là câu trả lời dựa trên kiến thức chung:\".";
 
                 // 5. Gọi API hoàn thiện hội thoại (Chat Completion API)
                 var baseUrlClean = _baseUrl.TrimEnd('/');
                 var requestUrl = $"{baseUrlClean}/chat/completions";
 
                 var requestMessage = new HttpRequestMessage(HttpMethod.Post, requestUrl);
-                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                if (!string.IsNullOrWhiteSpace(_apiKey))
+                {
+                    requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                }
+
+                // Xây dựng list tin nhắn gồm System context, Lịch sử chat (Multi-turn), và câu hỏi hiện tại
+                var messages = new List<OpenAiChatMessage>
+                {
+                    new OpenAiChatMessage { Role = "system", Content = systemPrompt }
+                };
+
+                if (threadId.HasValue)
+                {
+                    var history = await _db.ChatMessages
+                        .Where(m => m.ThreadId == threadId.Value)
+                        .OrderByDescending(m => m.SentAt)
+                        .Take(10)
+                        .ToListAsync();
+
+                    history.Reverse();
+
+                    foreach (var msg in history)
+                    {
+                        messages.Add(new OpenAiChatMessage
+                        {
+                            Role = msg.Role == "assistant" ? "assistant" : "user",
+                            Content = msg.Content
+                        });
+                    }
+                }
+
+                messages.Add(new OpenAiChatMessage { Role = "user", Content = question });
 
                 var requestBody = new OpenAiChatRequest
                 {
                     Model = _model,
-                    Messages = new List<OpenAiChatMessage>
-                    {
-                        new OpenAiChatMessage { Role = "user", Content = prompt }
-                    },
+                    Messages = messages,
                     Temperature = 0.7f
                 };
 

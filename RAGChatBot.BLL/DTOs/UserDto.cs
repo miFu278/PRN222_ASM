@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace RAGChatBot.BLL.DTOs
 {
@@ -9,5 +9,6 @@ namespace RAGChatBot.BLL.DTOs
         public string Role { get; set; } = string.Empty;
         public string SubscriptionTier { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
+        public DateTime? SubscriptionExpiresAt { get; set; }
     }
 }

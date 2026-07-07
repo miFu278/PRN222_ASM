@@ -1,4 +1,4 @@
-﻿using MiniExcelLibs;
+using MiniExcelLibs;
 using RAGChatBot.DAL.Interfaces;
 using RAGChatBot.BLL.Services;
 using RAGChatBot.BLL.DTOs;
@@ -38,7 +38,8 @@ namespace RAGChatBot.BLL.Services
                 Username = user.Username,
                 Role = user.Role,
                 SubscriptionTier = user.SubscriptionTier,
-                FullName = user.FullName
+                FullName = user.FullName,
+                SubscriptionExpiresAt = user.SubscriptionExpiresAt
             };
         }
 
@@ -69,7 +70,8 @@ namespace RAGChatBot.BLL.Services
                 Username = user.Username,
                 Role = user.Role,
                 SubscriptionTier = user.SubscriptionTier,
-                FullName = user.FullName
+                FullName = user.FullName,
+                SubscriptionExpiresAt = user.SubscriptionExpiresAt
             };
         }
 
@@ -82,6 +84,7 @@ namespace RAGChatBot.BLL.Services
             }
 
             user.SubscriptionTier = "Premium";
+            user.SubscriptionExpiresAt = DateTime.UtcNow.AddMonths(1);
             await _userRepository.SaveChangesAsync();
             return true;
         }
@@ -99,6 +102,21 @@ namespace RAGChatBot.BLL.Services
             return true;
         }
 
+        public async Task<UserDto?> GetUserByIdAsync(Guid id)
+        {
+            var user = await _userRepository.GetByIdAsync(id);
+            if (user == null) return null;
+            return new UserDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Role = user.Role,
+                SubscriptionTier = user.SubscriptionTier,
+                FullName = user.FullName,
+                SubscriptionExpiresAt = user.SubscriptionExpiresAt
+            };
+        }
+
         public async Task<UserDto?> GetUserByUsernameAsync(string username)
         {
             var user = await _userRepository.GetByUsernameAsync(username);
@@ -109,7 +127,8 @@ namespace RAGChatBot.BLL.Services
                 Username = user.Username,
                 Role = user.Role,
                 SubscriptionTier = user.SubscriptionTier,
-                FullName = user.FullName
+                FullName = user.FullName,
+                SubscriptionExpiresAt = user.SubscriptionExpiresAt
             };
         }
 
@@ -122,7 +141,8 @@ namespace RAGChatBot.BLL.Services
                 Username = user.Username,
                 Role = user.Role,
                 SubscriptionTier = user.SubscriptionTier,
-                FullName = user.FullName
+                FullName = user.FullName,
+                SubscriptionExpiresAt = user.SubscriptionExpiresAt
             }).OrderBy(u => u.Role).ThenBy(u => u.Username);
         }
 
