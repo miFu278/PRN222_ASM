@@ -141,5 +141,163 @@ window.zenInteract = {
         container.id = 'zen-toast-container';
         document.body.appendChild(container);
         return container;
+    },
+
+    initChatDrawer: function () {
+        const toggleBtn = document.querySelector('.zen-drawer-toggle');
+        const closeBtn = document.querySelector('.zen-drawer-close');
+        const drawer = document.querySelector('.zen-chat-drawer');
+        if (!toggleBtn || !drawer) return;
+
+        const toggle = () => {
+            const isActive = drawer.classList.contains('active');
+            if (isActive) {
+                // Đóng drawer bằng GSAP
+                gsap.to(drawer, {
+                    width: 0,
+                    duration: 0.5,
+                    ease: "power3.inOut",
+                    onComplete: () => {
+                        drawer.classList.remove('active');
+                        drawer.style.borderRight = '0px solid var(--border-light)';
+                    }
+                });
+            } else {
+                // Mở drawer bằng GSAP
+                drawer.classList.add('active');
+                drawer.style.borderRight = '1px solid var(--border-light)';
+                gsap.fromTo(drawer, 
+                    { width: 0 },
+                    { width: 320, duration: 0.6, ease: "power3.out" }
+                );
+                // Hoạt ảnh trồi lên tuần tự cho các đoạn chat cũ
+                gsap.fromTo('.zen-thread-item', 
+                    { opacity: 0, x: -20 },
+                    { opacity: 1, x: 0, duration: 0.4, stagger: 0.05, ease: "power2.out", delay: 0.1 }
+                );
+            }
+        };
+
+        toggleBtn.addEventListener('click', toggle);
+        if (closeBtn) {
+            closeBtn.addEventListener('click', toggle);
+        }
+    },
+
+    initWashiSkeleton: function () {
+        const dots = document.querySelectorAll('.washi-ink-dot');
+        if (dots.length === 0) return;
+
+        // Vô hiệu hóa hoạt ảnh nếu prefers-reduced-motion bật
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            gsap.set(dots, { opacity: 0.6 });
+            return;
+        }
+
+        gsap.to(dots, {
+            y: -6,
+            opacity: 1,
+            duration: 0.6,
+            stagger: {
+                each: 0.2,
+                repeat: -1,
+                yoyo: true
+            },
+            ease: "power1.inOut"
+        });
+    },
+
+    init3DTilt: function () {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        const configs = [
+            { selector: '.zen-suggestion-item', max: 8 },
+            { selector: '.hanko-seal', max: 12 },
+            { selector: '.btn-zen', max: 10 },
+            { selector: '.zen-input-area', max: 4 }
+        ];
+
+        configs.forEach(config => {
+            const elements = document.querySelectorAll(config.selector);
+            elements.forEach(el => {
+                // Thiết lập 3D perspective trên cha và transform-style preserve-3d trên đối tượng
+                gsap.set(el.parentElement, { perspective: 1000 });
+                gsap.set(el, { transformStyle: "preserve-3d", force3D: true });
+
+                el.addEventListener('mousemove', (e) => {
+                    const bounds = el.getBoundingClientRect();
+                    const x = e.clientX - bounds.left;
+                    const y = e.clientY - bounds.top;
+                    
+                    // Tính tọa độ lệch tâm (-0.5 đến 0.5)
+                    const relX = (x / bounds.width) - 0.5;
+                    const relY = (y / bounds.height) - 0.5;
+
+                    const rotX = -relY * config.max;
+                    const rotY = relX * config.max;
+
+                    gsap.to(el, {
+                        rotationX: rotX,
+                        rotationY: rotY,
+                        duration: 0.3,
+                        ease: "power2.out",
+                        overwrite: "auto"
+                    });
+                });
+
+                el.addEventListener('mouseleave', () => {
+                    gsap.to(el, {
+                        rotationX: 0,
+                        rotationY: 0,
+                        duration: 0.6,
+                        ease: "power3.out",
+                        overwrite: "auto"
+                    });
+                });
+            });
+        });
+    },
+
+    init3DScroll: function () {
+        if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        const targets = ['.zen-hero', '.zen-chat-layout', '.zen-container.py-5'];
+        
+        targets.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                // Kích hoạt transform 3D và tối ưu GPU
+                el.classList.add('zen-scroll-flip');
+
+                // Tạo timeline lật 3D cuốn sách cổ
+                const tl = gsap.timeline({
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top bottom",    // Khi phần tử bắt đầu đi vào đáy màn hình
+                        end: "top center",      // Khi đỉnh phần tử chạm giữa màn hình
+                        scrub: 1,               // Scrub mượt mà trễ 1 giây
+                        ease: "none"            // Scrub timeline cần để none để đồng bộ
+                    }
+                });
+
+                tl.fromTo(el, 
+                    {
+                        rotationX: -12,
+                        y: 50,
+                        opacity: 0,
+                        transformOrigin: "top center"
+                    },
+                    {
+                        rotationX: 0,
+                        y: 0,
+                        opacity: 1,
+                        ease: "none"
+                    }
+                );
+            });
+        });
     }
 };
