@@ -24,6 +24,7 @@
         <nav class="zen-scroll-menu">
             @if (User.Identity?.IsAuthenticated == true && User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value == "Admin")
             {
+                <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Dashboard">Dashboard</a>
                 <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Users">Tài Khoản</a>
                 <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Whitelist">Whitelist</a>
                 <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Payments">Giao Dịch</a>

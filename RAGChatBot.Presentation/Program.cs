@@ -93,6 +93,10 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddHostedService<DocumentProcessingWorker>();
 builder.Services.AddHostedService<DailyCreditResetService>();
 
+// Dashboard & Benchmark services
+builder.Services.AddScoped<IBenchmarkRepository, BenchmarkRepository>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
 // 4. Đăng ký Razor Pages
 builder.Services.AddRazorPages();
 

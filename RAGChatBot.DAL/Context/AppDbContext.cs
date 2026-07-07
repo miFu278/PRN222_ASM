@@ -79,42 +79,6 @@ modelBuilder.Entity<ChatSession>(entity =>
     entity.HasIndex(e => e.CreatedAt);
 });
 
-            modelBuilder.Entity<QuestionBank>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.DocumentId);
-                entity.HasIndex(e => e.CourseCode);
-                entity.HasOne(e => e.Document)
-                      .WithMany()
-                      .HasForeignKey(e => e.DocumentId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<QuizAttempt>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.UserId);
-                entity.HasIndex(e => e.CourseCode);
-            });
-
-            modelBuilder.Entity<ChatThread>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.UserId);
-                entity.HasIndex(e => e.CourseCode);
-            });
-
-            modelBuilder.Entity<ChatMessage>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.ThreadId);
-                entity.HasIndex(e => e.SentAt);
-                entity.HasOne(e => e.Thread)
-                      .WithMany(t => t.Messages)
-                      .HasForeignKey(e => e.ThreadId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
         }
     }
 }
