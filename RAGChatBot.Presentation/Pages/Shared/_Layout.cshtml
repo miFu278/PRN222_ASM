@@ -26,21 +26,32 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="bg-washi text-sumi">
-    @{
-        var displayName = User.Identity?.IsAuthenticated == true
-            ? (User.FindFirst("FullName")?.Value
-                ?? User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value
-                ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
-                ?? User.Identity?.Name
-                ?? "Người dùng")
-            : string.Empty;
-            
-        var userRole = User.Identity?.IsAuthenticated == true 
-            ? (User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User")
-            : string.Empty;
-
-        var currentPath = Context.Request.Path.ToString().ToLower();
-    }
+    <header class="zen-header zen-shoji-glass sticky-top">
+        <a class="zen-brand" asp-area="" asp-page="/Index">
+            <span class="hanko-seal">悟</span> RAG CHATBOT
+        </a>
+        
+        <!-- Sleek Horizontal Scroll Menu (Cuộn ngang tĩnh lặng) -->
+        <nav class="zen-scroll-menu">
+            @if (User.Identity?.IsAuthenticated == true && User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value == "Admin")
+            {
+                <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Dashboard">Dashboard</a>
+                <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Users">Tài Khoản</a>
+                <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Whitelist">Whitelist</a>
+                <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Payments">Giao Dịch</a>
+            }
+            else
+            {
+                <a class="zen-menu-item-sm" asp-area="" asp-page="/Index">Trò Chuyện</a>
+            }
+            <a class="zen-menu-item-sm" asp-area="" asp-page="/Courses/Index">Môn Học</a>
+            <a class="zen-menu-item-sm" asp-area="" asp-page="/Subscription/Index">Gói Dịch Vụ</a>
+        </nav>
+@{
+    var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    var displayName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "";
+    var currentPath = Context.Request.Path.ToString().ToLower();
+}
 
     <div class="zen-layout-wrapper">
         <!-- Collapsible Left Sidebar -->

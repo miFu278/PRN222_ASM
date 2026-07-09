@@ -175,6 +175,5 @@ namespace RAGChatBot.BLL.Services
                 MeasuredAt = b.MeasuredAt
             }).ToList();
         }
-
     }
 }
