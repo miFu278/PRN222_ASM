@@ -28,7 +28,6 @@ namespace RAGChatBot.Presentation.Pages.Admin
         public List<MonthlyRevenueDto> RevenueChart { get; set; } = new();
         public List<BenchmarkAvgDto> BenchmarkAverages { get; set; } = new();
         public List<BenchmarkPointDto> RecentBenchmarks { get; set; } = new();
-        public List<GitContributorDto> GitContributions { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -36,7 +35,6 @@ namespace RAGChatBot.Presentation.Pages.Admin
             RevenueChart = await _dashboard.GetRevenueChartAsync(Period, Year);
             BenchmarkAverages = await _dashboard.GetBenchmarkAveragesAsync();
             RecentBenchmarks = await _dashboard.GetRecentBenchmarksAsync(50);
-            GitContributions = await _dashboard.GetGitContributionsAsync();
 
             return Page();
         }

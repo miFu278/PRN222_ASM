@@ -884,4 +884,214 @@ a:hover {
     backface-visibility: hidden;
 }
 
-
+/* --- Left Sidebar Layout --- */
+.zen-layout-wrapper {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.zen-sidebar {
+    width: 260px;
+    background: var(--bg-washi);
+    border-right: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1000;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    padding: 24px 16px;
+}
+
+.sidebar-is-collapsed .zen-sidebar {
+    width: 70px;
+    padding: 24px 8px;
+}
+
+.zen-sidebar-brand-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    padding: 0 8px;
+}
+
+.sidebar-is-collapsed .zen-sidebar-brand-wrapper {
+    justify-content: center;
+    padding: 0;
+}
+
+.sidebar-is-collapsed .brand-text {
+    display: none;
+}
+
+.zen-sidebar-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 6px;
+    transition: color 0.2s, transform 0.3s;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.zen-sidebar-toggle:hover {
+    color: var(--accent-shu);
+}
+
+.sidebar-is-collapsed .zen-sidebar-toggle i {
+    transform: rotate(180deg);
+}
+
+.zen-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.zen-sidebar-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    color: var(--text-sumi);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    gap: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.zen-sidebar-item i {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    transition: color 0.2s;
+    flex-shrink: 0;
+}
+
+.zen-sidebar-item:hover {
+    background: rgba(0, 0, 0, 0.03);
+    color: var(--accent-shu);
+}
+
+.zen-sidebar-item:hover i {
+    color: var(--accent-shu);
+}
+
+.zen-sidebar-item.active {
+    background: var(--text-sumi);
+    color: var(--bg-washi);
+}
+
+.zen-sidebar-item.active i {
+    color: var(--bg-washi);
+}
+
+.sidebar-is-collapsed .nav-text {
+    display: none;
+}
+
+.sidebar-is-collapsed .zen-sidebar-item {
+    justify-content: center;
+    padding: 12px 0;
+    gap: 0;
+}
+
+.zen-sidebar-footer {
+    border-top: 1px solid var(--border-light);
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.zen-sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 8px;
+    overflow: hidden;
+}
+
+.sidebar-is-collapsed .zen-sidebar-user {
+    justify-content: center;
+    padding: 0;
+}
+
+.zen-sidebar-user-info {
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-is-collapsed .zen-sidebar-user-info {
+    display: none;
+}
+
+.zen-sidebar-user-info .zen-user-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.zen-sidebar-user-info .zen-user-role {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+}
+
+.zen-content-wrapper {
+    flex: 1;
+    margin-left: 260px;
+    transition: margin-left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-width: 0; /* Cho phép co giãn khi có nội dung rộng */
+}
+
+.sidebar-is-collapsed .zen-content-wrapper {
+    margin-left: 70px;
+}
+
+.zen-content-wrapper .zen-main {
+    padding: 40px 60px 60px 60px;
+    width: 100%;
+    max-width: 100%; /* Cho phép chiếm hết chiều ngang main */
+    flex: 1;
+}
+
+.zen-content-wrapper .zen-footer {
+    margin-top: auto;
+}
+
+/* Ẩn menu cuộn ngang cũ trên di động nếu có */
+@media (max-width: 768px) {
+    .zen-sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar-is-collapsed .zen-sidebar {
+        transform: translateX(0);
+        width: 70px;
+    }
+    .zen-content-wrapper {
+        margin-left: 0 !important;
+    }
+}

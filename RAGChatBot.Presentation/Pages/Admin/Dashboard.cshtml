@@ -1,0 +1,324 @@
+@page "/Admin/Dashboard"
+@model RAGChatBot.Presentation.Pages.Admin.DashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<style>
+    .dash-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 24px;
+        margin-bottom: 48px;
+    }
+    .dash-card {
+        border: 1px solid var(--border-light);
+        padding: 28px 24px;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 0.3s ease;
+    }
+    .dash-card:hover {
+        border-color: var(--accent-shu);
+    }
+    .dash-card-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+    }
+    .dash-card-value {
+        font-family: var(--font-serif);
+        font-size: 2.8rem;
+        font-weight: 500;
+        line-height: 1;
+    }
+    .dash-card-icon {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 1.4rem;
+        color: var(--accent-shu);
+        opacity: 0.5;
+    }
+    .dash-section {
+        margin-bottom: 48px;
+    }
+    .dash-section-title {
+        font-family: var(--font-serif);
+        font-size: 1.6rem;
+        margin-bottom: 24px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-light);
+    }
+    .dash-chart-container {
+        position: relative;
+        height: 350px;
+        width: 100%;
+    }
+    .dash-filter {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .dash-filter select, .dash-filter input {
+        border: 1px solid var(--border-light);
+        background: transparent;
+        padding: 8px 14px;
+        font-size: 0.85rem;
+        color: var(--text-sumi);
+        font-family: var(--font-sans);
+    }
+    .dash-filter select:focus, .dash-filter input:focus {
+        outline: none;
+        border-color: var(--accent-shu);
+    }
+    .git-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .git-table th, .git-table td {
+        padding: 14px 16px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-light);
+        font-size: 0.9rem;
+    }
+    .git-table th {
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+    .git-table tr:hover {
+        background: rgba(0,0,0,0.01);
+    }
+</style>
+
+<div class="gsap-fade-up">
+    <!-- Header -->
+    <div class="mb-5">
+        <div class="text-accent mb-2" style="font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase;">
+            Tổng Quan Hệ Thống
+        </div>
+        <h1 class="font-serif m-0" style="font-size: 3rem;">Dashboard</h1>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="dash-grid zen-list-item">
+        <div class="dash-card">
+            <div class="dash-card-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="dash-card-label">Tổng Người Dùng</div>
+            <div class="dash-card-value" id="statUsers">@Model.Stats.TotalUsers</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-card-icon"><i class="fa-solid fa-crown"></i></div>
+            <div class="dash-card-label">Premium Users</div>
+            <div class="dash-card-value" id="statPremium">@Model.Stats.PremiumUsers</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-card-icon"><i class="fa-solid fa-file-lines"></i></div>
+            <div class="dash-card-label">Tổng Tài Liệu</div>
+            <div class="dash-card-value" id="statDocs">@Model.Stats.TotalDocuments</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-card-icon"><i class="fa-solid fa-comments"></i></div>
+            <div class="dash-card-label">Tổng Lượt Chat</div>
+            <div class="dash-card-value" id="statChats">@Model.Stats.TotalChatSessions</div>
+        </div>
+    </div>
+
+    <!-- Revenue Chart -->
+    <div class="dash-section zen-list-item">
+        <div class="dash-section-title">Biểu Đồ Doanh Thu & Hoạt Động</div>
+        <div class="dash-filter">
+            <select id="periodFilter">
+                <option value="Month" selected="@(Model.Period == "Month")">Theo Tháng</option>
+                <option value="Quarter" selected="@(Model.Period == "Quarter")">Theo Quý</option>
+                <option value="Year" selected="@(Model.Period == "Year")">Theo Năm</option>
+            </select>
+            <input type="number" id="yearFilter" value="@Model.Year" min="2020" max="2030" style="width: 100px;" />
+            <button class="btn-zen" id="filterBtn" style="padding: 8px 20px; font-size: 0.85rem;">Lọc</button>
+        </div>
+        <div class="dash-chart-container">
+            <canvas id="revenueChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Benchmark Chart -->
+    <div class="dash-section zen-list-item">
+        <div class="dash-section-title">Hiệu Năng Hệ Thống (Benchmark)</div>
+        @if (Model.BenchmarkAverages.Any())
+        {
+            <div class="dash-chart-container" style="height: 300px;">
+                <canvas id="benchmarkChart"></canvas>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted" style="font-weight: 300;">
+                <i class="fa-solid fa-gauge me-2"></i> Chưa có dữ liệu benchmark. Hệ thống sẽ tự động đo khi xử lý tài liệu.
+            </div>
+        }
+    </div>
+
+
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    // ── Revenue Chart ──
+    const revenueLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueChart.Select(r => r.Label)));
+    const revenueData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueChart.Select(r => r.Revenue)));
+    const docData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueChart.Select(r => r.DocumentCount)));
+    const chatData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueChart.Select(r => r.ChatCount)));
+
+    const revenueCtx = document.getElementById('revenueChart')?.getContext('2d');
+    let revenueChart;
+    if (revenueCtx) {
+        revenueChart = new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: revenueLabels,
+                datasets: [
+                    {
+                        label: 'Doanh Thu (VNĐ)',
+                        data: revenueData,
+                        backgroundColor: 'rgba(200, 80, 60, 0.7)',
+                        borderColor: 'rgba(200, 80, 60, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Tài Liệu Mới',
+                        data: docData,
+                        type: 'line',
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y1'
+                    },
+                    {
+                        label: 'Lượt Chat',
+                        data: chatData,
+                        type: 'line',
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { labels: { font: { family: "'Noto Sans JP', sans-serif", size: 12 } } }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        position: 'left',
+                        title: { display: true, text: 'Doanh Thu (VNĐ)', font: { size: 11 } },
+                        grid: { color: 'rgba(0,0,0,0.04)' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        position: 'right',
+                        title: { display: true, text: 'Số lượng', font: { size: 11 } },
+                        grid: { drawOnChartArea: false }
+                    },
+                    x: { grid: { color: 'rgba(0,0,0,0.04)' } }
+                }
+            }
+        });
+    }
+
+    // ── Benchmark Chart ──
+    const benchLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BenchmarkAverages.Select(b => b.OperationType)));
+    const benchData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BenchmarkAverages.Select(b => b.AvgMs)));
+
+    const benchCtx = document.getElementById('benchmarkChart')?.getContext('2d');
+    if (benchCtx && benchLabels.length > 0) {
+        new Chart(benchCtx, {
+            type: 'bar',
+            data: {
+                labels: benchLabels,
+                datasets: [{
+                    label: 'Thời Gian Trung Bình (ms)',
+                    data: benchData,
+                    backgroundColor: [
+                        'rgba(200, 80, 60, 0.6)',
+                        'rgba(99, 102, 241, 0.6)',
+                        'rgba(5, 150, 105, 0.6)',
+                        'rgba(245, 158, 11, 0.6)'
+                    ],
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Milliseconds (ms)', font: { size: 11 } },
+                        grid: { color: 'rgba(0,0,0,0.04)' }
+                    },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // ── AJAX Filter ──
+    const filterBtn = document.getElementById('filterBtn');
+    if (filterBtn) {
+        filterBtn.addEventListener('click', async function () {
+            const period = document.getElementById('periodFilter').value;
+            const year = document.getElementById('yearFilter').value;
+
+            try {
+                // Load revenue data
+                const revenueRes = await fetch(`/Admin/Dashboard?handler=RevenueData&period=${period}&year=${year}`);
+                const revenueJson = await revenueRes.json();
+
+                if (revenueChart) {
+                    revenueChart.data.labels = revenueJson.map(r => r.label);
+                    revenueChart.data.datasets[0].data = revenueJson.map(r => r.revenue);
+                    revenueChart.data.datasets[1].data = revenueJson.map(r => r.documentCount);
+                    revenueChart.data.datasets[2].data = revenueJson.map(r => r.chatCount);
+                    revenueChart.update();
+                }
+
+                // Load stats data
+                const statsRes = await fetch(`/Admin/Dashboard?handler=StatsData&period=${period}&year=${year}`);
+                const statsJson = await statsRes.json();
+
+                document.getElementById('statUsers').textContent = statsJson.totalUsers;
+                document.getElementById('statPremium').textContent = statsJson.premiumUsers;
+                document.getElementById('statDocs').textContent = statsJson.totalDocuments;
+                document.getElementById('statChats').textContent = statsJson.totalChatSessions;
+
+                if (window.zenInteract) window.zenInteract.showToast('Đã cập nhật dữ liệu.');
+            } catch (err) {
+                console.error('Filter error:', err);
+                if (window.zenInteract) window.zenInteract.showToast('Lỗi khi lọc dữ liệu.', 'error');
+            }
+        });
+    }
+})();
+</script>
+}

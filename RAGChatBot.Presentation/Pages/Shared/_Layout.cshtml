@@ -4,6 +4,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - RAG ChatBot</title>
+    
+    <!-- Script chống nháy giao diện khi thu gọn sidebar -->
+    <script>
+        (function () {
+            var collapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+            if (collapsed) {
+                document.documentElement.classList.add('sidebar-is-collapsed');
+            }
+        })();
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -15,72 +26,107 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="bg-washi text-sumi">
-    <header class="zen-header zen-shoji-glass sticky-top">
-        <a class="zen-brand" asp-area="" asp-page="/Index">
-            <span class="hanko-seal">悟</span> RAG CHATBOT
-        </a>
-        
-        <!-- Sleek Horizontal Scroll Menu (Cuộn ngang tĩnh lặng) -->
-        <nav class="zen-scroll-menu">
-            @if (User.Identity?.IsAuthenticated == true && User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value == "Admin")
-            {
-                <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Dashboard">Dashboard</a>
-                <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Users">Tài Khoản</a>
-                <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Whitelist">Whitelist</a>
-                <a class="zen-menu-item-sm" asp-area="" asp-page="/Admin/Payments">Giao Dịch</a>
-            }
-            else
-            {
-                <a class="zen-menu-item-sm" asp-area="" asp-page="/Index">Trò Chuyện</a>
-            }
-            <a class="zen-menu-item-sm" asp-area="" asp-page="/Courses/Index">Môn Học</a>
-            <a class="zen-menu-item-sm" asp-area="" asp-page="/Subscription/Index">Gói Dịch Vụ</a>
-        </nav>
+    @{
+        var displayName = User.Identity?.IsAuthenticated == true
+            ? (User.FindFirst("FullName")?.Value
+                ?? User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value
+                ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                ?? User.Identity?.Name
+                ?? "Người dùng")
+            : string.Empty;
+            
+        var userRole = User.Identity?.IsAuthenticated == true 
+            ? (User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User")
+            : string.Empty;
 
-        <!-- Fixed Navigation Actions -->
-        @{
-            var displayName = User.Identity?.IsAuthenticated == true
-                ? (User.FindFirst("FullName")?.Value
-                    ?? User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value
-                    ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
-                    ?? User.Identity?.Name
-                    ?? "Người dùng")
-                : string.Empty;
-                
-            var userRole = User.Identity?.IsAuthenticated == true 
-                ? (User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User")
-                : string.Empty;
-        }
-        <div class="zen-nav-actions">
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <div class="zen-user-badge" style="gap: 12px;">
-                    <span class="zen-user-avatar">@(displayName.Length > 0 ? displayName[0].ToString().ToUpper() : "?")</span>
-                    <div class="d-flex flex-column justify-content-center">
-                        <span class="zen-user-name" style="line-height: 1.2;">@displayName</span>
-                        <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px;">@userRole</span>
+        var currentPath = Context.Request.Path.ToString().ToLower();
+    }
+
+    <div class="zen-layout-wrapper">
+        <!-- Collapsible Left Sidebar -->
+        <aside class="zen-sidebar" id="zenSidebar">
+            <!-- Sidebar Brand -->
+            <div class="zen-sidebar-brand-wrapper">
+                <a class="zen-brand" asp-area="" asp-page="/Index">
+                    <span class="hanko-seal">悟</span> <span class="brand-text ms-2" style="font-size: 1.1rem; font-weight: 700;">RAG CHATBOT</span>
+                </a>
+                <button class="zen-sidebar-toggle" id="sidebarToggle" type="button" title="Thu gọn / Mở rộng">
+                    <i class="fa-solid fa-chevron-left" id="toggleIcon"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Items -->
+            <nav class="zen-sidebar-nav">
+                @if (User.Identity?.IsAuthenticated == true && userRole == "Admin")
+                {
+                    <a class="zen-sidebar-item @(currentPath.Contains("/admin/dashboard") ? "active" : "")" asp-area="" asp-page="/Admin/Dashboard">
+                        <i class="fa-solid fa-chart-line"></i> <span class="nav-text">Dashboard</span>
+                    </a>
+                    <a class="zen-sidebar-item @(currentPath.Contains("/admin/users") ? "active" : "")" asp-area="" asp-page="/Admin/Users">
+                        <i class="fa-solid fa-users-gear"></i> <span class="nav-text">Tài Khoản</span>
+                    </a>
+                    <a class="zen-sidebar-item @(currentPath.Contains("/admin/whitelist") ? "active" : "")" asp-area="" asp-page="/Admin/Whitelist">
+                        <i class="fa-solid fa-shield-halved"></i> <span class="nav-text">Whitelist</span>
+                    </a>
+                    <a class="zen-sidebar-item @(currentPath.Contains("/admin/payments") ? "active" : "")" asp-area="" asp-page="/Admin/Payments">
+                        <i class="fa-solid fa-credit-card"></i> <span class="nav-text">Giao Dịch</span>
+                    </a>
+                    <a class="zen-sidebar-item @(currentPath.Contains("/admin/logs") ? "active" : "")" asp-area="" asp-page="/Admin/Logs">
+                        <i class="fa-solid fa-terminal"></i> <span class="nav-text">Xem Logs</span>
+                    </a>
+                }
+                else
+                {
+                    <a class="zen-sidebar-item @(currentPath == "/" || currentPath.Contains("/index") ? "active" : "")" asp-area="" asp-page="/Index">
+                        <i class="fa-solid fa-comments"></i> <span class="nav-text">Trò Chuyện</span>
+                    </a>
+                }
+                <a class="zen-sidebar-item @(currentPath.Contains("/courses") ? "active" : "")" asp-area="" asp-page="/Courses/Index">
+                    <i class="fa-solid fa-book-open"></i> <span class="nav-text">Môn Học</span>
+                </a>
+                <a class="zen-sidebar-item @(currentPath.Contains("/subscription") ? "active" : "")" asp-area="" asp-page="/Subscription/Index">
+                    <i class="fa-solid fa-crown"></i> <span class="nav-text">Gói Dịch Vụ</span>
+                </a>
+            </nav>
+
+            <!-- Sidebar Footer -->
+            <div class="zen-sidebar-footer">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="zen-sidebar-user">
+                        <span class="zen-user-avatar">@(displayName.Length > 0 ? displayName[0].ToString().ToUpper() : "?")</span>
+                        <div class="zen-sidebar-user-info">
+                            <span class="zen-user-name">@displayName</span>
+                            <span class="zen-user-role">@userRole</span>
+                        </div>
                     </div>
-                </div>
-                <form action="/Account/Logout" method="post" style="display: inline;">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn-zen magnetic-btn" style="padding: 10px 28px;">Đăng Xuất</button>
-                </form>
-            }
-            else
-            {
-                <a class="btn-zen magnetic-btn" asp-area="" asp-page="/Account/Login">Đăng Nhập</a>
-            }
+                    <form action="/Account/Logout" method="post" class="w-100 mt-2">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-zen w-100 text-center py-2 px-3 magnetic-btn" style="font-size: 0.8rem; border-radius: 6px;">
+                            <i class="fa-solid fa-right-from-bracket"></i> <span class="nav-text ms-1">Đăng Xuất</span>
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <a class="btn-zen w-100 text-center py-2 px-3 text-decoration-none magnetic-btn" asp-area="" asp-page="/Account/Login" style="font-size: 0.8rem; border-radius: 6px; display: block;">
+                        <i class="fa-solid fa-right-to-bracket"></i> <span class="nav-text ms-1">Đăng Nhập</span>
+                    </a>
+                }
+            </div>
+        </aside>
+
+        <!-- Right Content Wrapper -->
+        <div class="zen-content-wrapper">
+            <main class="zen-main">
+                @RenderBody()
+            </main>
+
+            <footer class="zen-footer py-4 border-top border-light text-center text-muted">
+                <p class="mb-0 small">© 2026 RAG Chatbot.</p>
+            </footer>
         </div>
-
-    </header>
-
-    <main class="zen-main">
-        @RenderBody()
-    </main>
-
-    <footer class="zen-container py-5 mt-5 border-top border-light text-center text-muted">
-        <p class="mb-0 small">© 2026 RAG Chatbot.</p>
-    </footer>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -90,11 +136,30 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            // Khởi tạo các hiệu ứng Zen
             if (window.zenInteract) {
                 window.zenInteract.initLenis();
                 window.zenInteract.initPageReveal();
                 window.zenInteract.initMagneticButtons();
                 window.zenInteract.init3DScroll();
+            }
+
+            // Xử lý đóng/mở sidebar
+            const sidebar = document.getElementById('zenSidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            
+            if (toggleBtn && sidebar) {
+                toggleBtn.addEventListener('click', function () {
+                    const isCollapsed = document.documentElement.classList.contains('sidebar-is-collapsed');
+                    
+                    if (isCollapsed) {
+                        document.documentElement.classList.remove('sidebar-is-collapsed');
+                        localStorage.setItem('sidebar-collapsed', 'false');
+                    } else {
+                        document.documentElement.classList.add('sidebar-is-collapsed');
+                        localStorage.setItem('sidebar-collapsed', 'true');
+                    }
+                });
             }
         });
     </script>

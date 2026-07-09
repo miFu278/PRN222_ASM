@@ -1,4 +1,4 @@
-﻿@page "/Courses/{CourseCode}/Documents"
+@page "/Courses/{CourseCode}/Documents"
 @model RAGChatBot.Presentation.Pages.Courses.DocumentsModel
 @{
     ViewData["Title"] = $"Quản Lý Tài Liệu - {Model.CourseCode}";
@@ -62,6 +62,26 @@
                         <input type="file" asp-for="UploadedFile" class="form-inline-zen w-100" accept=".pdf,.docx" required style="padding: 0 !important; cursor: pointer;" />
                         <div class="mt-2 small text-muted" style="font-weight: 300;">
                             Giới hạn: @(Model.CurrentSubscriptionTier == "Premium" ? "50 MB (Premium)" : "5 MB (Free)")
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase tracking-wider">Chiến lược Chunking:</label>
+                        <select asp-for="ChunkingStrategy" class="form-inline-zen w-100" style="cursor: pointer;">
+                            <option value="Character">Character (theo ký tự)</option>
+                            <option value="Word">Word (theo từ)</option>
+                            <option value="Paragraph">Paragraph (theo đoạn văn)</option>
+                        </select>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-6">
+                            <label class="form-label text-muted small text-uppercase tracking-wider">Chunk Size:</label>
+                            <input type="number" asp-for="ChunkSize" class="form-inline-zen w-100" min="100" max="5000" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small text-uppercase tracking-wider">Overlap:</label>
+                            <input type="number" asp-for="Overlap" class="form-inline-zen w-100" min="0" max="500" />
                         </div>
                     </div>
 

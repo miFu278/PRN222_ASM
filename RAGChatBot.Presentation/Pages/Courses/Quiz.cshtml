@@ -1,0 +1,196 @@
+@page "/Courses/{CourseCode}/Quiz"
+@model RAGChatBot.Presentation.Pages.Courses.QuizModel
+@{
+    ViewData["Title"] = $"Ôn Tập Trắc Nghiệm - {Model.CourseCode}";
+}
+
+<div class="zen-container py-4 gsap-fade-up">
+    <!-- Back to Documents -->
+    <div class="mb-4">
+        <a href="/Courses/@Model.CourseCode/Documents" class="zen-action-link text-muted small"><i class="fa-solid fa-arrow-left me-2"></i> Trở về tài liệu</a>
+    </div>
+
+    <!-- Hero Header -->
+    <div class="zen-hero mb-5" style="min-height: auto;">
+        <div class="zen-hero-title">
+            <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">Ôn Luyện Trắc Nghiệm</div>
+            <h2 class="font-serif m-0" style="font-size: 2.5rem;">@Model.CourseCode</h2>
+        </div>
+        <div class="zen-hero-desc">
+            Hệ thống tự động sinh câu hỏi trắc nghiệm từ nội dung tài liệu môn học bằng AI. Hãy hoàn thành bài kiểm tra để đánh giá mức độ hiểu bài.
+        </div>
+    </div>
+
+    <!-- Quiz Container -->
+    <div id="quizLoading" class="text-center py-5">
+        <span class="spinner-border spinner-border-sm text-secondary me-2"></span>
+        <span class="text-muted" style="font-weight: 300;">Đang tải câu hỏi...</span>
+    </div>
+
+    <div id="quizEmpty" class="text-center py-5" style="display: none;">
+        <span class="hanko-seal mb-3 d-block mx-auto" style="opacity: 0.4; width: 48px; height: 48px; font-size: 1.4rem;">無</span>
+        <div style="font-weight: 300;" class="text-muted">Chưa có câu hỏi trắc nghiệm nào cho môn học này.<br>Vui lòng tải lên tài liệu và đợi hệ thống tự động sinh câu hỏi.</div>
+    </div>
+
+    <form id="quizForm" style="display: none;">
+        <div id="quizQuestions" class="d-flex flex-column gap-4"></div>
+
+        <div class="mt-5 d-flex justify-content-center">
+            <button type="submit" class="btn-zen primary magnetic-btn" style="padding: 14px 48px; font-size: 1.1rem;" id="submitQuizBtn">
+                <span class="submit-text"><i class="fa-solid fa-paper-plane me-2"></i>Nộp Bài</span>
+                <span class="submit-spinner d-none">
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    Đang chấm điểm...
+                </span>
+            </button>
+        </div>
+    </form>
+
+    <!-- Result Modal -->
+    <div class="modal fade" id="resultModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0;">
+                <div class="modal-body text-center py-5 px-4">
+                    <div class="hanko-seal mx-auto mb-4" style="width: 64px; height: 64px; font-size: 1.8rem;" id="resultSeal">点</div>
+                    <h3 class="font-serif mb-3" id="resultTitle">Kết Quả</h3>
+                    <div class="mb-3" style="font-size: 3rem; font-weight: 500; font-family: var(--font-serif);">
+                        <span id="resultScore">0</span> / <span id="resultTotal">0</span>
+                    </div>
+                    <div class="text-muted mb-4" style="font-weight: 300;">
+                        Tỷ lệ đúng: <strong id="resultPercent">0</strong>%
+                    </div>
+                    <div class="d-flex gap-3 justify-content-center">
+                        <button class="btn-zen" data-bs-dismiss="modal">Đóng</button>
+                        <button class="btn-zen primary" onclick="location.reload()">Làm Lại</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const courseCode = '@Model.CourseCode';
+    const quizLoading = document.getElementById('quizLoading');
+    const quizEmpty = document.getElementById('quizEmpty');
+    const quizForm = document.getElementById('quizForm');
+    const quizQuestions = document.getElementById('quizQuestions');
+
+    // Load quiz questions
+    fetch(`/api/quiz?courseCode=${encodeURIComponent(courseCode)}`)
+        .then(res => res.json())
+        .then(data => {
+            quizLoading.style.display = 'none';
+
+            if (!data || data.length === 0) {
+                quizEmpty.style.display = 'block';
+                return;
+            }
+
+            quizForm.style.display = 'block';
+            data.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = 'zen-list-item';
+                card.style.cssText = 'padding: 28px 0; border-bottom: 1px solid var(--border-light);';
+                card.innerHTML = `
+                    <div class="mb-3" style="font-weight: 500; font-size: 1.1rem;">
+                        <span class="text-accent me-2" style="font-family: var(--font-serif);">問 ${idx + 1}.</span>
+                        ${escapeHtml(q.questionText)}
+                    </div>
+                    <div class="d-flex flex-column gap-2 ps-3">
+                        ${buildOption(q.id, 'A', q.optionA)}
+                        ${buildOption(q.id, 'B', q.optionB)}
+                        ${buildOption(q.id, 'C', q.optionC)}
+                        ${buildOption(q.id, 'D', q.optionD)}
+                    </div>
+                `;
+                quizQuestions.appendChild(card);
+            });
+
+            // GSAP animation
+            if (typeof gsap !== 'undefined') {
+                gsap.fromTo('.zen-list-item', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.08, ease: 'power2.out' });
+            }
+        })
+        .catch(err => {
+            quizLoading.style.display = 'none';
+            quizEmpty.style.display = 'block';
+            console.error('Quiz load error:', err);
+        });
+
+    function buildOption(qId, letter, text) {
+        return `
+            <label class="d-flex align-items-center gap-3" style="cursor: pointer; padding: 10px 14px; border: 1px solid var(--border-light); transition: border-color 0.2s;"
+                   onmouseover="this.style.borderColor='var(--accent-shu)'" onmouseout="this.style.borderColor='var(--border-light)'">
+                <input type="radio" name="q_${qId}" value="${letter}" style="accent-color: var(--accent-shu); width: 16px; height: 16px;" required />
+                <span><strong>${letter}.</strong> ${escapeHtml(text)}</span>
+            </label>
+        `;
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+    }
+
+    // Submit quiz
+    quizForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const btn = document.getElementById('submitQuizBtn');
+        btn.disabled = true;
+        btn.querySelector('.submit-text').classList.add('d-none');
+        btn.querySelector('.submit-spinner').classList.remove('d-none');
+
+        // Collect answers
+        const answers = [];
+        const radios = quizForm.querySelectorAll('input[type="radio"]:checked');
+        radios.forEach(r => {
+            const qId = r.name.replace('q_', '');
+            answers.push({ questionId: qId, selectedAnswer: r.value });
+        });
+
+        try {
+            const response = await fetch('/api/quiz?handler=Submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ courseCode: courseCode, answers: answers })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                document.getElementById('resultScore').textContent = result.score;
+                document.getElementById('resultTotal').textContent = result.totalQuestions;
+                document.getElementById('resultPercent').textContent = result.percentage;
+
+                if (result.percentage >= 80) {
+                    document.getElementById('resultSeal').textContent = '優';
+                    document.getElementById('resultTitle').textContent = 'Xuất Sắc!';
+                } else if (result.percentage >= 50) {
+                    document.getElementById('resultSeal').textContent = '良';
+                    document.getElementById('resultTitle').textContent = 'Khá Tốt!';
+                } else {
+                    document.getElementById('resultSeal').textContent = '再';
+                    document.getElementById('resultTitle').textContent = 'Cần Ôn Thêm';
+                }
+
+                new bootstrap.Modal(document.getElementById('resultModal')).show();
+            } else {
+                alert(result.error || 'Có lỗi xảy ra khi chấm bài.');
+            }
+        } catch (err) {
+            alert('Không thể kết nối tới máy chủ. Vui lòng thử lại.');
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+            btn.querySelector('.submit-text').classList.remove('d-none');
+            btn.querySelector('.submit-spinner').classList.add('d-none');
+        }
+    });
+})();
+</script>
+}
