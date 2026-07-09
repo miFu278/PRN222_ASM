@@ -47,9 +47,11 @@
             <a class="zen-menu-item-sm" asp-area="" asp-page="/Courses/Index">Môn Học</a>
             <a class="zen-menu-item-sm" asp-area="" asp-page="/Subscription/Index">Gói Dịch Vụ</a>
         </nav>
-
-        var currentPath = Context.Request.Path.ToString().ToLower();
-    }
+@{
+    var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    var displayName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "";
+    var currentPath = Context.Request.Path.ToString().ToLower();
+}
 
     <div class="zen-layout-wrapper">
         <!-- Collapsible Left Sidebar -->

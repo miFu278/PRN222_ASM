@@ -130,10 +130,21 @@ namespace RAGChatBot.BLL.Services
                     var docs = await _db.KnowledgeDocuments
                         .CountAsync(d => d.UploadedAt.Year == y);
                     var chats = await _db.ChatSessions.CountAsync(c => c.CreatedAt.Year == y);
+
+                    decimal revenue = 0m;
+                    foreach (var u in premiumUsers)
+                    {
+                        var paymentDate = u.SubscriptionExpiresAt!.Value.AddMonths(-1);
+                        if (paymentDate.Year == y)
+                        {
+                            revenue += PremiumMonthlyPrice;
+                        }
+                    }
+
                     result.Add(new MonthlyRevenueDto
                     {
                         Label = $"{y}",
-                        Revenue = chats * PremiumMonthlyPrice / 12,
+                        Revenue = revenue,
                         DocumentCount = docs,
                         ChatCount = chats
                     });
@@ -163,83 +174,6 @@ namespace RAGChatBot.BLL.Services
                 DocumentName = b.DocumentName,
                 MeasuredAt = b.MeasuredAt
             }).ToList();
-        }
-
-        public async Task<List<GitContributorDto>> GetGitContributionsAsync()
-        {
-            var repoPath = Directory.GetCurrentDirectory();
-            var contributors = new List<GitContributorDto>();
-
-            try
-            {
-                // Lấy danh sách tác giả và số commit
-                var logOutput = await RunGitCommandAsync(
-                    "shortlog -sn --all --no-merges", repoPath);
-
-                foreach (var line in logOutput.Split('\n',
-                    StringSplitOptions.RemoveEmptyEntries))
-                {
-                    var parts = line.Trim().Split('\t');
-                    if (parts.Length == 2 && int.TryParse(parts[0].Trim(), out int commits))
-                    {
-                        contributors.Add(new GitContributorDto
-                        {
-                            Author = parts[1].Trim(),
-                            CommitCount = commits
-                        });
-                    }
-                }
-
-                // Lấy thống kê dòng code cho mỗi tác giả
-                foreach (var contributor in contributors)
-                {
-                    var statOutput = await RunGitCommandAsync(
-                        $"log --author=\"{contributor.Author}\" --pretty=tformat: --numstat --all",
-                        repoPath);
-
-                    int added = 0, deleted = 0;
-                    foreach (var line in statOutput.Split('\n',
-                        StringSplitOptions.RemoveEmptyEntries))
-                    {
-                        var parts = line.Split('\t');
-                        if (parts.Length >= 2 &&
-                            int.TryParse(parts[0], out int a) &&
-                            int.TryParse(parts[1], out int d))
-                        {
-                            added += a;
-                            deleted += d;
-                        }
-                    }
-                    contributor.LinesAdded = added;
-                    contributor.LinesDeleted = deleted;
-                }
-            }
-            catch
-            {
-                contributors.Add(new GitContributorDto
-                {
-                    Author = "Git không khả dụng",
-                    CommitCount = 0
-                });
-            }
-
-            return contributors;
-        }
-
-        private static async Task<string> RunGitCommandAsync(string args, string workDir)
-        {
-            var psi = new ProcessStartInfo("git", args)
-            {
-                WorkingDirectory = workDir,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using var process = Process.Start(psi)!;
-            var output = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-            return output;
         }
     }
 }
