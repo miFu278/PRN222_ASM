@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
@@ -54,7 +54,7 @@ namespace RAGChatBot.Presentation.Pages.Account
             }
 
             await SignInUser(userDto);
-            return LocalRedirect(ReturnUrl ?? "/");
+            return LocalRedirect(ReturnUrl ?? (userDto.Role == "Admin" ? "/Admin/Dashboard" : "/"));
         }
 
         public IActionResult OnPostExternalLogin()
@@ -111,7 +111,7 @@ namespace RAGChatBot.Presentation.Pages.Account
             }
 
             await SignInUser(userDto);
-            return LocalRedirect(ReturnUrl ?? "/");
+            return LocalRedirect(ReturnUrl ?? (userDto.Role == "Admin" ? "/Admin/Dashboard" : "/"));
         }
 
         private async Task SignInUser(UserDto userDto)

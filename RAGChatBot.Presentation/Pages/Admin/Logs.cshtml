@@ -1,0 +1,168 @@
+@page "/Admin/Logs"
+@model RAGChatBot.Presentation.Pages.Admin.LogsModel
+@{
+    ViewData["Title"] = "Hệ thống Logs";
+}
+
+<div class="zen-container py-5 gsap-fade-up">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-end mb-5 flex-wrap gap-3">
+        <div>
+            <div class="text-accent mb-2" style="font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase;">
+                Admin Dashboard
+            </div>
+            <h1 class="font-serif m-0" style="font-size: 3rem;">Logs Hệ Thống</h1>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-page="/Admin/Dashboard" class="btn-zen" style="padding: 10px 20px; font-size: 0.85rem; background: transparent; border: 1px solid var(--border-light); color: var(--text-sumi); text-decoration: none;">
+                <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
+            </a>
+            @if (!string.IsNullOrEmpty(Model.SelectedFile))
+            {
+                <form method="post" asp-page-handler="ClearLog" asp-route-logFile="@Model.SelectedFile" onsubmit="return confirm('Bạn có chắc chắn muốn xóa rỗng tệp log này?');" style="display:inline;">
+                    <button type="submit" class="btn-zen" style="padding: 10px 20px; font-size: 0.85rem; background: var(--accent-shu); color: white; border: none;">
+                        <i class="fa-solid fa-trash-can me-1"></i> Xóa Rỗng Log
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div style="border: 1px solid var(--border-light); padding: 24px; margin-bottom: 32px; background: rgba(255,255,255,0.02);">
+        <form method="get" class="row g-3 align-items-end" id="filterForm">
+            <!-- Chọn file -->
+            <div class="col-md-4">
+                <label class="small text-muted mb-2 d-block" style="text-transform: uppercase; letter-spacing: 0.1em;">Chọn tệp tin Log</label>
+                <select name="LogFile" class="w-100" style="border: 1px solid var(--border-light); background: transparent; padding: 10px 14px; font-size: 0.9rem; color: var(--text-sumi);" onchange="this.form.submit()">
+                    @foreach (var file in Model.LogFiles)
+                    {
+                        <option value="@file" selected="@(file == Model.SelectedFile ? "selected" : null)">@file</option>
+                    }
+                </select>
+            </div>
+            
+            <!-- Chọn số dòng -->
+            <div class="col-md-2">
+                <label class="small text-muted mb-2 d-block" style="text-transform: uppercase; letter-spacing: 0.1em;">Hiển thị tối đa</label>
+                <select name="MaxLines" class="w-100" style="border: 1px solid var(--border-light); background: transparent; padding: 10px 14px; font-size: 0.9rem; color: var(--text-sumi);" onchange="this.form.submit()">
+                    <option value="100" selected="@(Model.MaxLines == 100 ? "selected" : null)">100 dòng</option>
+                    <option value="200" selected="@(Model.MaxLines == 200 ? "selected" : null)">200 dòng</option>
+                    <option value="500" selected="@(Model.MaxLines == 500 ? "selected" : null)">500 dòng</option>
+                    <option value="1000" selected="@(Model.MaxLines == 1000 ? "selected" : null)">1000 dòng</option>
+                </select>
+            </div>
+
+            <!-- Tìm kiếm từ khóa -->
+            <div class="col-md-4">
+                <label class="small text-muted mb-2 d-block" style="text-transform: uppercase; letter-spacing: 0.1em;">Tìm kiếm từ khóa</label>
+                <div style="position: relative;">
+                    <input type="text" name="SearchTerm" class="w-100" placeholder="Tìm nội dung log..." value="@Model.SearchTerm" style="border: 1px solid var(--border-light); background: transparent; padding: 10px 40px 10px 14px; font-size: 0.9rem; color: var(--text-sumi);" />
+                    <button type="submit" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted);"><i class="fa-solid fa-magnifying-glass"></i></button>
+                </div>
+            </div>
+
+            <!-- Reset bộ lọc -->
+            <div class="col-md-2">
+                <a asp-page="/Admin/Logs" class="btn-zen text-center d-block" style="padding: 10px 20px; font-size: 0.9rem; background: transparent; border: 1px solid var(--border-light); color: var(--text-sumi); text-decoration: none; width: 100%;">Xóa Lọc</a>
+            </div>
+
+            <!-- Level Tabs Hidden Input -->
+            <input type="hidden" name="Level" id="levelInput" value="@Model.Level" />
+        </form>
+    </div>
+
+    <!-- Level Tabs & Stats -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex gap-2">
+            <button class="btn-zen" style="padding: 6px 16px; font-size: 0.8rem; background: @(Model.Level == "All" ? "var(--text-sumi)" : "transparent"); color: @(Model.Level == "All" ? "var(--bg-washi)" : "var(--text-sumi)"); border: 1px solid var(--border-light);" onclick="setLevel('All')">Tất cả</button>
+            <button class="btn-zen" style="padding: 6px 16px; font-size: 0.8rem; background: @(Model.Level == "Info" ? "#10b981" : "transparent"); color: @(Model.Level == "Info" ? "white" : "var(--text-sumi)"); border: 1px solid var(--border-light);" onclick="setLevel('Info')">Info</button>
+            <button class="btn-zen" style="padding: 6px 16px; font-size: 0.8rem; background: @(Model.Level == "Warning" ? "#f59e0b" : "transparent"); color: @(Model.Level == "Warning" ? "black" : "var(--text-sumi)"); border: 1px solid var(--border-light);" onclick="setLevel('Warning')">Warning</button>
+            <button class="btn-zen" style="padding: 6px 16px; font-size: 0.8rem; background: @(Model.Level == "Error" ? "var(--accent-shu)" : "transparent"); color: @(Model.Level == "Error" ? "white" : "var(--text-sumi)"); border: 1px solid var(--border-light);" onclick="setLevel('Error')">Error</button>
+        </div>
+        <div class="small text-muted" style="font-weight: 300;">
+            Hiển thị @Model.LogLines.Count dòng log gần nhất (Mới nhất ở dưới)
+        </div>
+    </div>
+
+    <!-- Console Container -->
+    <div style="border: 1px solid var(--border-light); background: #151515; position: relative;">
+        <!-- Console Window Bar -->
+        <div class="d-flex justify-content-between align-items-center py-2 px-3" style="background: #0f0f0f; border-bottom: 1px solid var(--border-light);">
+            <div class="d-flex align-items-center gap-2">
+                <span class="d-inline-block rounded-circle" style="width: 10px; height: 10px; background: #ef4444;"></span>
+                <span class="d-inline-block rounded-circle" style="width: 10px; height: 10px; background: #eab308;"></span>
+                <span class="d-inline-block rounded-circle" style="width: 10px; height: 10px; background: #22c55e;"></span>
+                <span class="small ms-2 text-muted" style="font-family: monospace;">@Model.SelectedFile</span>
+            </div>
+            <button class="btn-zen" style="padding: 4px 10px; font-size: 0.75rem; background: transparent; border: none; color: #a3a3a3;" onclick="copyConsole()" title="Copy toàn bộ log"><i class="fa-regular fa-copy"></i> Copy</button>
+        </div>
+
+        <!-- Log Lines Console -->
+        <div id="logConsole" style="height: 600px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; line-height: 1.6; padding: 20px; background: #121212;">
+            @if (Model.LogLines.Count == 0)
+            {
+                <div class="text-center py-5" style="color: #6c757d;">
+                    <i class="fa-solid fa-receipt fs-2 mb-3 d-block"></i>
+                    Không có dòng log nào khớp với bộ lọc hiện tại.
+                </div>
+            }
+            else
+            {
+                @foreach (var line in Model.LogLines.AsEnumerable().Reverse())
+                {
+                    var color = "#a3a3a3";
+                    var bgColor = "transparent";
+                    if (line.Level == "ERR") { color = "#f87171"; bgColor = "rgba(239, 68, 68, 0.05)"; }
+                    else if (line.Level == "WRN") { color = "#fbbf24"; bgColor = "rgba(234, 179, 8, 0.05)"; }
+                    else if (line.Level == "INF") { color = "#38bdf8"; }
+
+                    <div style="padding: 4px 8px; background: @bgColor; margin-bottom: 2px; border-radius: 2px; display: flex; align-items: start; gap: 10px;">
+                        @if (!string.IsNullOrEmpty(line.Timestamp))
+                        {
+                            <span style="color: #525252; user-select: none; font-size: 0.75rem; white-space: nowrap;">@line.Timestamp</span>
+                        }
+                        @if (!string.IsNullOrEmpty(line.Level) && line.Level != "None")
+                        {
+                            <span style="color: @color; font-weight: bold; font-size: 0.75rem; min-width: 40px; text-align: center; border: 1px solid rgba(255,255,255,0.05); border-radius: 3px; display: inline-block;">@line.Level</span>
+                        }
+                        <span style="color: @(line.Level == "ERR" ? "#f87171" : line.Level == "WRN" ? "#fbbf24" : "#e5e5e5"); white-space: pre-wrap; word-break: break-all;">@line.Message</span>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        gsap.to(".gsap-fade-up", { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" });
+        
+        // Tự động cuộn xuống dưới cùng của console để xem log mới nhất
+        const consoleEl = document.getElementById('logConsole');
+        if (consoleEl) {
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+    });
+
+    function setLevel(lvl) {
+        document.getElementById('levelInput').value = lvl;
+        document.getElementById('filterForm').submit();
+    }
+
+    function copyConsole() {
+        const consoleEl = document.getElementById('logConsole');
+        let text = consoleEl.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            if (window.zenInteract) {
+                window.zenInteract.showToast('Đã copy logs vào clipboard.');
+            } else {
+                alert('Đã copy logs vào Clipboard!');
+            }
+        }).catch(err => {
+            console.error('Lỗi khi copy: ', err);
+        });
+    }
+</script>
+}

@@ -1,7 +1,9 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RAGChatBot.DAL.Interfaces;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -98,13 +100,111 @@ namespace RAGChatBot.DAL.Services
             }
         }
 
+        public async Task<List<float[]>> GenerateEmbeddingsAsync(List<string> texts)
+        {
+            if (texts == null || texts.Count == 0)
+            {
+                return new List<float[]>();
+            }
+
+            var results = new List<float[]>();
+            const int batchSize = 16; // Gom nhóm 16 chunks một lượt để an toàn cho Rate Limit
+            
+            for (int i = 0; i < texts.Count; i += batchSize)
+            {
+                var batch = texts.Skip(i).Take(batchSize).ToList();
+                try
+                {
+                    var baseUrlClean = _baseUrl.TrimEnd('/');
+                    var requestUrl = $"{baseUrlClean}/embeddings";
+
+                    var requestMessage = new HttpRequestMessage(HttpMethod.Post, requestUrl);
+                    requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                    
+                    var requestBody = new OpenAIEmbeddingRequest
+                    {
+                        Input = batch,
+                        Model = _model
+                    };
+
+                    requestMessage.Content = JsonContent.Create(requestBody);
+
+                    var response = await _httpClient.SendAsync(requestMessage);
+                    
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        _logger.LogError("Lỗi gọi API Batch Embedding: {StatusCode} - {ErrorContent}", response.StatusCode, errorContent);
+                        
+                        // Kích hoạt Mock Embedding cho batch bị lỗi này
+                        foreach (var _ in batch)
+                        {
+                            results.Add(GenerateMockEmbedding());
+                        }
+                        continue;
+                    }
+
+                    var result = await response.Content.ReadFromJsonAsync<OpenAIEmbeddingResponse>();
+                    
+                    if (result?.Data == null || result.Data.Length == 0)
+                    {
+                        _logger.LogWarning("Phản hồi Batch không chứa dữ liệu. Fallback Mock Embedding.");
+                        foreach (var _ in batch)
+                        {
+                            results.Add(GenerateMockEmbedding());
+                        }
+                        continue;
+                    }
+
+                    // Sắp xếp theo Index trả về để đảm bảo trùng khớp thứ tự gốc của texts
+                    var sortedData = result.Data.OrderBy(d => d.Index).ToList();
+                    foreach (var item in sortedData)
+                    {
+                        var embedding = item.Embedding;
+                        if (embedding.Length != 1536)
+                        {
+                            _logger.LogWarning("Kích thước Vector Embedding từ API ({ActualLength}) khác với kích thước yêu cầu (1536) trong Batch. Đang tự động điều chỉnh...", embedding.Length);
+                            var adjusted = new float[1536];
+                            Array.Copy(embedding, adjusted, Math.Min(embedding.Length, 1536));
+                            results.Add(adjusted);
+                        }
+                        else
+                        {
+                            results.Add(embedding);
+                        }
+                    }
+
+                    // Đảm bảo số lượng phần tử trả về đủ bằng cách bù đệm mock
+                    while (results.Count < i + batch.Count)
+                    {
+                        results.Add(GenerateMockEmbedding());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi xảy ra trong quá trình sinh batch embedding.");
+                    foreach (var _ in batch)
+                    {
+                        results.Add(GenerateMockEmbedding());
+                    }
+                }
+
+                // Chờ 600ms giữa các batch để tránh 429 Rate Limit (100 RPM)
+                if (i + batchSize < texts.Count)
+                {
+                    await Task.Delay(600);
+                }
+            }
+
+            return results;
+        }
+
         private float[] GenerateMockEmbedding()
         {
             var mockVector = new float[1536];
             var rand = new Random();
             for (int i = 0; i < 1536; i++)
             {
-                // Sinh giá trị ngẫu nhiên nhỏ từ -0.01 đến 0.01
                 mockVector[i] = (float)(rand.NextDouble() * 2 - 1) * 0.01f;
             }
             return mockVector;
@@ -114,7 +214,7 @@ namespace RAGChatBot.DAL.Services
         private class OpenAIEmbeddingRequest
         {
             [JsonPropertyName("input")]
-            public string Input { get; set; } = string.Empty;
+            public object Input { get; set; } = string.Empty;
 
             [JsonPropertyName("model")]
             public string Model { get; set; } = "text-embedding-3-small";
@@ -128,6 +228,9 @@ namespace RAGChatBot.DAL.Services
 
         private class OpenAIEmbeddingData
         {
+            [JsonPropertyName("index")]
+            public int Index { get; set; }
+
             [JsonPropertyName("embedding")]
             public float[] Embedding { get; set; } = Array.Empty<float>();
         }

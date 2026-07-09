@@ -8,6 +8,5 @@ namespace RAGChatBot.BLL.Services
         Task<List<MonthlyRevenueDto>> GetRevenueChartAsync(string period, int year);
         Task<List<BenchmarkAvgDto>> GetBenchmarkAveragesAsync();
         Task<List<BenchmarkPointDto>> GetRecentBenchmarksAsync(int count = 50);
-        Task<List<GitContributorDto>> GetGitContributionsAsync();
     }
 }
