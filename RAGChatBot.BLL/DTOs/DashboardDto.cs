@@ -33,11 +33,4 @@ namespace RAGChatBot.BLL.DTOs
         public DateTime MeasuredAt { get; set; }
     }
 
-    public class GitContributorDto
-    {
-        public string Author { get; set; } = string.Empty;
-        public int CommitCount { get; set; }
-        public int LinesAdded { get; set; }
-        public int LinesDeleted { get; set; }
-    }
 }
