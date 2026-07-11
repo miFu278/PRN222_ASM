@@ -10,6 +10,7 @@ WORKDIR /src
 COPY ["RAGChatBot.Presentation/RAGChatBot.Presentation.csproj", "RAGChatBot.Presentation/"]
 COPY ["RAGChatBot.BLL/RAGChatBot.BLL.csproj", "RAGChatBot.BLL/"]
 COPY ["RAGChatBot.DAL/RAGChatBot.DAL.csproj", "RAGChatBot.DAL/"]
+COPY ["RAGChatBot.Domain/RAGChatBot.Domain.csproj", "RAGChatBot.Domain/"]
 
 RUN dotnet restore "RAGChatBot.Presentation/RAGChatBot.Presentation.csproj"
 
