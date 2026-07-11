@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using RAGChatBot.Domain.Constants;
 
 namespace RAGChatBot.Presentation.Pages
 {
@@ -7,7 +8,7 @@ namespace RAGChatBot.Presentation.Pages
     {
         public IActionResult OnGet()
         {
-            if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+            if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
             {
                 return RedirectToPage("/Admin/Dashboard");
             }

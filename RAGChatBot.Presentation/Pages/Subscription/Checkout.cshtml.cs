@@ -10,10 +10,12 @@ namespace RAGChatBot.Presentation.Pages.Subscription
     public class CheckoutModel : PageModel
     {
         private readonly IVnPayService _vnPayService;
+        private readonly IPaymentService _paymentService;
 
-        public CheckoutModel(IVnPayService vnPayService)
+        public CheckoutModel(IVnPayService vnPayService, IPaymentService paymentService)
         {
             _vnPayService = vnPayService;
+            _paymentService = paymentService;
         }
 
         public string? ErrorMessage { get; set; }
@@ -29,7 +31,7 @@ namespace RAGChatBot.Presentation.Pages.Subscription
             return Page();
         }
 
-        public IActionResult OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
             var userTier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
             if (userTier == "Premium")
@@ -45,7 +47,9 @@ namespace RAGChatBot.Presentation.Pages.Subscription
             }
 
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "127.0.0.1";
-            var paymentUrl = _vnPayService.CreatePaymentUrl(userId, ipAddress);
+            const long amount = 199000;
+            var orderId = await _paymentService.CreatePendingTransactionAsync(userId, amount);
+            var paymentUrl = _vnPayService.CreatePaymentUrl(userId, ipAddress, orderId);
 
             return Redirect(paymentUrl);
         }

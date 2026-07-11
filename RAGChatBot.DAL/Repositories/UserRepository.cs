@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RAGChatBot.DAL.Context;
-using RAGChatBot.DAL.Interfaces;
-using RAGChatBot.DAL.Entities;
+using RAGChatBot.Domain.Interfaces;
+using RAGChatBot.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -19,12 +19,16 @@ namespace RAGChatBot.DAL.Repositories
 
         public async Task<User?> GetByIdAsync(Guid id)
         {
-            return await _context.Users.FindAsync(id);
+            return await _context.Users
+                .Include(user => user.Role)
+                .FirstOrDefaultAsync(user => user.Id == id);
         }
 
         public async Task<User?> GetByUsernameAsync(string username)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            return await _context.Users
+                .Include(user => user.Role)
+                .FirstOrDefaultAsync(user => user.Username == username);
         }
 
         public async Task AddAsync(User user)
@@ -34,7 +38,9 @@ namespace RAGChatBot.DAL.Repositories
 
         public async Task<IEnumerable<User>> GetAllAsync()
         {
-            return await _context.Users.ToListAsync();
+            return await _context.Users
+                .Include(user => user.Role)
+                .ToListAsync();
         }
 
         public async Task DeleteAsync(User user)

@@ -1,9 +1,9 @@
 ﻿using MiniExcelLibs;
 using Microsoft.Extensions.Logging;
-using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.Domain.Interfaces;
 using RAGChatBot.BLL.Services;
 using RAGChatBot.BLL.DTOs;
-using RAGChatBot.DAL.Entities;
+using RAGChatBot.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.IO;

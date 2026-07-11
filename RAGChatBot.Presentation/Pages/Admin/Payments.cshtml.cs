@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using RAGChatBot.Domain.Constants;
 using RAGChatBot.BLL.DTOs;
 using RAGChatBot.BLL.Services;
 
 namespace RAGChatBot.Presentation.Pages.Admin
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = RoleNames.Admin)]
     public class PaymentsModel : PageModel
     {
         private readonly IPaymentService _paymentService;

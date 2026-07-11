@@ -1,4 +1,4 @@
-﻿using RAGChatBot.DAL.Interfaces;
+﻿using RAGChatBot.Domain.Interfaces;
 
 namespace RAGChatBot.DAL.Services
 {

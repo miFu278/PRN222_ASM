@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="RAGChatBot.Domain/RAGChatBot.Domain.csproj" />
   <Project Path="RAGChatBot.DAL/RAGChatBot.DAL.csproj" />
   <Project Path="RAGChatBot.BLL/RAGChatBot.BLL.csproj" />
   <Project Path="RAGChatBot.Presentation/RAGChatBot.Presentation.csproj" />

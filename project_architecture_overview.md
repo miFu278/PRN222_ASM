@@ -23,23 +23,29 @@ This document provides a comprehensive breakdown of the **RAGChatBot** project a
 
 ## 📁 Project Architecture & Modules
 
-The repository is structured into a classic 3-Tier clean architecture:
+The repository uses three application layers plus a shared Business Objects/Entity project, following the structure described in the referenced Enlab article:
 
 ```mermaid
 graph TD
     Presentation[RAGChatBot.Presentation - Razor Pages UI / Hubs / Controllers]
     BLL[RAGChatBot.BLL - Business Logic / Services / DTOs]
-    DAL[RAGChatBot.DAL - Data Access / Entities / Repositories / Workers]
+    Domain[RAGChatBot.Domain - Entities / Models / Shared Contracts]
+    DAL[RAGChatBot.DAL - Data Access / Repositories / External Adapters / Workers]
     DB[(PostgreSQL + pgvector)]
     Supabase[Supabase Storage]
     AI_API[OpenAI / Gemini API]
 
     Presentation --> BLL
-    BLL --> DAL
+    BLL -->|Domain contracts| DAL
+    BLL -. references .-> Domain
+    DAL -. implements .-> Domain
     DAL --> DB
     DAL --> Supabase
     DAL --> AI_API
 ```
+
+### Shared Business Objects Project (`RAGChatBot.Domain`)
+Contains entities, enums, shared models, and repository/adapter interfaces used across the application. It has no project reference to BLL, DAL, or Presentation. BLL and DAL both reference Domain, while DAL implements its persistence and external-service contracts.
 
 ### 1. 🖥️ Presentation Layer (`RAGChatBot.Presentation`)
 Contains the user interface, API endpoints (via Razor Pages), Middlewares, SignalR hubs, and host configurations.
@@ -60,11 +66,11 @@ Contains the user interface, API endpoints (via Razor Pages), Middlewares, Signa
 ### 2. ⚙️ Business Logic Layer (`RAGChatBot.BLL`)
 Defines the business logic, DTO models, and interfaces/orchestrations of services.
 - **DTOs (Data Transfer Objects)**:
-  - `UserDto`, `CourseDto`, `DocumentDto`, `ChunkDto`, `PaymentTransactionDto`, `DashboardDto`
+  - `UserDto`, `CourseDto`, `DocumentDto`, `ChunkDto`, `ChatDto`, `PaymentTransactionDto`, `DashboardDto`
 - **Services**:
   - [AuthService.cs](file:///e:/developer/code/PRN222_ASM/RAGChatBot.BLL/Services/AuthService.cs): Handle authentication and registration.
   - [DocumentService.cs](file:///e:/developer/code/PRN222_ASM/RAGChatBot.BLL/Services/DocumentService.cs): Document uploads, metadata changes, metadata checks (e.g., file-size constraints per user tier), approval, and deletion.
-  - [QuizService.cs](file:///e:/developer/code/PRN222_ASM/RAGChatBot.BLL/Services/QuizService.cs): Integrates LLMs to automatically generate multiple-choice quizzes from document contents, record attempts, and submit/score them.
+  - [QuizService.cs](file:///e:/developer/code/PRN222_ASM/RAGChatBot.BLL/Services/QuizService.cs): Orchestrates quiz generation through Domain contracts, records attempts, and scores submissions without accessing EF Core directly.
   - `CreditService.cs` & `DailyCreditResetService.cs`: Manages daily free chat credits (e.g., 10 queries/day limit for free tier) and resets them.
   - `VnPayService.cs` & `PaymentService.cs`: Processes subscriptions, generates payment URLs, and handles callbacks.
 
@@ -75,7 +81,7 @@ Handles data persistence, DB schema mapping, repository implementations, low-lev
 - **Context ([AppDbContext.cs](file:///e:/developer/code/PRN222_ASM/RAGChatBot.DAL/Context/AppDbContext.cs))**:
   - Maps database tables and initializes the PostgreSQL `vector` extension.
   - Configures `DocumentChunk` with a `vector(1536)` database column.
-- **Entities**:
+- **Domain entities consumed by EF Core** (defined in `RAGChatBot.Domain`):
   - `User`: Accounts, Roles (`Admin`, `Lecturer`, `Student`), and Tiers (`Free`, `Premium`).
   - `KnowledgeDocument` & `DocumentChunk`: Document metadata and raw text splits associated with vector embeddings.
   - `Course`: Code, Name, and Course Leader ID.
@@ -84,6 +90,6 @@ Handles data persistence, DB schema mapping, repository implementations, low-lev
   - `ChatTrackerLog`, `WhitelistEmail`, `PerformanceBenchmark`, `ChatSession`, `PaymentTransaction`.
 - **Infrastructure Services**:
   - `DocumentProcessingWorker.cs`: Background `IHostedService` that monitors pending documents, extracts text via `TextExtractor`, creates semantic chunks, generates embeddings using `OpenAiEmbeddingService`, and saves them to the DB.
-  - `OpenAiChatService.cs` & `OpenAiEmbeddingService.cs`: Integrations with external AI APIs.
+  - `OpenAiChatService.cs`, `OpenAiEmbeddingService.cs`, and `OpenAiQuizGenerationService.cs`: Integrations with external AI APIs.
   - `SupabaseFileStorageService.cs`: Connects to Supabase storage buckets to save/retrieve physical documents.
   - `TextExtractor.cs`: Utility using libraries to parse content from `.pdf` and `.docx`.

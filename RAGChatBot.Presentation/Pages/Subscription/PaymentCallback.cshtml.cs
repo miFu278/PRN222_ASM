@@ -29,7 +29,11 @@ namespace RAGChatBot.Presentation.Pages.Subscription
 
         public async Task<IActionResult> OnGetAsync()
         {
-            var callbackResult = _vnPayService.ValidateCallback(Request.Query);
+            var callbackParameters = Request.Query.ToDictionary(
+                item => item.Key,
+                item => item.Value.ToString(),
+                StringComparer.OrdinalIgnoreCase);
+            var callbackResult = _vnPayService.ValidateCallback(callbackParameters);
 
             _logger.LogInformation("[VNPay Callback] OrderId={OrderId}, ResponseCode={ResponseCode}, Valid={IsValid}, Success={IsSuccess}",
                 callbackResult.OrderId, callbackResult.ResponseCode, callbackResult.IsValid, callbackResult.IsSuccess);

@@ -1,74 +1,94 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using RAGChatBot.BLL.DTOs;
-using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.Domain.Entities;
+using RAGChatBot.Domain.Interfaces;
 
 namespace RAGChatBot.BLL.Services
 {
     public class PaymentService : IPaymentService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IPaymentTransactionRepository _transactionRepository;
 
-        public PaymentService(IUserRepository userRepository)
+        public PaymentService(
+            IUserRepository userRepository,
+            IPaymentTransactionRepository transactionRepository)
         {
             _userRepository = userRepository;
+            _transactionRepository = transactionRepository;
         }
 
-        public async Task<bool> ProcessPaymentCallbackAsync(VnPayCallbackResult callbackResult, Guid userId)
+        public async Task<string> CreatePendingTransactionAsync(Guid userId, long amount)
         {
-            if (callbackResult.IsSuccess && callbackResult.IsValid)
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new InvalidOperationException("User was not found.");
+
+            var orderId = $"ORDER-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}";
+            await _transactionRepository.AddAsync(new PaymentTransaction
             {
-                var user = await _userRepository.GetByIdAsync(userId);
-                if (user != null)
-                {
-                    user.SubscriptionTier = "Premium";
-                    await _userRepository.SaveChangesAsync();
-                    return true;
-                }
+                OrderId = orderId,
+                UserId = user.Id,
+                Amount = amount,
+                Status = "Pending"
+            });
+            await _transactionRepository.SaveChangesAsync();
+
+            return orderId;
+        }
+
+        public async Task<bool> ProcessPaymentCallbackAsync(
+            VnPayCallbackResult callbackResult,
+            Guid userId)
+        {
+            if (!callbackResult.IsValid)
+            {
+                return false;
             }
-            return false;
+
+            var transaction = await _transactionRepository.GetByOrderIdAsync(callbackResult.OrderId);
+            if (transaction == null || transaction.UserId != userId)
+            {
+                return false;
+            }
+
+            // A repeated successful callback must not extend the subscription twice.
+            if (transaction.Status == "Success")
+            {
+                return true;
+            }
+
+            transaction.TransactionNo = callbackResult.TransactionNo;
+            var isSuccessfulPayment = callbackResult.IsSuccess && callbackResult.Amount == transaction.Amount;
+            transaction.Status = isSuccessfulPayment ? "Success" : "Failed";
+            transaction.PaidAt = isSuccessfulPayment ? DateTime.UtcNow : null;
+
+            if (isSuccessfulPayment)
+            {
+                var user = transaction.User;
+                user.SubscriptionTier = "Premium";
+                var subscriptionStart = user.SubscriptionExpiresAt > DateTime.UtcNow
+                    ? user.SubscriptionExpiresAt.Value
+                    : DateTime.UtcNow;
+                user.SubscriptionExpiresAt = subscriptionStart.AddMonths(1);
+            }
+
+            await _transactionRepository.SaveChangesAsync();
+            return isSuccessfulPayment;
         }
 
         public async Task<IEnumerable<PaymentTransactionDto>> GetAllTransactionsAsync()
         {
-            var list = new List<PaymentTransactionDto>
+            var transactions = await _transactionRepository.GetAllAsync();
+            return transactions.Select(transaction => new PaymentTransactionDto
             {
-                new PaymentTransactionDto
-                {
-                    OrderId = "ORDER-TXN-101",
-                    FullName = "Nguyễn Văn A",
-                    Username = "sv_studentA",
-                    Amount = 199000,
-                    TransactionNo = "VNP87654321",
-                    Status = "Success",
-                    CreatedAt = DateTime.UtcNow.AddDays(-2),
-                    PaidAt = DateTime.UtcNow.AddDays(-2).AddMinutes(5)
-                },
-                new PaymentTransactionDto
-                {
-                    OrderId = "ORDER-TXN-102",
-                    FullName = "Trần Thị B",
-                    Username = "sv_studentB",
-                    Amount = 199000,
-                    TransactionNo = null,
-                    Status = "Pending",
-                    CreatedAt = DateTime.UtcNow.AddDays(-1),
-                    PaidAt = null
-                },
-                new PaymentTransactionDto
-                {
-                    OrderId = "ORDER-TXN-103",
-                    FullName = "Lê Văn C",
-                    Username = "sv_studentC",
-                    Amount = 199000,
-                    TransactionNo = "VNP87654323",
-                    Status = "Failed",
-                    CreatedAt = DateTime.UtcNow,
-                    PaidAt = null
-                }
-            };
-            return await Task.FromResult(list);
+                OrderId = transaction.OrderId,
+                FullName = transaction.User.FullName,
+                Username = transaction.User.Username,
+                Amount = transaction.Amount,
+                TransactionNo = transaction.TransactionNo,
+                Status = transaction.Status,
+                CreatedAt = transaction.CreatedAt,
+                PaidAt = transaction.PaidAt
+            }).ToList();
         }
     }
 }

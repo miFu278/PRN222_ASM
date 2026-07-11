@@ -1,8 +1,9 @@
-using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.Domain.Interfaces;
 using RAGChatBot.BLL.Services;
 using RAGChatBot.BLL.DTOs;
-using RAGChatBot.DAL.Enums;
-using RAGChatBot.DAL.Entities;
+using RAGChatBot.Domain.Constants;
+using RAGChatBot.Domain.Enums;
+using RAGChatBot.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -207,7 +208,7 @@ namespace RAGChatBot.BLL.Services
 
             // Chỉ Trưởng bộ môn hoặc người upload mới được thử lại
             var user = await _userRepository.GetByIdAsync(userId);
-            bool isAdmin = user != null && user.Role == "Admin";
+            bool isAdmin = user?.Role.Name == RoleNames.Admin;
             bool isSubjectLeader = course.SubjectLeaderId == userId;
             bool isUploader = document.UploadedBy == userId;
 
@@ -241,7 +242,7 @@ namespace RAGChatBot.BLL.Services
             
             // Allow update if user is the uploader, subject leader, or an admin
             var user = await _userRepository.GetByIdAsync(userId);
-            bool isAdmin = user != null && user.Role == "Admin";
+            bool isAdmin = user?.Role.Name == RoleNames.Admin;
             bool isSubjectLeader = course != null && course.SubjectLeaderId == userId;
             bool isUploader = document.UploadedBy == userId;
 

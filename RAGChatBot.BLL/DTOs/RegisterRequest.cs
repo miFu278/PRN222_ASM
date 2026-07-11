@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
+using RAGChatBot.Domain.Constants;
+
 namespace RAGChatBot.BLL.DTOs
 {
     public class RegisterRequest
@@ -12,7 +14,7 @@ namespace RAGChatBot.BLL.DTOs
         public string Password { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Vai trò không được để trống")]
-        public string Role { get; set; } = "Student"; // Student, Lecturer, Admin
+        public string Role { get; set; } = RoleNames.Student;
 
         [Required(ErrorMessage = "Gói đăng ký không được để trống")]
         public string SubscriptionTier { get; set; } = "Free"; // Free, Basic, Premium

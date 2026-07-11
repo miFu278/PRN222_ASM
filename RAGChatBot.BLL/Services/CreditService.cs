@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.Domain.Interfaces;
 
 namespace RAGChatBot.BLL.Services
 {

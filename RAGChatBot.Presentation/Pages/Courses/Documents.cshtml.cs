@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RAGChatBot.BLL.Services;
+using RAGChatBot.Domain.Constants;
 using RAGChatBot.BLL.DTOs;
 using System.Security.Claims;
 
@@ -164,7 +165,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
 
         public async Task<IActionResult> OnGetChunksAsync(Guid id)
         {
-            if (User.IsInRole("Student"))
+            if (User.IsInRole(RoleNames.Student))
             {
                 return Forbid();
             }
@@ -180,8 +181,8 @@ namespace RAGChatBot.Presentation.Pages.Courses
             CurrentUserId = userId;
             CurrentSubscriptionTier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
 
-            var isLecturer = User.IsInRole("Lecturer");
-            var isAdmin = User.IsInRole("Admin");
+            var isLecturer = User.IsInRole(RoleNames.Lecturer);
+            var isAdmin = User.IsInRole(RoleNames.Admin);
             CanUpload = isLecturer; // Admin không được upload document
 
             var courses = await _courseService.GetAllCoursesAsync();

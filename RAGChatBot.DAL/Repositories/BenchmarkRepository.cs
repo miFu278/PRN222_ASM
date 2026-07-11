@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RAGChatBot.DAL.Context;
-using RAGChatBot.DAL.Entities;
-using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.Domain.Entities;
+using RAGChatBot.Domain.Interfaces;
 
 namespace RAGChatBot.DAL.Repositories
 {

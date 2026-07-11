@@ -1,4 +1,4 @@
-﻿using RAGChatBot.DAL.Interfaces;
+﻿using RAGChatBot.Domain.Interfaces;
 using System;
 using System.IO;
 using System.Threading.Tasks;

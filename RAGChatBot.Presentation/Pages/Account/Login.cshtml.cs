@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RAGChatBot.BLL.DTOs;
 using RAGChatBot.BLL.Services;
+using RAGChatBot.Domain.Constants;
 using System.Security.Claims;
 
 namespace RAGChatBot.Presentation.Pages.Account
@@ -54,7 +55,7 @@ namespace RAGChatBot.Presentation.Pages.Account
             }
 
             await SignInUser(userDto);
-            return LocalRedirect(ReturnUrl ?? (userDto.Role == "Admin" ? "/Admin/Dashboard" : "/"));
+            return LocalRedirect(ReturnUrl ?? (userDto.Role == RoleNames.Admin ? "/Admin/Dashboard" : "/"));
         }
 
         public IActionResult OnPostExternalLogin()
@@ -107,11 +108,11 @@ namespace RAGChatBot.Presentation.Pages.Account
 
                 var fullName = result.Principal.FindFirstValue(ClaimTypes.Name) ?? email.Split('@')[0];
                 var randomPassword = Guid.NewGuid().ToString(); 
-                userDto = await _authService.RegisterAsync(email, randomPassword, "Student", "Free", fullName);
+                userDto = await _authService.RegisterAsync(email, randomPassword, RoleNames.Student, "Free", fullName);
             }
 
             await SignInUser(userDto);
-            return LocalRedirect(ReturnUrl ?? (userDto.Role == "Admin" ? "/Admin/Dashboard" : "/"));
+            return LocalRedirect(ReturnUrl ?? (userDto.Role == RoleNames.Admin ? "/Admin/Dashboard" : "/"));
         }
 
         private async Task SignInUser(UserDto userDto)

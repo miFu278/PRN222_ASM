@@ -1,7 +1,8 @@
-﻿using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.Domain.Interfaces;
 using RAGChatBot.BLL.Services;
 using RAGChatBot.BLL.DTOs;
-using RAGChatBot.DAL.Entities;
+using RAGChatBot.Domain.Constants;
+using RAGChatBot.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,17 +16,20 @@ namespace RAGChatBot.BLL.Services
         private readonly IUserRepository _userRepository;
         private readonly IKnowledgeDocumentRepository _documentRepository;
         private readonly IFileStorageService _fileStorageService;
+        private readonly ICourseEventService _courseEventService;
 
         public CourseService(
             ICourseRepository courseRepository, 
             IUserRepository userRepository,
             IKnowledgeDocumentRepository documentRepository,
-            IFileStorageService fileStorageService)
+            IFileStorageService fileStorageService,
+            ICourseEventService courseEventService)
         {
             _courseRepository = courseRepository;
             _userRepository = userRepository;
             _documentRepository = documentRepository;
             _fileStorageService = fileStorageService;
+            _courseEventService = courseEventService;
         }
 
         public async Task<CourseDto> CreateCourseAsync(CourseDto courseDto, Guid userId)
@@ -44,6 +48,9 @@ namespace RAGChatBot.BLL.Services
 
             courseDto.Id = course.Id;
             courseDto.CreatedAt = course.CreatedAt;
+
+            _courseEventService.NotifyCourseChanged();
+
             return courseDto;
         }
 
@@ -100,13 +107,17 @@ namespace RAGChatBot.BLL.Services
             }
 
             var user = await _userRepository.GetByIdAsync(subjectLeaderId);
-            if (user == null || (!user.Role.Equals("Lecturer", StringComparison.OrdinalIgnoreCase) && !user.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase)))
+            if (user == null ||
+                (!user.Role.Name.Equals(RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase) &&
+                 !user.Role.Name.Equals(RoleNames.Admin, StringComparison.OrdinalIgnoreCase)))
             {
                 throw new ArgumentException("Người dùng được chọn không hợp lệ hoặc không phải Giảng viên/Admin!");
             }
 
             course.SubjectLeaderId = subjectLeaderId;
             await _courseRepository.UpdateAsync(course);
+
+            _courseEventService.NotifyCourseChanged();
         }
 
         public async Task UpdateCourseAsync(CourseDto courseDto)
@@ -142,7 +153,9 @@ namespace RAGChatBot.BLL.Services
             if (courseDto.SubjectLeaderId.HasValue)
             {
                 var user = await _userRepository.GetByIdAsync(courseDto.SubjectLeaderId.Value);
-                if (user == null || (!user.Role.Equals("Lecturer", StringComparison.OrdinalIgnoreCase) && !user.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase)))
+                if (user == null ||
+                    (!user.Role.Name.Equals(RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase) &&
+                     !user.Role.Name.Equals(RoleNames.Admin, StringComparison.OrdinalIgnoreCase)))
                 {
                     throw new ArgumentException("Trưởng bộ môn được chọn không hợp lệ hoặc không phải Giảng viên/Admin!");
                 }
@@ -154,6 +167,8 @@ namespace RAGChatBot.BLL.Services
             course.SubjectLeaderId = courseDto.SubjectLeaderId;
 
             await _courseRepository.UpdateAsync(course);
+
+            _courseEventService.NotifyCourseChanged();
         }
 
         public async Task DeleteCourseAsync(Guid id)
@@ -182,6 +197,8 @@ namespace RAGChatBot.BLL.Services
 
             // Xóa môn học
             await _courseRepository.DeleteAsync(course);
+
+            _courseEventService.NotifyCourseChanged();
         }
 
         public async Task<IEnumerable<CourseDto>> GetCoursesBySubjectLeaderAsync(Guid userId)
