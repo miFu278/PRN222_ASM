@@ -11,17 +11,20 @@ namespace RAGChatBot.BLL.Services
         private readonly IChatResponseService _chatResponseService;
         private readonly IChatTrackerLogRepository _chatLogRepository;
         private readonly ICreditService _creditService;
+        private readonly IChatSessionRepository _chatSessionRepository;
 
         public ChatService(
             IChatRepository chatRepository,
             IChatResponseService chatResponseService,
             IChatTrackerLogRepository chatLogRepository,
-            ICreditService creditService)
+            ICreditService creditService,
+            IChatSessionRepository chatSessionRepository)
         {
             _chatRepository = chatRepository;
             _chatResponseService = chatResponseService;
             _chatLogRepository = chatLogRepository;
             _creditService = creditService;
+            _chatSessionRepository = chatSessionRepository;
         }
 
         public async Task<ChatReplyDto?> SendMessageAsync(
@@ -103,6 +106,7 @@ namespace RAGChatBot.BLL.Services
             };
             await _chatLogRepository.AddAsync(log);
             await _chatLogRepository.SaveChangesAsync();
+            await _chatSessionRepository.IncrementAsync(userId, effectiveCourseCode);
 
             return new ChatReplyDto
             {

@@ -49,5 +49,21 @@ namespace RAGChatBot.DAL.Repositories
                 session.CreatedAt.Year == year &&
                 (!startMonth.HasValue || session.CreatedAt.Month >= startMonth.Value) &&
                 (!endMonth.HasValue || session.CreatedAt.Month <= endMonth.Value));
+
+        public async Task<decimal> GetRevenueAsync(
+            int year,
+            int? startMonth = null,
+            int? endMonth = null)
+        {
+            var query = _db.PaymentTransactions
+                .Where(t => t.Status == "Success" &&
+                            t.PaidAt.HasValue &&
+                            t.PaidAt.Value.Year == year &&
+                            (!startMonth.HasValue || t.PaidAt.Value.Month >= startMonth.Value) &&
+                            (!endMonth.HasValue || t.PaidAt.Value.Month <= endMonth.Value));
+
+            var total = await query.SumAsync(t => (long?)t.Amount) ?? 0L;
+            return (decimal)total;
+        }
     }
 }
