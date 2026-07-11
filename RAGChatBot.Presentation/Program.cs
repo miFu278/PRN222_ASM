@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.Domain.Interfaces;
 using RAGChatBot.BLL.Services;
 using RAGChatBot.DAL.Context;
 using RAGChatBot.DAL.Repositories;
 using RAGChatBot.DAL.Services;
-using RAGChatBot.DAL.Entities;
+using RAGChatBot.Domain.Constants;
+using RAGChatBot.Domain.Entities;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 
@@ -41,8 +42,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     .AddGoogle(options =>
     {
         var googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
-        options.ClientId = googleAuthNSection["ClientId"];
-        options.ClientSecret = googleAuthNSection["ClientSecret"];
+        options.ClientId = googleAuthNSection["ClientId"]
+            ?? throw new InvalidOperationException("Missing Authentication:Google:ClientId configuration.");
+        options.ClientSecret = googleAuthNSection["ClientSecret"]
+            ?? throw new InvalidOperationException("Missing Authentication:Google:ClientSecret configuration.");
     });
 
 builder.Services.AddCascadingAuthenticationState();
@@ -54,6 +57,7 @@ builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IWhitelistService, WhitelistService>();
 builder.Services.AddScoped<IQuizService, QuizService>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 // Tầng Infrastructure Services
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
@@ -72,9 +76,13 @@ builder.Services.AddSingleton(provider => new Supabase.Client(supabaseUrl, supab
 builder.Services.AddScoped<IFileStorageService, SupabaseFileStorageService>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IKnowledgeDocumentRepository, KnowledgeDocumentRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IWhitelistRepository, WhitelistRepository>();
+builder.Services.AddScoped<IChatRepository, ChatRepository>();
+builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IChatTrackerLogRepository, ChatTrackerLogRepository>();
 builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
 
@@ -83,8 +91,30 @@ builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IChunkingService, ChunkingService>();
 builder.Services.AddScoped<ITextExtractor, TextExtractor>();
 builder.Services.AddHttpClient<IEmbeddingService, OpenAiEmbeddingService>();
-builder.Services.AddHttpClient<IChatService, OpenAiChatService>(); // Dịch vụ RAG Chatbot mới cho ASM02
+builder.Services.AddHttpClient<IChatResponseService, OpenAiChatService>(); // Dịch vụ RAG Chatbot mới cho ASM02
+builder.Services.AddHttpClient<IQuizGenerationService, OpenAiQuizGenerationService>();
 builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
+
+// Dịch vụ Credit & Thanh toán
+builder.Services.AddScoped<ICreditService, CreditService>();
+builder.Services.AddSingleton<IVnPayService, VnPayService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddHostedService<DocumentProcessingWorker>();
+builder.Services.AddHostedService<DailyCreditResetService>();
+
+// Dashboard & Benchmark services
+builder.Services.AddScoped<IBenchmarkRepository, BenchmarkRepository>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+// 4. Đăng ký Razor Pages
+builder.Services.AddRazorPages();
+
+// Cấu hình BackgroundService không crash host khi TaskCanceledException xảy ra lúc shutdown
+builder.Services.Configure<HostOptions>(options =>
+{
+    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+});
+
 
 // Dịch vụ Credit & Thanh toán
 builder.Services.AddScoped<ICreditService, CreditService>();
@@ -113,8 +143,9 @@ builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
  
 // Đăng ký Event Service cho Real-time UI updates
-builder.Services.AddSingleton<RAGChatBot.DAL.Interfaces.IDocumentEventService, DocumentEventService>();
-builder.Services.AddSingleton<DocumentEventService>(sp => (DocumentEventService)sp.GetRequiredService<RAGChatBot.DAL.Interfaces.IDocumentEventService>());
+builder.Services.AddSingleton<RAGChatBot.Domain.Interfaces.IDocumentEventService, DocumentEventService>();
+builder.Services.AddSingleton<DocumentEventService>(sp => (DocumentEventService)sp.GetRequiredService<RAGChatBot.Domain.Interfaces.IDocumentEventService>());
+builder.Services.AddSingleton<RAGChatBot.Domain.Interfaces.ICourseEventService, CourseEventService>();
 
 builder.Services.AddSignalR();
 
@@ -125,7 +156,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("StudentChatLimit", context =>
     {
         var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
-        if (userRole == "Student")
+        if (userRole == RoleNames.Student)
         {
             var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                          ?? context.Connection.RemoteIpAddress?.ToString()
@@ -155,6 +186,22 @@ using (var scope = app.Services.CreateScope())
         context.Database.Migrate();
 
         // Seed dữ liệu mẫu nếu bảng Users trống
+        var systemRoles = new[]
+        {
+            new Role { Id = SystemRoleIds.Admin, Name = RoleNames.Admin, Description = "System administrator" },
+            new Role { Id = SystemRoleIds.Lecturer, Name = RoleNames.Lecturer, Description = "Lecturer and course manager" },
+            new Role { Id = SystemRoleIds.Student, Name = RoleNames.Student, Description = "Student user" }
+        };
+
+        foreach (var role in systemRoles)
+        {
+            if (!context.Roles.Any(existingRole => existingRole.Id == role.Id || existingRole.Name == role.Name))
+            {
+                context.Roles.Add(role);
+            }
+        }
+        context.SaveChanges();
+
         if (!context.Users.Any())
         {
             var hasher = services.GetRequiredService<IPasswordHasher>();
@@ -168,7 +215,7 @@ using (var scope = app.Services.CreateScope())
                     Id = Guid.NewGuid(),
                     Username = "lecturer_free",
                     PasswordHash = hasher.Hash(seedPassword),
-                    Role = "Lecturer",
+                    RoleId = SystemRoleIds.Lecturer,
                     SubscriptionTier = "Free"
                 },
                 new User
@@ -176,7 +223,7 @@ using (var scope = app.Services.CreateScope())
                     Id = Guid.NewGuid(),
                     Username = "lecturer_premium",
                     PasswordHash = hasher.Hash(seedPassword),
-                    Role = "Lecturer",
+                    RoleId = SystemRoleIds.Lecturer,
                     SubscriptionTier = "Premium"
                 },
                 new User
@@ -184,7 +231,7 @@ using (var scope = app.Services.CreateScope())
                     Id = Guid.NewGuid(),
                     Username = "admin",
                     PasswordHash = hasher.Hash(seedPassword),
-                    Role = "Admin",
+                    RoleId = SystemRoleIds.Admin,
                     SubscriptionTier = "Premium"
                 }
             };
@@ -262,5 +309,6 @@ app.MapControllers();
 app.MapRazorPages();
 
 app.MapHub<RAGChatBot.Presentation.Hubs.DocumentHub>("/documentHub");
+app.MapHub<RAGChatBot.Presentation.Hubs.CourseHub>("/courseHub");
 
 app.Run();

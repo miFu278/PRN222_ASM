@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
+using RAGChatBot.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
@@ -9,7 +10,7 @@ using System.Linq;
 
 namespace RAGChatBot.Presentation.Pages.Admin
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = RoleNames.Admin)]
     public class LogsModel : PageModel
     {
         private readonly IWebHostEnvironment _env;

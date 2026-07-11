@@ -1,11 +1,11 @@
-using RAGChatBot.DAL.Interfaces;
-using RAGChatBot.BLL.Services;
+using RAGChatBot.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
 
 namespace RAGChatBot.BLL.Services
 {
-    public class ChunkingService : IChunkingService
+    // Stateless by design, so this service is safe to register as a singleton.
+    public sealed class ChunkingService : IChunkingService
     {
         public List<string> ChunkText(string text, string strategy = "Character", int chunkSize = 500, int overlap = 50)
         {
@@ -41,7 +41,7 @@ namespace RAGChatBot.BLL.Services
             }
         }
 
-        private List<string> ChunkByCharacter(string text, int chunkSize, int overlap)
+        private static List<string> ChunkByCharacter(string text, int chunkSize, int overlap)
         {
             var chunks = new List<string>();
             int start = 0;
@@ -68,7 +68,7 @@ namespace RAGChatBot.BLL.Services
             return chunks;
         }
 
-        private List<string> ChunkByWord(string text, int chunkSize, int overlap)
+        private static List<string> ChunkByWord(string text, int chunkSize, int overlap)
         {
             var chunks = new List<string>();
             var words = text.Split(new[] { ' ', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries);
@@ -97,7 +97,7 @@ namespace RAGChatBot.BLL.Services
             return chunks;
         }
 
-        private List<string> ChunkByParagraph(string text, int chunkSize, int overlap)
+        private static List<string> ChunkByParagraph(string text, int chunkSize, int overlap)
         {
             var chunks = new List<string>();
             var paragraphs = text.Split(new[] { "\n\n", "\n \n" }, StringSplitOptions.RemoveEmptyEntries)

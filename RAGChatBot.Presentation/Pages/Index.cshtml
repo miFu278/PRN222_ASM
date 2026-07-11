@@ -46,30 +46,13 @@
             </button>
 
             <!-- Chat Messages Display -->
-            <div class="zen-chat-messages gsap-fade-up" id="chatMessages" data-lenis-prevent></div>
+            <div class="zen-chat-messages gsap-fade-up" id="chatMessages"></div>
 
             <!-- Loading Skeleton (Washi Ink dots) ẩn mặc định -->
             <div class="zen-washi-skeleton" id="washiSkeleton">
                 <div class="washi-ink-dot"></div>
                 <div class="washi-ink-dot"></div>
                 <div class="washi-ink-dot"></div>
-            </div>
-
-            <!-- Bộ đếm Credit còn lại -->
-            <div class="zen-credit-counter gsap-fade-up">
-                <i class="fa-solid fa-bolt"></i> <span id="creditDisplay">Đang tải...</span>
-            </div>
-
-            <!-- Khu vực nhập liệu Chat -->
-            <div class="zen-input-area gsap-fade-up">
-                <div class="zen-input-wrapper">
-                    <div class="flex-grow-1">
-                        <input type="text" class="input-zen" placeholder="Hãy đặt câu hỏi về nội dung bài giảng hoặc tài liệu môn học..." id="chatInputField" autocomplete="off" />
-                    </div>
-                    <button class="zen-send-btn magnetic-btn" id="sendChatBtn" title="Gửi tin nhắn">
-                        <i class="fa-solid fa-paper-plane" id="sendIcon"></i>
-                    </button>
-                </div>
             </div>
 
             <!-- Gợi ý câu hỏi -->
@@ -88,6 +71,23 @@
                         <span class="text-sumi" style="font-size: 1.15rem; font-weight: 500;">Các phương pháp tối ưu hóa Vector Database</span>
                     </div>
                     <i class="fa-solid fa-arrow-right text-sumi"></i>
+                </div>
+            </div>
+
+            <!-- Bộ đếm Credit còn lại -->
+            <div class="zen-credit-counter gsap-fade-up">
+                <i class="fa-solid fa-bolt"></i> <span id="creditDisplay">Đang tải...</span>
+            </div>
+
+            <!-- Khu vực nhập liệu Chat -->
+            <div class="zen-input-area gsap-fade-up">
+                <div class="zen-input-wrapper">
+                    <div class="flex-grow-1">
+                        <input type="text" class="input-zen" placeholder="Hãy đặt câu hỏi về nội dung bài giảng hoặc tài liệu môn học..." id="chatInputField" autocomplete="off" />
+                    </div>
+                    <button class="zen-send-btn magnetic-btn" id="sendChatBtn" title="Gửi tin nhắn">
+                        <i class="fa-solid fa-paper-plane" id="sendIcon"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -122,6 +122,19 @@
             .replace(/\n/g, '<br>');
     }
 
+    function scrollToBottom() {
+        setTimeout(() => {
+            if (window.lenis) {
+                window.lenis.scrollTo('bottom', { immediate: false, duration: 0.4 });
+            } else {
+                window.scrollTo({
+                    top: document.documentElement.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }, 50);
+    }
+
     function appendMessage(role, text) {
         const div = document.createElement('div');
         div.className = role === 'user' ? 'zen-msg zen-msg-user' : 'zen-msg zen-msg-bot';
@@ -134,13 +147,13 @@
         }
         div.appendChild(bubble);
         chatMessages.appendChild(div);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        scrollToBottom();
     }
 
     function appendTyping() {
         if (washiSkeleton) {
             washiSkeleton.style.display = 'flex';
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            scrollToBottom();
         }
     }
 

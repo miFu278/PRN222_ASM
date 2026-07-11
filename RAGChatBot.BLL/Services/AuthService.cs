@@ -1,8 +1,9 @@
 using MiniExcelLibs;
-using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.Domain.Interfaces;
 using RAGChatBot.BLL.Services;
 using RAGChatBot.BLL.DTOs;
-using RAGChatBot.DAL.Entities;
+using RAGChatBot.Domain.Constants;
+using RAGChatBot.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,12 +15,18 @@ namespace RAGChatBot.BLL.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IRoleRepository _roleRepository;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IEmailService _emailService;
 
-        public AuthService(IUserRepository userRepository, IPasswordHasher passwordHasher, IEmailService emailService)
+        public AuthService(
+            IUserRepository userRepository,
+            IRoleRepository roleRepository,
+            IPasswordHasher passwordHasher,
+            IEmailService emailService)
         {
             _userRepository = userRepository;
+            _roleRepository = roleRepository;
             _passwordHasher = passwordHasher;
             _emailService = emailService;
         }
@@ -36,7 +43,7 @@ namespace RAGChatBot.BLL.Services
             {
                 Id = user.Id,
                 Username = user.Username,
-                Role = user.Role,
+                Role = user.Role.Name,
                 SubscriptionTier = user.SubscriptionTier,
                 FullName = user.FullName,
                 SubscriptionExpiresAt = user.SubscriptionExpiresAt
@@ -51,12 +58,16 @@ namespace RAGChatBot.BLL.Services
                 throw new Exception("Tên tài khoản này đã tồn tại trong hệ thống!");
             }
 
+            var assignedRole = await _roleRepository.GetByNameAsync(role)
+                ?? throw new ArgumentException($"Vai trò '{role}' không tồn tại trong hệ thống.", nameof(role));
+
             var user = new User
             {
                 Id = Guid.NewGuid(),
                 Username = username,
                 PasswordHash = _passwordHasher.Hash(password),
-                Role = role,
+                RoleId = assignedRole.Id,
+                Role = assignedRole,
                 SubscriptionTier = subscriptionTier,
                 FullName = fullName.Trim()
             };
@@ -68,7 +79,7 @@ namespace RAGChatBot.BLL.Services
             {
                 Id = user.Id,
                 Username = user.Username,
-                Role = user.Role,
+                Role = assignedRole.Name,
                 SubscriptionTier = user.SubscriptionTier,
                 FullName = user.FullName,
                 SubscriptionExpiresAt = user.SubscriptionExpiresAt
@@ -110,7 +121,7 @@ namespace RAGChatBot.BLL.Services
             {
                 Id = user.Id,
                 Username = user.Username,
-                Role = user.Role,
+                Role = user.Role.Name,
                 SubscriptionTier = user.SubscriptionTier,
                 FullName = user.FullName,
                 SubscriptionExpiresAt = user.SubscriptionExpiresAt
@@ -125,7 +136,7 @@ namespace RAGChatBot.BLL.Services
             {
                 Id = user.Id,
                 Username = user.Username,
-                Role = user.Role,
+                Role = user.Role.Name,
                 SubscriptionTier = user.SubscriptionTier,
                 FullName = user.FullName,
                 SubscriptionExpiresAt = user.SubscriptionExpiresAt
@@ -139,7 +150,7 @@ namespace RAGChatBot.BLL.Services
             {
                 Id = user.Id,
                 Username = user.Username,
-                Role = user.Role,
+                Role = user.Role.Name,
                 SubscriptionTier = user.SubscriptionTier,
                 FullName = user.FullName,
                 SubscriptionExpiresAt = user.SubscriptionExpiresAt
@@ -155,7 +166,7 @@ namespace RAGChatBot.BLL.Services
             }
 
             // Bảo mật: Không cho phép tự xóa tài khoản Admin để tránh mất quyền quản trị
-            if (user.Role == "Admin")
+            if (user.Role.Name == RoleNames.Admin)
             {
                 throw new InvalidOperationException("Không được phép xóa tài khoản quản trị hệ thống (Admin)!");
             }
@@ -182,6 +193,8 @@ namespace RAGChatBot.BLL.Services
 
             int success = 0, skipped = 0;
             var newUsers = new List<(string Email, string FullName, string Password, string Role)>();
+            var roles = (await _roleRepository.GetAllAsync())
+                .ToDictionary(item => item.Name, StringComparer.OrdinalIgnoreCase);
 
             foreach (var row in rows)
             {
@@ -198,12 +211,12 @@ namespace RAGChatBot.BLL.Services
                     fullName = nameObj?.ToString()?.Trim();
                 if (string.IsNullOrWhiteSpace(fullName)) fullName = username.Split('@')[0];
 
-                string role = "Student";
+                string role = RoleNames.Student;
                 if (!string.IsNullOrEmpty(roleHeader) && row.TryGetValue(roleHeader, out var roleObj))
                 {
                     var roleStr = roleObj?.ToString()?.Trim().ToLower() ?? "";
                     if (roleStr.Contains("lecture") || roleStr.Contains("giảng") || roleStr.Contains("gv"))
-                        role = "Lecturer";
+                        role = RoleNames.Lecturer;
                 }
 
                 string tier = "Free";
@@ -225,7 +238,9 @@ namespace RAGChatBot.BLL.Services
                     Id = Guid.NewGuid(),
                     Username = username,
                     PasswordHash = _passwordHasher.Hash(password),
-                    Role = role,
+                    RoleId = roles.TryGetValue(role, out var assignedRole)
+                        ? assignedRole.Id
+                        : throw new InvalidOperationException($"Vai trò '{role}' chưa được cấu hình."),
                     SubscriptionTier = tier,
                     FullName = fullName
                 };

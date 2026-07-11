@@ -1,6 +1,6 @@
 using System;
 
-using RAGChatBot.DAL.Enums;
+using RAGChatBot.Domain.Enums;
 
 namespace RAGChatBot.BLL.DTOs
 {

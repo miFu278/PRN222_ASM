@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.Domain.Constants;
+using RAGChatBot.Domain.Interfaces;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -102,7 +103,7 @@ namespace RAGChatBot.DAL.Services
             }
 
             var displayName = !string.IsNullOrWhiteSpace(fullName) ? fullName : toEmail.Split('@')[0];
-            var roleDisplay = role == "Lecturer" ? "Giảng viên" : "Sinh viên";
+            var roleDisplay = role == RoleNames.Lecturer ? "Giảng viên" : "Sinh viên";
 
             try
             {

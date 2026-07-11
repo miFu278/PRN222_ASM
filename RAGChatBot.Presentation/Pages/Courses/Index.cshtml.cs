@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using RAGChatBot.DAL.Interfaces;
 using RAGChatBot.BLL.Services;
 using RAGChatBot.BLL.DTOs;
+using RAGChatBot.Domain.Constants;
 using System.Security.Claims;
 
 namespace RAGChatBot.Presentation.Pages.Courses
@@ -47,7 +47,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             Guid.TryParse(userIdStr, out var currentUserId);
 
-            if (User.IsInRole("Lecturer"))
+            if (User.IsInRole(RoleNames.Lecturer))
             {
                 Courses = await _courseService.GetCoursesBySubjectLeaderAsync(currentUserId);
             }
@@ -63,10 +63,10 @@ namespace RAGChatBot.Presentation.Pages.Courses
                     c.Name.Contains(Search, StringComparison.OrdinalIgnoreCase));
             }
 
-            if (User.IsInRole("Admin"))
+            if (User.IsInRole(RoleNames.Admin))
             {
                 var users = await _authService.GetAllUsersAsync();
-                Lecturers = users.Where(u => u.Role == "Lecturer").Select(u => new UserDto
+                Lecturers = users.Where(u => u.Role == RoleNames.Lecturer).Select(u => new UserDto
                 {
                     Id = u.Id,
                     Username = u.Username,
@@ -80,7 +80,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
 
         public async Task<IActionResult> OnPostEditAsync()
         {
-            if (!User.IsInRole("Admin")) return Forbid();
+            if (!User.IsInRole(RoleNames.Admin)) return Forbid();
 
             if (!ModelState.IsValid)
             {
@@ -122,7 +122,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
 
         public async Task<IActionResult> OnPostDeleteAsync(Guid id)
         {
-            if (!User.IsInRole("Admin")) return Forbid();
+            if (!User.IsInRole(RoleNames.Admin)) return Forbid();
 
             try
             {

@@ -1,13 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using RAGChatBot.DAL.Context;
-using RAGChatBot.DAL.Entities;
-using System;
-using System.Linq;
+using RAGChatBot.BLL.Services;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace RAGChatBot.Presentation.Pages
 {
@@ -15,68 +10,65 @@ namespace RAGChatBot.Presentation.Pages
     [IgnoreAntiforgeryToken]
     public class ChatThreadsApiModel : PageModel
     {
-        private readonly AppDbContext _db;
+        private readonly IChatService _chatService;
 
-        public ChatThreadsApiModel(AppDbContext db)
+        public ChatThreadsApiModel(IChatService chatService)
         {
-            _db = db;
+            _chatService = chatService;
         }
 
         public async Task<IActionResult> OnGetAsync(string? courseCode)
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(userIdStr, out var userId))
+            if (!TryGetUserId(out var userId))
             {
-                return new JsonResult(new { error = "Phiên đăng nhập không hợp lệ." }) { StatusCode = 401 };
+                return UnauthorizedResult();
             }
 
-            var query = _db.ChatThreads.Where(t => t.UserId == userId);
-            if (!string.IsNullOrWhiteSpace(courseCode))
+            var threads = await _chatService.GetThreadsAsync(userId, courseCode);
+            return new JsonResult(threads.Select(thread => new
             {
-                query = query.Where(t => t.CourseCode.ToLower() == courseCode.ToLower());
-            }
-
-            var threads = await query
-                .OrderByDescending(t => t.CreatedAt)
-                .Select(t => new
-                {
-                    id = t.Id,
-                    title = t.Title,
-                    courseCode = t.CourseCode,
-                    createdAt = t.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                })
-                .ToListAsync();
-
-            return new JsonResult(threads);
+                id = thread.Id,
+                title = thread.Title,
+                courseCode = thread.CourseCode,
+                createdAt = thread.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+            }));
         }
 
         public async Task<IActionResult> OnGetMessagesAsync(Guid threadId)
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(userIdStr, out var userId))
+            if (!TryGetUserId(out var userId))
             {
-                return new JsonResult(new { error = "Phiên đăng nhập không hợp lệ." }) { StatusCode = 401 };
+                return UnauthorizedResult();
             }
 
-            var thread = await _db.ChatThreads.FindAsync(threadId);
-            if (thread == null || thread.UserId != userId)
+            var messages = await _chatService.GetMessagesAsync(userId, threadId);
+            if (messages is null)
             {
-                return new JsonResult(new { error = "Không tìm thấy luồng chat." }) { StatusCode = 404 };
-            }
-
-            var messages = await _db.ChatMessages
-                .Where(m => m.ThreadId == threadId)
-                .OrderBy(m => m.SentAt)
-                .Select(m => new
+                return new JsonResult(new { error = "Không tìm thấy luồng chat." })
                 {
-                    id = m.Id,
-                    role = m.Role,
-                    content = m.Content,
-                    sentAt = m.SentAt.ToString("dd/MM/yyyy HH:mm")
-                })
-                .ToListAsync();
+                    StatusCode = StatusCodes.Status404NotFound
+                };
+            }
 
-            return new JsonResult(messages);
+            return new JsonResult(messages.Select(message => new
+            {
+                id = message.Id,
+                role = message.Role,
+                content = message.Content,
+                sentAt = message.SentAt.ToString("dd/MM/yyyy HH:mm")
+            }));
         }
+
+        private bool TryGetUserId(out Guid userId)
+        {
+            var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return Guid.TryParse(userIdValue, out userId);
+        }
+
+        private static JsonResult UnauthorizedResult()
+            => new(new { error = "Phiên đăng nhập không hợp lệ." })
+            {
+                StatusCode = StatusCodes.Status401Unauthorized
+            };
     }
 }

@@ -2,8 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Pgvector;
 using Pgvector.EntityFrameworkCore;
 using RAGChatBot.DAL.Context;
-using RAGChatBot.DAL.Interfaces;
-using RAGChatBot.DAL.Entities;
+using RAGChatBot.Domain.Interfaces;
+using RAGChatBot.Domain.Entities;
+using RAGChatBot.Domain.Enums;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -55,7 +56,7 @@ namespace RAGChatBot.DAL.Repositories
             var pgVector = new Pgvector.Vector(queryEmbedding);
             return await _context.DocumentChunks
                 .Include(c => c.Document)
-                .Where(c => (string.IsNullOrEmpty(courseCode) || c.Document.CourseCode == courseCode) && c.Document.IsApproved && c.Document.Status == RAGChatBot.DAL.Enums.DocumentStatus.Success)
+                .Where(c => (string.IsNullOrEmpty(courseCode) || c.Document.CourseCode == courseCode) && c.Document.IsApproved && c.Document.Status == DocumentStatus.Success)
                 .OrderBy(c => c.Embedding!.CosineDistance(pgVector))
                 .Take(topK)
                 .ToListAsync();

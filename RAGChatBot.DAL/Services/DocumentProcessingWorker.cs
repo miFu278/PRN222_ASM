@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using RAGChatBot.DAL.Interfaces;
-using RAGChatBot.DAL.Enums;
-using RAGChatBot.DAL.Entities;
+using RAGChatBot.Domain.Interfaces;
+using RAGChatBot.Domain.Enums;
+using RAGChatBot.Domain.Entities;
 using RAGChatBot.DAL.Context;
 using System;
 using System.Collections.Generic;

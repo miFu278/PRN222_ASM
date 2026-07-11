@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using RAGChatBot.DAL.Entities;
+using RAGChatBot.Domain.Entities;
 
 namespace RAGChatBot.DAL.Context
 {
@@ -10,6 +10,7 @@ namespace RAGChatBot.DAL.Context
         }
 
         public DbSet<User> Users => Set<User>();
+        public DbSet<Role> Roles => Set<Role>();
         public DbSet<KnowledgeDocument> KnowledgeDocuments => Set<KnowledgeDocument>();
         public DbSet<Course> Courses => Set<Course>();
         public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
@@ -20,6 +21,7 @@ namespace RAGChatBot.DAL.Context
         public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
         public DbSet<ChatThread> ChatThreads => Set<ChatThread>();
         public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+        public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -38,6 +40,34 @@ namespace RAGChatBot.DAL.Context
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Username).IsUnique();
+                entity.HasIndex(e => e.RoleId);
+                entity.HasOne(e => e.Role)
+                      .WithMany(role => role.Users)
+                      .HasForeignKey(e => e.RoleId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Role>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Name).IsUnique();
+                entity.Property(e => e.Name)
+                      .HasMaxLength(50)
+                      .IsRequired();
+            });
+
+            modelBuilder.Entity<PaymentTransaction>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.OrderId).IsUnique();
+                entity.HasIndex(e => e.UserId);
+                entity.Property(e => e.OrderId).HasMaxLength(100).IsRequired();
+                entity.Property(e => e.TransactionNo).HasMaxLength(100);
+                entity.Property(e => e.Status).HasMaxLength(20).IsRequired();
+                entity.HasOne(e => e.User)
+                      .WithMany()
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Course>(entity =>

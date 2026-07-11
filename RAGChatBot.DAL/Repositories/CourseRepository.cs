@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RAGChatBot.DAL.Context;
-using RAGChatBot.DAL.Interfaces;
-using RAGChatBot.DAL.Entities;
+using RAGChatBot.Domain.Interfaces;
+using RAGChatBot.Domain.Entities;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

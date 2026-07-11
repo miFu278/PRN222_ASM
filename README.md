@@ -170,11 +170,11 @@ App sẽ chạy tại: **http://localhost:5178**
 ## Cấu Trúc Dự Án
 
 ```
-RAGChatBot.sln
-├── RAGChatBot.Domain/          # Entities, domain models
-├── RAGChatBot.Application/     # Business logic, services, interfaces
-├── RAGChatBot.Infrastructure/  # EF Core, Supabase, AI, Email
-└── RAGChatBot.Presentation/    # ASP.NET MVC Controllers, Views
+RAGChatBot.slnx
+├── RAGChatBot.Domain/          # Entities, enums, shared models and contracts
+├── RAGChatBot.BLL/             # Business logic, application services and DTOs
+├── RAGChatBot.DAL/             # EF Core, repositories, AI, storage and email adapters
+└── RAGChatBot.Presentation/    # ASP.NET Core Razor Pages, middleware and SignalR
     ├── appsettings.json        # ← Tạo file này (không commit)
     ├── appsettings.Example.json
     └── Program.cs

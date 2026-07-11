@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RAGChatBot.Domain.Constants;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RAGChatBot.BLL.DTOs;
 using RAGChatBot.BLL.Services;
 
 namespace RAGChatBot.Presentation.Pages.Admin
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = RoleNames.Admin)]
     public class DashboardModel : PageModel
     {
         private readonly IDashboardService _dashboard;

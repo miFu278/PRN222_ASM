@@ -27,9 +27,14 @@
 </head>
 <body class="bg-washi text-sumi">
     <header class="zen-header zen-shoji-glass sticky-top">
-        <a class="zen-brand" asp-area="" asp-page="/Index">
-            <span class="hanko-seal">悟</span> RAG CHATBOT
-        </a>
+        <div class="d-flex align-items-center gap-3">
+            <button class="zen-mobile-toggle" id="mobileSidebarToggle" type="button" title="Mở menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <a class="zen-brand" asp-area="" asp-page="/Index">
+                <span class="hanko-seal">悟</span> RAG CHATBOT
+            </a>
+        </div>
         
         <!-- Sleek Horizontal Scroll Menu (Cuộn ngang tĩnh lặng) -->
         <nav class="zen-scroll-menu">
@@ -47,6 +52,7 @@
             <a class="zen-menu-item-sm" asp-area="" asp-page="/Courses/Index">Môn Học</a>
             <a class="zen-menu-item-sm" asp-area="" asp-page="/Subscription/Index">Gói Dịch Vụ</a>
         </nav>
+    </header>
 @{
     var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
     var displayName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "";
@@ -158,11 +164,17 @@
             // Xử lý đóng/mở sidebar
             const sidebar = document.getElementById('zenSidebar');
             const toggleBtn = document.getElementById('sidebarToggle');
+            const mobileToggleBtn = document.getElementById('mobileSidebarToggle');
             
             if (toggleBtn && sidebar) {
                 toggleBtn.addEventListener('click', function () {
-                    const isCollapsed = document.documentElement.classList.contains('sidebar-is-collapsed');
+                    // Nếu là di động, nhấn nút toggle (chevron) trong sidebar sẽ đóng sidebar
+                    if (window.innerWidth <= 768) {
+                        document.documentElement.classList.remove('mobile-sidebar-active');
+                        return;
+                    }
                     
+                    const isCollapsed = document.documentElement.classList.contains('sidebar-is-collapsed');
                     if (isCollapsed) {
                         document.documentElement.classList.remove('sidebar-is-collapsed');
                         localStorage.setItem('sidebar-collapsed', 'false');
@@ -172,6 +184,22 @@
                     }
                 });
             }
+
+            if (mobileToggleBtn) {
+                mobileToggleBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    document.documentElement.classList.toggle('mobile-sidebar-active');
+                });
+            }
+
+            // Đóng mobile sidebar khi click ra ngoài
+            document.addEventListener('click', function (e) {
+                if (document.documentElement.classList.contains('mobile-sidebar-active')) {
+                    if (sidebar && !sidebar.contains(e.target) && e.target !== mobileToggleBtn && !mobileToggleBtn.contains(e.target)) {
+                        document.documentElement.classList.remove('mobile-sidebar-active');
+                    }
+                }
+            });
         });
     </script>
 

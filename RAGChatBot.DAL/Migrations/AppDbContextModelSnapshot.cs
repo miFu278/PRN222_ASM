@@ -24,7 +24,7 @@ namespace RAGChatBot.DAL.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.ChatMessage", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.ChatMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -51,7 +51,7 @@ namespace RAGChatBot.DAL.Migrations
                     b.ToTable("ChatMessages");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.ChatSession", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.ChatSession", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -79,7 +79,7 @@ namespace RAGChatBot.DAL.Migrations
                     b.ToTable("ChatSessions");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.ChatThread", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.ChatThread", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -104,7 +104,7 @@ namespace RAGChatBot.DAL.Migrations
                     b.ToTable("ChatThreads");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.Course", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.Course", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -138,7 +138,7 @@ namespace RAGChatBot.DAL.Migrations
                     b.ToTable("Courses");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.DocumentChunk", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.DocumentChunk", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -164,7 +164,7 @@ namespace RAGChatBot.DAL.Migrations
                     b.ToTable("DocumentChunks");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.KnowledgeDocument", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.KnowledgeDocument", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -222,7 +222,49 @@ namespace RAGChatBot.DAL.Migrations
                     b.ToTable("KnowledgeDocuments");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.PerformanceBenchmark", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.PaymentTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OrderId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("TransactionNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PaymentTransactions");
+                });
+
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.PerformanceBenchmark", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -253,7 +295,7 @@ namespace RAGChatBot.DAL.Migrations
                     b.ToTable("PerformanceBenchmarks");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.QuestionBank", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.QuestionBank", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -300,7 +342,7 @@ namespace RAGChatBot.DAL.Migrations
                     b.ToTable("QuestionBanks");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.QuizAttempt", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.QuizAttempt", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -330,7 +372,29 @@ namespace RAGChatBot.DAL.Migrations
                     b.ToTable("QuizAttempts");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.User", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Roles");
+                });
+
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -344,9 +408,8 @@ namespace RAGChatBot.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("SubscriptionExpiresAt")
                         .HasColumnType("timestamp with time zone");
@@ -361,13 +424,15 @@ namespace RAGChatBot.DAL.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("RoleId");
+
                     b.HasIndex("Username")
                         .IsUnique();
 
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.WhitelistEmail", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.WhitelistEmail", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -394,9 +459,9 @@ namespace RAGChatBot.DAL.Migrations
                     b.ToTable("WhitelistEmails");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.ChatMessage", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.ChatMessage", b =>
                 {
-                    b.HasOne("RAGChatBot.DAL.Entities.ChatThread", "Thread")
+                    b.HasOne("RAGChatBot.Domain.Entities.ChatThread", "Thread")
                         .WithMany("Messages")
                         .HasForeignKey("ThreadId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -405,9 +470,9 @@ namespace RAGChatBot.DAL.Migrations
                     b.Navigation("Thread");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.DocumentChunk", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.DocumentChunk", b =>
                 {
-                    b.HasOne("RAGChatBot.DAL.Entities.KnowledgeDocument", "Document")
+                    b.HasOne("RAGChatBot.Domain.Entities.KnowledgeDocument", "Document")
                         .WithMany("Chunks")
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -416,9 +481,20 @@ namespace RAGChatBot.DAL.Migrations
                     b.Navigation("Document");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.QuestionBank", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.PaymentTransaction", b =>
                 {
-                    b.HasOne("RAGChatBot.DAL.Entities.KnowledgeDocument", "Document")
+                    b.HasOne("RAGChatBot.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.QuestionBank", b =>
+                {
+                    b.HasOne("RAGChatBot.Domain.Entities.KnowledgeDocument", "Document")
                         .WithMany()
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -427,14 +503,30 @@ namespace RAGChatBot.DAL.Migrations
                     b.Navigation("Document");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.ChatThread", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.User", b =>
+                {
+                    b.HasOne("RAGChatBot.Domain.Entities.Role", "Role")
+                        .WithMany("Users")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.ChatThread", b =>
                 {
                     b.Navigation("Messages");
                 });
 
-            modelBuilder.Entity("RAGChatBot.DAL.Entities.KnowledgeDocument", b =>
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.KnowledgeDocument", b =>
                 {
                     b.Navigation("Chunks");
+                });
+
+            modelBuilder.Entity("RAGChatBot.Domain.Entities.Role", b =>
+                {
+                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }

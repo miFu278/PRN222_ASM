@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,17 +9,14 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using RAGChatBot.DAL.Context;
 
 namespace RAGChatBot.DAL.Services
 {
-    public class OpenAiChatService : IChatService
+    public class OpenAiChatService : IChatResponseService
     {
         private readonly HttpClient _httpClient;
         private readonly IEmbeddingService _embeddingService;
         private readonly IKnowledgeDocumentRepository _documentRepository;
-        private readonly AppDbContext _db;
         private readonly ILogger<OpenAiChatService> _logger;
         private readonly string _baseUrl;
         private readonly string _apiKey;
@@ -29,14 +26,12 @@ namespace RAGChatBot.DAL.Services
             HttpClient httpClient,
             IEmbeddingService embeddingService,
             IKnowledgeDocumentRepository documentRepository,
-            AppDbContext db,
             IConfiguration configuration,
             ILogger<OpenAiChatService> _loggerVal)
         {
             _httpClient = httpClient;
             _embeddingService = embeddingService;
             _documentRepository = documentRepository;
-            _db = db;
             _logger = _loggerVal;
 
             var section = configuration.GetSection("AiSettings");
@@ -49,7 +44,10 @@ namespace RAGChatBot.DAL.Services
                 _logger.LogWarning("AI API Key cho Chatbot chưa được cấu hình tại mục AiSettings:ApiKey!");
             }
         }
-        public async Task<string> GetChatResponseAsync(string question, string? courseCode, Guid? threadId = null)
+        public async Task<string> GetChatResponseAsync(
+            string question,
+            string? courseCode,
+            IReadOnlyList<ChatHistoryItem> history)
         {
             if (string.IsNullOrWhiteSpace(question))
             {
@@ -104,22 +102,14 @@ namespace RAGChatBot.DAL.Services
                     new OpenAiChatMessage { Role = "system", Content = systemPrompt }
                 };
 
-                if (threadId.HasValue)
+                foreach (var message in history)
                 {
-                    var history = await _db.ChatMessages
-                        .Where(m => m.ThreadId == threadId.Value)
-                        .OrderByDescending(m => m.SentAt)
-                        .Take(10)
-                        .ToListAsync();
-
-                    history.Reverse();
-
-                    foreach (var msg in history)
+                    if (message.Role is "user" or "assistant")
                     {
                         messages.Add(new OpenAiChatMessage
                         {
-                            Role = msg.Role == "assistant" ? "assistant" : "user",
-                            Content = msg.Content
+                            Role = message.Role,
+                            Content = message.Content
                         });
                     }
                 }

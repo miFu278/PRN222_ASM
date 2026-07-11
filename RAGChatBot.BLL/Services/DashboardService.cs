@@ -1,154 +1,102 @@
-using Microsoft.EntityFrameworkCore;
 using RAGChatBot.BLL.DTOs;
-using RAGChatBot.DAL.Context;
-using RAGChatBot.DAL.Interfaces;
-using System.Diagnostics;
+using RAGChatBot.Domain.Interfaces;
 
 namespace RAGChatBot.BLL.Services
 {
-    public class DashboardService : IDashboardService
+    public sealed class DashboardService : IDashboardService
     {
-        private readonly AppDbContext _db;
-        private readonly IBenchmarkRepository _benchmarkRepo;
-        private const decimal PremiumMonthlyPrice = 199000m; // VND
+        private const decimal PremiumMonthlyPrice = 199000m;
+        private readonly IDashboardRepository _dashboardRepository;
+        private readonly IBenchmarkRepository _benchmarkRepository;
 
-        public DashboardService(AppDbContext db, IBenchmarkRepository benchmarkRepo)
+        public DashboardService(
+            IDashboardRepository dashboardRepository,
+            IBenchmarkRepository benchmarkRepository)
         {
-            _db = db;
-            _benchmarkRepo = benchmarkRepo;
+            _dashboardRepository = dashboardRepository;
+            _benchmarkRepository = benchmarkRepository;
         }
 
         public async Task<DashboardStatsDto> GetStatsAsync(
-            string period, int year, int? month, int? quarter)
+            string period,
+            int year,
+            int? month,
+            int? quarter)
         {
-            var totalUsers = await _db.Users.CountAsync();
-            var premiumUsers = await _db.Users.CountAsync(u => u.SubscriptionTier == "Premium");
-            var totalDocs = await _db.KnowledgeDocuments.CountAsync();
-            var totalChats = await _db.ChatSessions.CountAsync();
-
-            var benchmarkAvgs = await _benchmarkRepo.GetAveragesByTypeAsync();
-            var recentBenchmarks = await _benchmarkRepo.GetRecentAsync(50);
+            var summary = await _dashboardRepository.GetSummaryAsync();
+            var benchmarkAverages = await _benchmarkRepository.GetAveragesByTypeAsync();
+            var recentBenchmarks = await _benchmarkRepository.GetRecentAsync(50);
 
             return new DashboardStatsDto
             {
-                TotalUsers = totalUsers,
-                PremiumUsers = premiumUsers,
-                TotalDocuments = totalDocs,
-                TotalChatSessions = totalChats,
+                TotalUsers = summary.TotalUsers,
+                PremiumUsers = summary.PremiumUsers,
+                TotalDocuments = summary.TotalDocuments,
+                TotalChatSessions = summary.TotalChatSessions,
                 MonthlyRevenue = await GetRevenueChartAsync(period, year),
-                BenchmarkAverages = benchmarkAvgs
-                    .Select(kv => new BenchmarkAvgDto
+                BenchmarkAverages = benchmarkAverages
+                    .Select(item => new BenchmarkAvgDto
                     {
-                        OperationType = kv.Key,
-                        AvgMs = Math.Round(kv.Value, 2)
-                    }).ToList(),
+                        OperationType = item.Key,
+                        AvgMs = Math.Round(item.Value, 2)
+                    })
+                    .ToList(),
                 RecentBenchmarks = recentBenchmarks
-                    .Select(b => new BenchmarkPointDto
+                    .Select(benchmark => new BenchmarkPointDto
                     {
-                        OperationType = b.OperationType,
-                        DurationMs = b.DurationMs,
-                        DocumentName = b.DocumentName,
-                        MeasuredAt = b.MeasuredAt
-                    }).ToList()
+                        OperationType = benchmark.OperationType,
+                        DurationMs = benchmark.DurationMs,
+                        DocumentName = benchmark.DocumentName,
+                        MeasuredAt = benchmark.MeasuredAt
+                    })
+                    .ToList()
             };
         }
 
         public async Task<List<MonthlyRevenueDto>> GetRevenueChartAsync(string period, int year)
         {
+            var expiryDates = await _dashboardRepository.GetPremiumSubscriptionExpiryDatesAsync();
             var result = new List<MonthlyRevenueDto>();
-
-            // Lấy tất cả người dùng Premium có ngày hết hạn gói cước thực tế từ DB
-            var premiumUsers = await _db.Users
-                .Where(u => u.SubscriptionTier == "Premium" && u.SubscriptionExpiresAt != null)
-                .ToListAsync();
 
             if (period == "Month")
             {
-                for (int m = 1; m <= 12; m++)
+                for (var month = 1; month <= 12; month++)
                 {
-                    var docs = await _db.KnowledgeDocuments
-                        .CountAsync(d => d.UploadedAt.Year == year && d.UploadedAt.Month == m);
-                    var chats = await _db.ChatSessions
-                        .CountAsync(c => c.CreatedAt.Year == year && c.CreatedAt.Month == m);
-                    
-                    // Tính doanh thu thực tế: dựa vào ngày hết hạn lùi đi 1 tháng (thời điểm mua gói cước 1 tháng)
-                    decimal revenue = 0m;
-                    foreach (var u in premiumUsers)
-                    {
-                        var paymentDate = u.SubscriptionExpiresAt!.Value.AddMonths(-1);
-                        if (paymentDate.Year == year && paymentDate.Month == m)
-                        {
-                            revenue += PremiumMonthlyPrice;
-                        }
-                    }
-
-                    result.Add(new MonthlyRevenueDto
-                    {
-                        Label = $"T{m}",
-                        Revenue = revenue,
-                        DocumentCount = docs,
-                        ChatCount = chats
-                    });
+                    result.Add(await CreateRevenuePointAsync(
+                        $"T{month}",
+                        year,
+                        month,
+                        month,
+                        expiryDates));
                 }
+
+                return result;
             }
-            else if (period == "Quarter")
+
+            if (period == "Quarter")
             {
-                for (int q = 1; q <= 4; q++)
+                for (var quarter = 1; quarter <= 4; quarter++)
                 {
-                    var sm = (q - 1) * 3 + 1;
-                    var em = sm + 2;
-                    var docs = await _db.KnowledgeDocuments.CountAsync(d =>
-                        d.UploadedAt.Year == year &&
-                        d.UploadedAt.Month >= sm && d.UploadedAt.Month <= em);
-                    var chats = await _db.ChatSessions.CountAsync(c =>
-                        c.CreatedAt.Year == year &&
-                        c.CreatedAt.Month >= sm && c.CreatedAt.Month <= em);
-
-                    decimal revenue = 0m;
-                    foreach (var u in premiumUsers)
-                    {
-                        var paymentDate = u.SubscriptionExpiresAt!.Value.AddMonths(-1);
-                        if (paymentDate.Year == year && paymentDate.Month >= sm && paymentDate.Month <= em)
-                        {
-                            revenue += PremiumMonthlyPrice;
-                        }
-                    }
-
-                    result.Add(new MonthlyRevenueDto
-                    {
-                        Label = $"Q{q}",
-                        Revenue = revenue,
-                        DocumentCount = docs,
-                        ChatCount = chats
-                    });
+                    var startMonth = (quarter - 1) * 3 + 1;
+                    result.Add(await CreateRevenuePointAsync(
+                        $"Q{quarter}",
+                        year,
+                        startMonth,
+                        startMonth + 2,
+                        expiryDates));
                 }
+
+                return result;
             }
-            else // Year
+
+            for (var currentYear = year - 2; currentYear <= year; currentYear++)
             {
-                for (int y = year - 2; y <= year; y++)
-                {
-                    var docs = await _db.KnowledgeDocuments
-                        .CountAsync(d => d.UploadedAt.Year == y);
-                    var chats = await _db.ChatSessions.CountAsync(c => c.CreatedAt.Year == y);
-
-                    decimal revenue = 0m;
-                    foreach (var u in premiumUsers)
-                    {
-                        var paymentDate = u.SubscriptionExpiresAt!.Value.AddMonths(-1);
-                        if (paymentDate.Year == y)
-                        {
-                            revenue += PremiumMonthlyPrice;
-                        }
-                    }
-
-                    result.Add(new MonthlyRevenueDto
-                    {
-                        Label = $"{y}",
-                        Revenue = revenue,
-                        DocumentCount = docs,
-                        ChatCount = chats
-                    });
-                }
+                result.Add(await CreateRevenuePointAsync(
+                    currentYear.ToString(),
+                    currentYear,
+                    null,
+                    null,
+                    expiryDates));
             }
 
             return result;
@@ -156,24 +104,61 @@ namespace RAGChatBot.BLL.Services
 
         public async Task<List<BenchmarkAvgDto>> GetBenchmarkAveragesAsync()
         {
-            var avgs = await _benchmarkRepo.GetAveragesByTypeAsync();
-            return avgs.Select(kv => new BenchmarkAvgDto
-            {
-                OperationType = kv.Key,
-                AvgMs = Math.Round(kv.Value, 2)
-            }).ToList();
+            var averages = await _benchmarkRepository.GetAveragesByTypeAsync();
+            return averages
+                .Select(item => new BenchmarkAvgDto
+                {
+                    OperationType = item.Key,
+                    AvgMs = Math.Round(item.Value, 2)
+                })
+                .ToList();
         }
 
         public async Task<List<BenchmarkPointDto>> GetRecentBenchmarksAsync(int count = 50)
         {
-            var items = await _benchmarkRepo.GetRecentAsync(count);
-            return items.Select(b => new BenchmarkPointDto
+            var benchmarks = await _benchmarkRepository.GetRecentAsync(count);
+            return benchmarks
+                .Select(benchmark => new BenchmarkPointDto
+                {
+                    OperationType = benchmark.OperationType,
+                    DurationMs = benchmark.DurationMs,
+                    DocumentName = benchmark.DocumentName,
+                    MeasuredAt = benchmark.MeasuredAt
+                })
+                .ToList();
+        }
+
+        private async Task<MonthlyRevenueDto> CreateRevenuePointAsync(
+            string label,
+            int year,
+            int? startMonth,
+            int? endMonth,
+            IReadOnlyList<DateTime> expiryDates)
+        {
+            var documentCount = await _dashboardRepository.CountDocumentsAsync(
+                year,
+                startMonth,
+                endMonth);
+            var chatCount = await _dashboardRepository.CountChatSessionsAsync(
+                year,
+                startMonth,
+                endMonth);
+
+            var paymentCount = expiryDates.Count(expiryDate =>
             {
-                OperationType = b.OperationType,
-                DurationMs = b.DurationMs,
-                DocumentName = b.DocumentName,
-                MeasuredAt = b.MeasuredAt
-            }).ToList();
+                var paymentDate = expiryDate.AddMonths(-1);
+                return paymentDate.Year == year &&
+                       (!startMonth.HasValue || paymentDate.Month >= startMonth.Value) &&
+                       (!endMonth.HasValue || paymentDate.Month <= endMonth.Value);
+            });
+
+            return new MonthlyRevenueDto
+            {
+                Label = label,
+                Revenue = paymentCount * PremiumMonthlyPrice,
+                DocumentCount = documentCount,
+                ChatCount = chatCount
+            };
         }
     }
 }

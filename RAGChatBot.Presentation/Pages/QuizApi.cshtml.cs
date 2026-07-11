@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using RAGChatBot.DAL.Entities;
-using RAGChatBot.DAL.Interfaces;
+using RAGChatBot.Domain.Interfaces;
+using RAGChatBot.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,7 +45,7 @@ namespace RAGChatBot.Presentation.Pages
             return new JsonResult(safeQuiz);
         }
 
-        public async Task<IActionResult> OnPostSubmitAsync([FromBody] QuizSubmitRequest request)
+        public async Task<IActionResult> OnPostSubmitAsync([FromBody] QuizSubmitRequest? request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.CourseCode) || request.Answers == null)
             {
