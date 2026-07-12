@@ -22,6 +22,7 @@ namespace RAGChatBot.DAL.Context
         public DbSet<ChatThread> ChatThreads => Set<ChatThread>();
         public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
         public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
+        public DbSet<Quiz> Quizzes => Set<Quiz>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -107,6 +108,12 @@ modelBuilder.Entity<ChatSession>(entity =>
     entity.HasKey(e => e.Id);
     entity.HasIndex(e => e.UserId);
     entity.HasIndex(e => e.CreatedAt);
+});
+
+modelBuilder.Entity<Quiz>(entity =>
+{
+    entity.HasKey(e => e.Id);
+    entity.HasIndex(e => e.CourseCode);
 });
 
         }

@@ -1,17 +1,18 @@
 using System;
 
-namespace RAGChatBot.Domain.Entities
+namespace RAGChatBot.Domain.Models
 {
-    public class QuizAttempt
+    public class QuizAttemptDetailsDto
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid Id { get; set; }
         public Guid UserId { get; set; }
+        public string StudentName { get; set; } = string.Empty;
+        public string StudentUsername { get; set; } = string.Empty;
         public string CourseCode { get; set; } = string.Empty;
         public int Score { get; set; }
         public int TotalQuestions { get; set; }
         public double Percentage { get; set; }
-        public DateTime AttemptedAt { get; set; } = DateTime.UtcNow.AddHours(7);
-        public Guid? QuizId { get; set; }
+        public DateTime AttemptedAt { get; set; }
         public string? QuizTitle { get; set; }
     }
 }

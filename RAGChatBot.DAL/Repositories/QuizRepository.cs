@@ -66,5 +66,83 @@ namespace RAGChatBot.DAL.Repositories
             _db.QuizAttempts.Add(attempt);
             await _db.SaveChangesAsync();
         }
+
+        public async Task<IReadOnlyList<QuizAttempt>> GetAttemptsByCourseAsync(string courseCode)
+        {
+            var normalizedCourseCode = courseCode.Trim().ToLower();
+            return await _db.QuizAttempts
+                .AsNoTracking()
+                .Where(attempt => attempt.CourseCode.ToLower() == normalizedCourseCode)
+                .OrderByDescending(attempt => attempt.AttemptedAt)
+                .ToListAsync();
+        }
+
+        public async Task AddQuestionAsync(QuestionBank question)
+        {
+            _db.QuestionBanks.Add(question);
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task UpdateQuestionAsync(QuestionBank question)
+        {
+            _db.QuestionBanks.Update(question);
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task DeleteQuestionAsync(Guid id)
+        {
+            var question = await _db.QuestionBanks.FindAsync(id);
+            if (question != null)
+            {
+                _db.QuestionBanks.Remove(question);
+                await _db.SaveChangesAsync();
+            }
+        }
+
+        public async Task<QuestionBank?> GetQuestionByIdAsync(Guid id)
+        {
+            return await _db.QuestionBanks
+                .FirstOrDefaultAsync(q => q.Id == id);
+        }
+
+        public async Task<KnowledgeDocument?> GetFirstDocumentByCourseAsync(string courseCode)
+        {
+            var normalized = courseCode.Trim().ToLower();
+            return await _db.KnowledgeDocuments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.CourseCode.ToLower() == normalized);
+        }
+
+        public async Task<IReadOnlyList<Quiz>> GetQuizzesByCourseAsync(string courseCode)
+        {
+            var normalized = courseCode.Trim().ToLower();
+            return await _db.Quizzes
+                .AsNoTracking()
+                .Where(q => q.CourseCode.ToLower() == normalized)
+                .OrderByDescending(q => q.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task AddQuizAsync(Quiz quiz)
+        {
+            _db.Quizzes.Add(quiz);
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task DeleteQuizAsync(Guid id)
+        {
+            var quiz = await _db.Quizzes.FindAsync(id);
+            if (quiz != null)
+            {
+                _db.Quizzes.Remove(quiz);
+                await _db.SaveChangesAsync();
+            }
+        }
+
+        public async Task<Quiz?> GetQuizByIdAsync(Guid id)
+        {
+            return await _db.Quizzes
+                .FirstOrDefaultAsync(q => q.Id == id);
+        }
     }
 }
