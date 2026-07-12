@@ -194,7 +194,7 @@
                                 Truy cập tài liệu &rarr;
                             </a>
                             <a href="/Courses/@course.Code/Quiz" class="zen-action-link">
-                                Ôn luyện trắc nghiệm &rarr;
+                                @(isLecturerOrAdmin ? "Ngân hàng câu hỏi & Kết quả" : "Ôn luyện trắc nghiệm") &rarr;
                             </a>
                             
                             @if (User.IsInRole("Admin"))
