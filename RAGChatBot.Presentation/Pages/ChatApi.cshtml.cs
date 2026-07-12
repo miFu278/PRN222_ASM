@@ -69,7 +69,7 @@ namespace RAGChatBot.Presentation.Pages
                     reply = "Xin lỗi, hệ thống đang gặp sự cố. Vui lòng thử lại sau."
                 })
                 {
-                    StatusCode = StatusCodes.Status200OK
+                    StatusCode = StatusCodes.Status500InternalServerError
                 };
             }
         }

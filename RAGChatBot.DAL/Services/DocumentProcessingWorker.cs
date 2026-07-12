@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using RAGChatBot.Domain.Interfaces;
 using RAGChatBot.Domain.Enums;
 using RAGChatBot.Domain.Entities;
@@ -58,24 +59,32 @@ namespace RAGChatBot.DAL.Services
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             // 1. Quét tìm tài liệu chưa được xử lý VÀ đã được phê duyệt
-            var document = dbContext.KnowledgeDocuments
+            var documentId = await dbContext.KnowledgeDocuments
+                .AsNoTracking()
                 .Where(d => d.Status == DocumentStatus.Pending && d.IsApproved)
                 .OrderBy(d => d.UploadedAt)
-                .FirstOrDefault();
+                .Select(d => d.Id)
+                .FirstOrDefaultAsync(stoppingToken);
 
-            if (document == null)
+            if (documentId == Guid.Empty)
             {
                 return;
             }
+
+            // Claim atomically so multiple worker instances cannot process the same file.
+            var claimed = await dbContext.KnowledgeDocuments
+                .Where(d => d.Id == documentId && d.Status == DocumentStatus.Pending && d.IsApproved)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(d => d.Status, DocumentStatus.Processing), stoppingToken);
+            if (claimed == 0) return;
+
+            var document = await dbContext.KnowledgeDocuments
+                .FirstAsync(d => d.Id == documentId, stoppingToken);
 
             _logger.LogInformation("Tìm thấy tài liệu chưa xử lý: ID={DocId}, FileName='{FileName}'", document.Id, document.FileName);
 
             try
             {
-                // Cập nhật trạng thái sang Processing
-                document.Status = DocumentStatus.Processing;
-                await dbContext.SaveChangesAsync(stoppingToken);
-
                 var textExtractor = scope.ServiceProvider.GetRequiredService<ITextExtractor>();
                 var chunkingService = scope.ServiceProvider.GetRequiredService<IChunkingService>();
                 var embeddingService = scope.ServiceProvider.GetRequiredService<IEmbeddingService>();
@@ -115,6 +124,8 @@ namespace RAGChatBot.DAL.Services
                 if (string.IsNullOrWhiteSpace(fullText))
                 {
                     _logger.LogWarning("Tài liệu '{FileName}' rỗng hoặc không có chữ để trích xuất.", document.FileName);
+                    document.Status = DocumentStatus.Failed;
+                    await dbContext.SaveChangesAsync(stoppingToken);
                     return;
                 }
 
@@ -149,7 +160,20 @@ namespace RAGChatBot.DAL.Services
                 _logger.LogInformation("Đang sinh vector hàng loạt (Batch) cho {Count}/{Total} chunks hợp lệ...", cleanChunks.Count, textChunks.Count);
                 
                 var chunksTexts = cleanChunks.Select(c => c.Text).ToList();
+                if (chunksTexts.Count == 0)
+                {
+                    throw new InvalidOperationException("Tài liệu không tạo được chunk hợp lệ.");
+                }
                 var embeddings = await embeddingService.GenerateEmbeddingsAsync(chunksTexts);
+                if (embeddings.Count != cleanChunks.Count)
+                {
+                    throw new InvalidOperationException("Số vector trả về không khớp với số chunk.");
+                }
+
+                // Retry must replace old chunks instead of duplicating them.
+                await dbContext.DocumentChunks
+                    .Where(c => c.DocumentId == document.Id)
+                    .ExecuteDeleteAsync(stoppingToken);
 
                 for (int i = 0; i < cleanChunks.Count; i++)
                 {

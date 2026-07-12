@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using RAGChatBot.BLL.Services;
+using System.Security.Claims;
 
 namespace RAGChatBot.Presentation.Pages.Subscription
 {
@@ -19,9 +20,10 @@ namespace RAGChatBot.Presentation.Pages.Subscription
         {
             // PayOS trả về orderCode qua query string khi user hủy
             var orderCode = Request.Query["orderCode"].ToString();
-            if (!string.IsNullOrEmpty(orderCode))
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(orderCode) && Guid.TryParse(userIdValue, out var userId))
             {
-                await _paymentService.CancelTransactionAsync(orderCode);
+                await _paymentService.CancelTransactionAsync(orderCode, userId);
             }
 
             return Page();

@@ -16,13 +16,23 @@
             <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">Quản lý tài liệu</div>
             <h2 class="font-serif m-0" style="font-size: 2.5rem;">@Model.CourseCode - @Model.CourseName</h2>
         </div>
-        <div class="zen-hero-desc">
-            @if (!string.IsNullOrEmpty(Model.CourseDescription))
-            {
-                <p class="text-muted m-0 mb-2">@Model.CourseDescription</p>
-            }
-            <div class="text-muted small" style="letter-spacing: 0.1em; text-transform: uppercase;">
-                Giám sát: @(Model.SubjectLeaderName ?? "Chưa phân công")
+        @{
+            var isLecturerOrAdmin = User.IsInRole("Lecturer") || User.IsInRole("Admin");
+        }
+        <div class="zen-hero-desc d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                @if (!string.IsNullOrEmpty(Model.CourseDescription))
+                {
+                    <p class="text-muted m-0 mb-2">@Model.CourseDescription</p>
+                }
+                <div class="text-muted small" style="letter-spacing: 0.1em; text-transform: uppercase;">
+                    Giám sát: @(Model.SubjectLeaderName ?? "Chưa phân công")
+                </div>
+            </div>
+            <div>
+                <a href="/Courses/@Model.CourseCode/Quiz" class="btn-zen">
+                    <i class="fa-solid fa-circle-question me-2"></i>@(isLecturerOrAdmin ? "Ngân hàng câu hỏi & Kết quả" : "Làm bài trắc nghiệm")
+                </a>
             </div>
         </div>
     </div>

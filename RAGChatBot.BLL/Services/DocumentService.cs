@@ -53,23 +53,33 @@ namespace RAGChatBot.BLL.Services
                 throw new ArgumentException("Chỉ chấp nhận tệp tin định dạng .pdf hoặc .docx!");
             }
 
-            // 2. Validate file size based on subscription tier
-            long maxBytes = userSubscriptionTier.Equals("Premium", StringComparison.OrdinalIgnoreCase)
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new UnauthorizedAccessException("Không tìm thấy người dùng tải tài liệu!");
+            var courses = await _courseRepository.GetAllAsync();
+            var course = courses.FirstOrDefault(c => c.Code.Equals(courseCode, StringComparison.OrdinalIgnoreCase))
+                ?? throw new KeyNotFoundException("Không tìm thấy môn học!");
+            var isAdmin = user.Role?.Name == RoleNames.Admin;
+            var isSubjectLeader = course.SubjectLeaderId == userId;
+            if (!isAdmin && !isSubjectLeader)
+            {
+                throw new UnauthorizedAccessException("Chỉ quản trị viên hoặc Trưởng bộ môn mới được tải tài liệu lên môn học này!");
+            }
+
+            // Never trust a subscription tier supplied by the browser.
+            var hasPremium = string.Equals(user.SubscriptionTier, "Premium", StringComparison.OrdinalIgnoreCase)
+                && (!user.SubscriptionExpiresAt.HasValue || user.SubscriptionExpiresAt.Value > DateTime.UtcNow);
+            long maxBytes = hasPremium
                 ? 50 * 1024 * 1024  // 50 MB
                 : 5 * 1024 * 1024;   // 5 MB
 
             if (fileSize > maxBytes)
             {
-                string tierName = userSubscriptionTier.Equals("Premium", StringComparison.OrdinalIgnoreCase) ? "Premium" : "Free";
+                string tierName = hasPremium ? "Premium" : "Free";
                 throw new InvalidOperationException($"Kích thước tệp ({fileSize / 1024.0 / 1024.0:F2} MB) vượt quá giới hạn cho phép ({maxBytes / 1024.0 / 1024.0} MB) của gói tài khoản {tierName}!");
             }
 
             // 3. Save physical file in parallel / synchronously
             var relativePath = await _fileStorageService.SaveFileAsync(fileStream, fileName);
-
-            // 4. Auto-approve document so it can be viewed by students immediately
-            var user = await _userRepository.GetByIdAsync(userId);
-            var isApproved = true;
 
             var uploaderName = !string.IsNullOrWhiteSpace(user?.FullName) ? user.FullName : (user?.Username ?? "N/A");
 
@@ -82,11 +92,11 @@ namespace RAGChatBot.BLL.Services
                 CourseCode = courseCode,
                 Chapter = chapter,
                 FileSize = fileSize,
-                UploadedAt = DateTime.UtcNow.AddHours(7),
+                UploadedAt = DateTime.UtcNow,
                 UploadedBy = userId,
                 UploaderName = uploaderName,
                 Status = DocumentStatus.Pending,
-                IsApproved = isApproved,
+                IsApproved = false,
                 ChunkingStrategy = chunkingStrategy,
                 ChunkSize = chunkSize,
                 Overlap = overlap
@@ -140,7 +150,9 @@ namespace RAGChatBot.BLL.Services
 
             var courses = await _courseRepository.GetAllAsync();
             var course = courses.FirstOrDefault(c => c.Code.Equals(document.CourseCode, StringComparison.OrdinalIgnoreCase));
-            if (course == null || course.SubjectLeaderId != userId)
+            var user = await _userRepository.GetByIdAsync(userId);
+            var isAdmin = user?.Role?.Name == RoleNames.Admin;
+            if (course == null || (!isAdmin && course.SubjectLeaderId != userId))
             {
                 throw new UnauthorizedAccessException("Chỉ có Trưởng bộ môn của môn học này mới được quyền xóa tài liệu!");
             }
@@ -178,8 +190,9 @@ namespace RAGChatBot.BLL.Services
                 throw new KeyNotFoundException("Không tìm thấy môn học liên quan đến tài liệu!");
             }
 
-            // Kiểm tra quyền duyệt: Chỉ Trưởng bộ môn của môn đó mới được duyệt
-            if (course.SubjectLeaderId != userId)
+            var user = await _userRepository.GetByIdAsync(userId);
+            var isAdmin = user?.Role?.Name == RoleNames.Admin;
+            if (!isAdmin && course.SubjectLeaderId != userId)
             {
                 throw new UnauthorizedAccessException("Chỉ có Trưởng bộ môn của môn học này mới có quyền phê duyệt!");
             }

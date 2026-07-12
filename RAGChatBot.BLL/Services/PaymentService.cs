@@ -17,12 +17,12 @@ namespace RAGChatBot.BLL.Services
             _transactionRepository = transactionRepository;
         }
 
-        public async Task<string> CreatePendingTransactionAsync(Guid userId, long amount)
+        public async Task<string> CreatePendingTransactionAsync(Guid userId, long amount, string? orderId = null)
         {
             var user = await _userRepository.GetByIdAsync(userId)
                 ?? throw new InvalidOperationException("User was not found.");
 
-            var orderId = $"ORDER-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}";
+            orderId ??= $"ORDER-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}";
             await _transactionRepository.AddAsync(new PaymentTransaction
             {
                 OrderId = orderId,
@@ -89,6 +89,16 @@ namespace RAGChatBot.BLL.Services
                 CreatedAt = transaction.CreatedAt,
                 PaidAt = transaction.PaidAt
             }).ToList();
+        }
+
+        public async Task CancelTransactionAsync(string orderId, Guid userId)
+        {
+            var transaction = await _transactionRepository.GetByOrderIdAsync(orderId);
+            if (transaction != null && transaction.UserId == userId && transaction.Status == "Pending")
+            {
+                transaction.Status = "Failed";
+                await _transactionRepository.SaveChangesAsync();
+            }
         }
     }
 }

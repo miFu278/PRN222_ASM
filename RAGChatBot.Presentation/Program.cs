@@ -293,8 +293,8 @@ app.UseHttpsRedirection();
 app.MapStaticAssets();
 
 // Kích hoạt Middleware
-app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 // Đăng ký các controller định tuyến (AccountController)
