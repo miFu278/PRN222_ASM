@@ -34,14 +34,14 @@ namespace RAGChatBot.BLL.Services
             return response.CheckoutUrl;
         }
 
-        public async Task<VnPayCallbackResult> ValidateReturnAsync(IReadOnlyDictionary<string, string> parameters)
+        public async Task<PayOSCallbackResult> ValidateReturnAsync(IReadOnlyDictionary<string, string> parameters)
         {
             parameters.TryGetValue("orderCode", out var orderCodeStr);
             parameters.TryGetValue("id", out var paymentLinkId);
             parameters.TryGetValue("code", out var responseCode);
             if (!long.TryParse(orderCodeStr, out var orderCode))
             {
-                return new VnPayCallbackResult
+                return new PayOSCallbackResult
                 {
                     OrderId = orderCodeStr ?? string.Empty,
                     ResponseCode = responseCode ?? string.Empty,
@@ -55,7 +55,7 @@ namespace RAGChatBot.BLL.Services
                 // PayOS return URLs are not signed. Verify the transaction against PayOS itself.
                 var paymentLink = await _payOSClient.PaymentRequests.GetAsync(orderCode);
                 var isSuccess = paymentLink.Status == PaymentLinkStatus.Paid;
-                return new VnPayCallbackResult
+                return new PayOSCallbackResult
                 {
                     OrderId = orderCodeStr!,
                     ResponseCode = responseCode ?? string.Empty,
@@ -68,7 +68,7 @@ namespace RAGChatBot.BLL.Services
             }
             catch
             {
-                return new VnPayCallbackResult
+                return new PayOSCallbackResult
                 {
                     OrderId = orderCodeStr!,
                     ResponseCode = responseCode ?? string.Empty,

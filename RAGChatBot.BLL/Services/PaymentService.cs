@@ -36,7 +36,7 @@ namespace RAGChatBot.BLL.Services
         }
 
         public async Task<bool> ProcessPaymentCallbackAsync(
-            VnPayCallbackResult callbackResult,
+            PayOSCallbackResult callbackResult,
             Guid userId)
         {
             if (!callbackResult.IsValid)
