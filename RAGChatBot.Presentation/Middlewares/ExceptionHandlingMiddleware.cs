@@ -36,8 +36,7 @@ namespace RAGChatBot.Presentation.Middlewares
 
             var result = JsonSerializer.Serialize(new
             {
-                error = "Đã xảy ra lỗi nội bộ trong hệ thống. Vui lòng thử lại sau.",
-                details = exception.Message // Có thể ẩn đi trong môi trường Production
+                error = "Đã xảy ra lỗi nội bộ trong hệ thống. Vui lòng thử lại sau."
             });
 
             return context.Response.WriteAsync(result);

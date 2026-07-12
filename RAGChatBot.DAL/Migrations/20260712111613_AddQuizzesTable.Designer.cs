@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using RAGChatBot.DAL.Context;
 namespace RAGChatBot.DAL.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260712111613_AddQuizzesTable")]
+    partial class AddQuizzesTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -102,38 +105,6 @@ namespace RAGChatBot.DAL.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ChatThreads");
-                });
-
-            modelBuilder.Entity("RAGChatBot.Domain.Entities.ChatTrackerLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Answer")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CourseCode")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Question")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("ChatTrackerLogs");
                 });
 
             modelBuilder.Entity("RAGChatBot.Domain.Entities.Course", b =>
@@ -333,10 +304,6 @@ namespace RAGChatBot.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Chapter")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("CorrectAnswer")
                         .IsRequired()
                         .HasColumnType("text");
@@ -394,27 +361,8 @@ namespace RAGChatBot.DAL.Migrations
                     b.Property<Guid?>("DocumentId")
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("IsPublished")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("MaxAttempts")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("PasswordHash")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
                     b.Property<int>("QuestionCount")
                         .HasColumnType("integer");
-
-                    b.Property<int>("ReviewPolicy")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("ShuffleOptions")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("ShuffleQuestions")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -433,9 +381,6 @@ namespace RAGChatBot.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("AttemptNumber")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("AttemptedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -452,20 +397,8 @@ namespace RAGChatBot.DAL.Migrations
                     b.Property<string>("QuizTitle")
                         .HasColumnType("text");
 
-                    b.Property<int>("ReviewPolicy")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Score")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime>("StartedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("SubmittedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("TotalQuestions")
                         .HasColumnType("integer");
@@ -475,65 +408,7 @@ namespace RAGChatBot.DAL.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("QuizId", "UserId", "Status");
-
-                    b.HasIndex("UserId", "QuizId", "AttemptNumber")
-                        .IsUnique();
-
                     b.ToTable("QuizAttempts");
-                });
-
-            modelBuilder.Entity("RAGChatBot.Domain.Entities.QuizAttemptAnswer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AttemptId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CorrectAnswer")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("integer");
-
-                    b.Property<bool?>("IsCorrect")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("OptionA")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OptionB")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OptionC")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OptionD")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("QuestionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("QuestionText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("SelectedAnswer")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AttemptId", "DisplayOrder")
-                        .IsUnique();
-
-                    b.ToTable("QuizAttemptAnswers");
                 });
 
             modelBuilder.Entity("RAGChatBot.Domain.Entities.Role", b =>
@@ -667,17 +542,6 @@ namespace RAGChatBot.DAL.Migrations
                     b.Navigation("Document");
                 });
 
-            modelBuilder.Entity("RAGChatBot.Domain.Entities.QuizAttemptAnswer", b =>
-                {
-                    b.HasOne("RAGChatBot.Domain.Entities.QuizAttempt", "Attempt")
-                        .WithMany("Answers")
-                        .HasForeignKey("AttemptId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Attempt");
-                });
-
             modelBuilder.Entity("RAGChatBot.Domain.Entities.User", b =>
                 {
                     b.HasOne("RAGChatBot.Domain.Entities.Role", "Role")
@@ -697,11 +561,6 @@ namespace RAGChatBot.DAL.Migrations
             modelBuilder.Entity("RAGChatBot.Domain.Entities.KnowledgeDocument", b =>
                 {
                     b.Navigation("Chunks");
-                });
-
-            modelBuilder.Entity("RAGChatBot.Domain.Entities.QuizAttempt", b =>
-                {
-                    b.Navigation("Answers");
                 });
 
             modelBuilder.Entity("RAGChatBot.Domain.Entities.Role", b =>

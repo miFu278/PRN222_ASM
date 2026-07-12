@@ -100,5 +100,15 @@ namespace RAGChatBot.BLL.Services
                 PaidAt = transaction.PaidAt
             }).ToList();
         }
+
+        public async Task CancelTransactionAsync(string orderId, Guid userId)
+        {
+            var transaction = await _transactionRepository.GetByOrderIdAsync(orderId);
+            if (transaction != null && transaction.UserId == userId && transaction.Status == "Pending")
+            {
+                transaction.Status = "Failed";
+                await _transactionRepository.SaveChangesAsync();
+            }
+        }
     }
 }

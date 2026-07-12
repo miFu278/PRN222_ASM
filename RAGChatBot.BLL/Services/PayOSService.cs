@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using PayOS;
 using PayOS.Models.V2.PaymentRequests;
 
@@ -5,13 +8,13 @@ namespace RAGChatBot.BLL.Services
 {
     public class PayOSService : IPayOSService
     {
-        private readonly PayOSClient _client;
+        private readonly PayOSClient _payOSClient;
         private readonly string _returnUrl;
         private readonly string _cancelUrl;
 
-        public PayOSService(PayOSClient client, string returnUrl, string cancelUrl)
+        public PayOSService(PayOSClient payOSClient, string returnUrl, string cancelUrl)
         {
-            _client = client;
+            _payOSClient = payOSClient;
             _returnUrl = returnUrl;
             _cancelUrl = cancelUrl;
         }
@@ -21,41 +24,58 @@ namespace RAGChatBot.BLL.Services
             var request = new CreatePaymentLinkRequest
             {
                 OrderCode = orderCode,
-                Amount = (int)amount,
-                Description = "Premium " + orderCode,
+                Amount = amount,
+                Description = $"Thanh toan don hang {orderCode}",
                 ReturnUrl = _returnUrl,
                 CancelUrl = _cancelUrl
             };
 
-            var result = await _client.PaymentRequests.CreateAsync(request);
-            return result.CheckoutUrl;
+            var response = await _payOSClient.PaymentRequests.CreateAsync(request);
+            return response.CheckoutUrl;
         }
 
-        public PayOSCallbackResult ValidateCallback(IReadOnlyDictionary<string, string> parameters)
+        public async Task<VnPayCallbackResult> ValidateReturnAsync(IReadOnlyDictionary<string, string> parameters)
         {
-            var code = GetValue(parameters, "code");
-            var status = GetValue(parameters, "status");
-            var orderCodeStr = GetValue(parameters, "orderCode");
-            var idStr = GetValue(parameters, "id");
-            var cancel = GetValue(parameters, "cancel");
-
-            var isSuccess = code == "00" && status == "PAID" && cancel != "true";
-
-            return new PayOSCallbackResult
+            parameters.TryGetValue("orderCode", out var orderCodeStr);
+            parameters.TryGetValue("id", out var paymentLinkId);
+            parameters.TryGetValue("code", out var responseCode);
+            if (!long.TryParse(orderCodeStr, out var orderCode))
             {
-                OrderId = orderCodeStr,
-                ResponseCode = code,
-                IsValid = true,
-                IsSuccess = isSuccess,
-                Message = isSuccess ? "Giao dịch Premium thành công!" : "Giao dịch thất bại.",
-                TransactionNo = idStr,
-                Amount = 0 // Sẽ được so khớp từ transaction trong DB
-            };
-        }
+                return new VnPayCallbackResult
+                {
+                    OrderId = orderCodeStr ?? string.Empty,
+                    ResponseCode = responseCode ?? string.Empty,
+                    IsValid = false,
+                    Message = "Mã giao dịch PayOS không hợp lệ."
+                };
+            }
 
-        private static string GetValue(
-            IReadOnlyDictionary<string, string> parameters,
-            string key)
-            => parameters.TryGetValue(key, out var value) ? value : string.Empty;
+            try
+            {
+                // PayOS return URLs are not signed. Verify the transaction against PayOS itself.
+                var paymentLink = await _payOSClient.PaymentRequests.GetAsync(orderCode);
+                var isSuccess = paymentLink.Status == PaymentLinkStatus.Paid;
+                return new VnPayCallbackResult
+                {
+                    OrderId = orderCodeStr!,
+                    ResponseCode = responseCode ?? string.Empty,
+                    IsValid = true,
+                    IsSuccess = isSuccess,
+                    Message = isSuccess ? "Giao dịch Premium thành công!" : "Giao dịch thất bại hoặc bị hủy.",
+                    TransactionNo = paymentLinkId,
+                    Amount = paymentLink.Amount
+                };
+            }
+            catch
+            {
+                return new VnPayCallbackResult
+                {
+                    OrderId = orderCodeStr!,
+                    ResponseCode = responseCode ?? string.Empty,
+                    IsValid = false,
+                    Message = "Không thể xác minh giao dịch với PayOS."
+                };
+            }
+        }
     }
 }

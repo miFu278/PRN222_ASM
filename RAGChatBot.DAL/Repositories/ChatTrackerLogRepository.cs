@@ -12,14 +12,12 @@ namespace RAGChatBot.DAL.Repositories
 
         public async Task AddAsync(ChatTrackerLog log)
         {
-            // Do ChatTrackerLog chưa được cấu hình Migration/DbSet chính thức,
-            // chúng ta trả về tác vụ đã hoàn tất để tránh lỗi runtime DB
-            await Task.CompletedTask;
+            await _db.ChatTrackerLogs.AddAsync(log);
         }
 
         public async Task SaveChangesAsync()
         {
-            await Task.CompletedTask;
+            await _db.SaveChangesAsync();
         }
     }
 }

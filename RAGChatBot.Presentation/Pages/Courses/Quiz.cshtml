@@ -2,7 +2,35 @@
 @model RAGChatBot.Presentation.Pages.Courses.QuizModel
 @{
     ViewData["Title"] = $"Ôn Tập Trắc Nghiệm - {Model.CourseCode}";
+    var isLecturerOrAdmin = User.IsInRole("Lecturer") || User.IsInRole("Admin");
 }
+
+<div class="d-none">@Html.AntiForgeryToken()</div>
+
+<style>
+    .tab-btn {
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        border-bottom: 2px solid transparent !important;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+        font-family: var(--font-sans);
+    }
+    .tab-btn:hover {
+        color: var(--text-sumi);
+    }
+    .tab-btn.active {
+        color: var(--accent-shu) !important;
+        border-color: var(--accent-shu) !important;
+    }
+    
+    .correct-option-badge {
+        background-color: rgba(16, 185, 129, 0.1) !important;
+        border: 1px solid rgb(16, 185, 129) !important;
+        color: rgb(4, 120, 87) !important;
+        border-radius: 4px;
+    }
+</style>
 
 <div class="zen-container py-4 gsap-fade-up">
     <!-- Back to Documents -->
@@ -13,41 +41,297 @@
     <!-- Hero Header -->
     <div class="zen-hero mb-5" style="min-height: auto;">
         <div class="zen-hero-title">
-            <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">Ôn Luyện Trắc Nghiệm</div>
+            <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">
+                @(isLecturerOrAdmin ? "Quản Lý Trắc Nghiệm" : "Ôn Luyện Trắc Nghiệm")
+            </div>
             <h2 class="font-serif m-0" style="font-size: 2.5rem;">@Model.CourseCode</h2>
         </div>
         <div class="zen-hero-desc">
-            Hệ thống tự động sinh câu hỏi trắc nghiệm từ nội dung tài liệu môn học bằng AI. Hãy hoàn thành bài kiểm tra để đánh giá mức độ hiểu bài.
+            @(isLecturerOrAdmin 
+                ? "Giao diện quản lý ngân hàng câu hỏi trắc nghiệm, thiết lập đề thi và theo dõi kết quả làm bài của học viên." 
+                : "Hệ thống hiển thị danh sách các bài trắc nghiệm do giảng viên thiết lập. Hãy làm bài để đánh giá mức độ hiểu bài của bạn.")
         </div>
     </div>
 
-    <!-- Quiz Container -->
-    <div id="quizLoading" class="text-center py-5">
-        <span class="spinner-border spinner-border-sm text-secondary me-2"></span>
-        <span class="text-muted" style="font-weight: 300;">Đang tải câu hỏi...</span>
-    </div>
-
-    <div id="quizEmpty" class="text-center py-5" style="display: none;">
-        <span class="hanko-seal mb-3 d-block mx-auto" style="opacity: 0.4; width: 48px; height: 48px; font-size: 1.4rem;">無</span>
-        <div style="font-weight: 300;" class="text-muted">Chưa có câu hỏi trắc nghiệm nào cho môn học này.<br>Vui lòng tải lên tài liệu và đợi hệ thống tự động sinh câu hỏi.</div>
-    </div>
-
-    <form id="quizForm" style="display: none;">
-        <div id="quizQuestions" class="d-flex flex-column gap-4"></div>
-
-        <div class="mt-5 d-flex justify-content-center">
-            <button type="submit" class="btn-zen primary magnetic-btn" style="padding: 14px 48px; font-size: 1.1rem;" id="submitQuizBtn">
-                <span class="submit-text"><i class="fa-solid fa-paper-plane me-2"></i>Nộp Bài</span>
-                <span class="submit-spinner d-none">
-                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                    Đang chấm điểm...
-                </span>
+    @if (isLecturerOrAdmin)
+    {
+        <!-- Tabs for Lecturer/Admin -->
+        <div class="d-flex border-bottom mb-5">
+            <button class="tab-btn active me-4 pb-2 fw-bold border-0 bg-transparent" onclick="switchTab('questionBank')" id="tab-questionBank">
+                Ngân Hàng Câu Hỏi
+            </button>
+            <button class="tab-btn me-4 pb-2 fw-bold border-0 bg-transparent" onclick="switchTab('quizBuilder')" id="tab-quizBuilder">
+                Quản Lý Đề Thi
+            </button>
+            <button class="tab-btn pb-2 fw-bold border-0 bg-transparent" onclick="switchTab('studentAttempts')" id="tab-studentAttempts">
+                Kết Quả Học Viên
             </button>
         </div>
-    </form>
 
-    <!-- Result Modal -->
-    <div class="modal fade" id="resultModal" tabindex="-1" aria-hidden="true">
+        <!-- Question Bank Section -->
+        <div id="questionBankSection">
+            <!-- AI Generation Control Card -->
+            <div class="card mb-4" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0; box-shadow: none;">
+                <div class="card-body p-4">
+                    <h5 class="font-serif mb-2" style="font-size: 1.1rem; color: var(--text-sumi);"><i class="fa-solid fa-wand-magic-sparkles text-accent me-2"></i>Sinh câu hỏi trắc nghiệm bằng AI</h5>
+                    <p class="text-muted small mb-4">Hệ thống sẽ quét nội dung tài liệu đã chọn để tự động phân tích và tạo ngân hàng câu hỏi trắc nghiệm (lên tới 100 câu).</p>
+                    
+                    <div class="d-flex align-items-end gap-3 flex-wrap">
+                        <div style="flex: 1; min-width: 250px;">
+                            <label class="text-muted mb-2 small text-uppercase tracking-wider">Chọn tài liệu đã duyệt</label>
+                            <select id="aiDocSelect" class="form-select" style="border-radius: 0; border: 1px solid var(--border-light); font-size: 0.9rem; background-color: transparent;">
+                                <option value="">-- Đang tải tài liệu... --</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn-zen primary" id="generateAiBtn" onclick="triggerAiGeneration()">
+                            <span class="gen-text">Bắt đầu sinh câu hỏi</span>
+                            <span class="gen-spinner d-none">
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                Đang sinh câu hỏi...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="text-muted"><span id="qCount" class="fw-bold text-accent">0</span> câu hỏi trong ngân hàng</div>
+                <div class="d-flex gap-3">
+                    <button class="btn-zen" onclick="openAddQuestionModal()"><i class="fa-solid fa-plus me-2"></i>Thêm Câu Hỏi</button>
+                    <input type="text" id="qSearch" class="input-zen" placeholder="Tìm kiếm câu hỏi..." style="max-width: 300px; font-size: 0.9rem;" onkeyup="filterQuestions()" />
+                </div>
+            </div>
+
+            <div id="quizLoadingBank" class="text-center py-5">
+                <span class="spinner-border spinner-border-sm text-secondary me-2"></span>
+                <span class="text-muted" style="font-weight: 300;">Đang tải ngân hàng câu hỏi...</span>
+            </div>
+
+            <div id="quizEmptyBank" class="text-center py-5" style="display: none;">
+                <span class="hanko-seal mb-3 d-block mx-auto" style="opacity: 0.4; width: 48px; height: 48px; font-size: 1.4rem;">無</span>
+                <div style="font-weight: 300;" class="text-muted">Chưa có câu hỏi trắc nghiệm nào cho môn học này.<br>Vui lòng duyệt tài liệu để hệ thống sinh câu hỏi tự động.</div>
+            </div>
+
+            <div id="questionBankList" class="d-flex flex-column gap-4"></div>
+            
+            <!-- Question Bank Pagination -->
+            <div id="questionBankPagination"></div>
+        </div>
+
+        <!-- Quiz Builder Section -->
+        <div id="quizBuilderSection" style="display: none;">
+            <!-- Create Quiz Card -->
+            <div class="card mb-4" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0; box-shadow: none;">
+                <form id="createQuizForm" class="card-body p-4">
+                    <h5 class="font-serif mb-4" style="font-size: 1.15rem; color: var(--text-sumi);"><i class="fa-solid fa-file-signature text-accent me-2"></i>Thiết lập bài trắc nghiệm mới</h5>
+                    
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="text-muted mb-2 small text-uppercase tracking-wider">Tiêu đề bài trắc nghiệm</label>
+                            <input type="text" id="quizTitleInput" class="input-zen" required placeholder="Ví dụ: Bài kiểm tra Chương 1, Thi giữa kỳ thử..." style="font-size: 0.95rem;" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted mb-2 small text-uppercase tracking-wider">Số lượng câu hỏi</label>
+                            <input type="number" id="quizQuestionCountInput" class="input-zen" required min="5" max="100" value="20" style="font-size: 0.95rem;" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted mb-2 small text-uppercase tracking-wider">Phạm vi tài liệu</label>
+                            <select id="quizDocSelect" class="form-select" style="border-radius: 0; border: 1px solid var(--border-light); font-size: 0.95rem; background-color: transparent;">
+                                <option value="">Tất cả tài liệu môn học</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-2">
+                            <label class="text-muted mb-2 small text-uppercase">Số lần làm tối đa</label>
+                            <input type="number" id="quizMaxAttemptsInput" class="input-zen" min="1" max="100" value="1" required />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted mb-2 small text-uppercase">Mật khẩu (không bắt buộc)</label>
+                            <input type="password" id="quizPasswordInput" class="input-zen" autocomplete="new-password" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted mb-2 small text-uppercase">Quyền xem lại</label>
+                            <select id="quizReviewPolicyInput" class="form-select">
+                                <option value="0">Chỉ xem điểm</option>
+                                <option value="1">Xem câu đã làm</option>
+                                <option value="2">Xem cả đáp án đúng</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end gap-4 pb-2">
+                            <label><input type="checkbox" id="quizShuffleQuestionsInput" checked /> Trộn câu hỏi</label>
+                            <label><input type="checkbox" id="quizShuffleOptionsInput" checked /> Trộn đáp án</label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn-zen primary">Tạo Bài Trắc Nghiệm</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="mb-4 text-muted"><span id="quizCount" class="fw-bold text-accent">0</span> bài trắc nghiệm đã thiết lập</div>
+
+            <div id="quizzesLoading" class="text-center py-5">
+                <span class="spinner-border spinner-border-sm text-secondary me-2"></span>
+                <span class="text-muted" style="font-weight: 300;">Đang tải danh sách bài trắc nghiệm...</span>
+            </div>
+
+            <div id="quizzesEmpty" class="text-center py-5" style="display: none;">
+                <span class="hanko-seal mb-3 d-block mx-auto" style="opacity: 0.4; width: 48px; height: 48px; font-size: 1.4rem;">空</span>
+                <div style="font-weight: 300;" class="text-muted">Chưa có bài trắc nghiệm nào được tạo. Hãy sử dụng form trên để tạo mới.</div>
+            </div>
+
+            <div id="quizzesTableWrapper" class="table-responsive" style="display: none;">
+                <table class="table align-middle" style="background: var(--bg-washi); border: 1px solid var(--border-light);">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border-light); font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted);">
+                            <th class="ps-4">Tiêu Đề</th>
+                            <th>Số Câu Hỏi</th>
+                            <th>Phạm Vi Tài Liệu</th>
+                            <th>Ngày Tạo</th>
+                            <th class="pe-4 text-end">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quizzesList"></tbody>
+                </table>
+            </div>
+            
+            <!-- Quizzes Pagination -->
+            <div id="quizPagination"></div>
+        </div>
+
+        <!-- Student Attempts Section -->
+        <div id="studentAttemptsSection" style="display: none;">
+            <div class="mb-4 text-muted"><span id="aCount" class="fw-bold text-accent">0</span> lượt làm bài của học viên</div>
+            
+            <div id="attemptsLoading" class="text-center py-5">
+                <span class="spinner-border spinner-border-sm text-secondary me-2"></span>
+                <span class="text-muted" style="font-weight: 300;">Đang tải kết quả...</span>
+            </div>
+
+            <div id="attemptsEmpty" class="text-center py-5" style="display: none;">
+                <span class="hanko-seal mb-3 d-block mx-auto" style="opacity: 0.4; width: 48px; height: 48px; font-size: 1.4rem;">空</span>
+                <div style="font-weight: 300;" class="text-muted">Chưa có sinh viên nào thực hiện bài trắc nghiệm môn này.</div>
+            </div>
+
+            <div id="attemptsTableWrapper" class="table-responsive" style="display: none;">
+                <table class="table align-middle" style="background: var(--bg-washi); border: 1px solid var(--border-light);">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border-light); font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted);">
+                            <th class="ps-4">Học Viên</th>
+                            <th>Mã Sinh Viên</th>
+                            <th>Bài Trắc Nghiệm</th>
+                            <th>Thời Gian</th>
+                            <th>Số Câu Đúng</th>
+                            <th>Tỷ Lệ Đúng</th>
+                            <th class="pe-4 text-end">Đánh Giá</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attemptsList"></tbody>
+                </table>
+            </div>
+            
+            <!-- Attempts Pagination -->
+            <div id="attemptsPagination"></div>
+        </div>
+    }
+    else
+    {
+        <!-- Student Quiz View -->
+        <!-- Quiz Selection List -->
+        <div id="studentQuizListPanel">
+            <h5 class="font-serif mb-4" style="font-size: 1.25rem;"><i class="fa-solid fa-list-check text-accent me-2"></i>Danh sách bài trắc nghiệm</h5>
+            
+            <div id="studentQuizzesLoading" class="text-center py-5">
+                <span class="spinner-border spinner-border-sm text-secondary me-2"></span>
+                <span class="text-muted" style="font-weight: 300;">Đang tải danh sách bài thi...</span>
+            </div>
+
+            <div id="studentQuizzesEmpty" class="text-center py-5" style="display: none;">
+                <span class="hanko-seal mb-3 d-block mx-auto" style="opacity: 0.4; width: 48px; height: 48px; font-size: 1.4rem;">無</span>
+                <div style="font-weight: 300;" class="text-muted">Hiện tại môn học chưa có bài trắc nghiệm nào do Giảng viên thiết lập.</div>
+            </div>
+
+            <div id="studentQuizCards" class="row g-4"></div>
+            <h5 class="font-serif mt-5 mb-3">Lịch sử làm bài của tôi</h5>
+            <div id="myAttemptsList" class="d-flex flex-column gap-2"></div>
+        </div>
+
+        <!-- Student Quiz Taker Loading Screen -->
+        <div id="quizLoading" class="text-center py-5" style="display: none;">
+            <span class="spinner-border spinner-border-sm text-secondary me-2"></span>
+            <span class="text-muted" style="font-weight: 300;">Đang tạo đề và chuẩn bị câu hỏi...</span>
+        </div>
+
+        <!-- Student Quiz Wizard (Paginated) -->
+        <form id="quizForm" style="display: none;">
+            <div id="studentQuizWizard"></div>
+        </form>
+    }
+</div>
+
+<!-- Place Modals outside zen-container at the root level to prevent transform/stacking context layout bugs -->
+@if (isLecturerOrAdmin)
+{
+    <!-- Add/Edit Question Modal -->
+    <div class="modal fade" id="questionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0;">
+                <div class="modal-header" style="border-bottom: 1px solid var(--border-light);">
+                    <h5 class="modal-title font-serif" id="questionModalTitle">Thêm Câu Hỏi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="questionForm">
+                    <input type="hidden" id="qIdInput" />
+                    <div class="modal-body py-4">
+                        <div class="mb-3">
+                            <label class="text-muted mb-2 small text-uppercase tracking-wider">Nội dung câu hỏi</label>
+                            <textarea id="qTextInput" class="form-control" rows="3" required style="border-radius: 0; border: 1px solid var(--border-light); font-size: 0.95rem;"></textarea>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="text-muted mb-2 small text-uppercase tracking-wider">Đáp án A</label>
+                                <input type="text" id="qOptAInput" class="input-zen" required style="font-size: 0.9rem;" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted mb-2 small text-uppercase tracking-wider">Đáp án B</label>
+                                <input type="text" id="qOptBInput" class="input-zen" required style="font-size: 0.9rem;" />
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="text-muted mb-2 small text-uppercase tracking-wider">Đáp án C</label>
+                                <input type="text" id="qOptCInput" class="input-zen" required style="font-size: 0.9rem;" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted mb-2 small text-uppercase tracking-wider">Đáp án D</label>
+                                <input type="text" id="qOptDInput" class="input-zen" required style="font-size: 0.9rem;" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-muted mb-2 small text-uppercase tracking-wider">Đáp án đúng</label>
+                            <select id="qCorrectInput" class="form-select" required style="border-radius: 0; border: 1px solid var(--border-light); font-size: 0.95rem;">
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: none;">
+                        <button type="button" class="zen-action-link" data-bs-dismiss="modal" style="margin-right: 20px;">Hủy</button>
+                        <button type="submit" class="btn-zen primary">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Result Modal (For Students) -->
+    <div class="modal fade" id="resultModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0;">
                 <div class="modal-body text-center py-5 px-4">
@@ -60,11 +344,23 @@
                         Tỷ lệ đúng: <strong id="resultPercent">0</strong>%
                     </div>
                     <div class="d-flex gap-3 justify-content-center">
-                        <button class="btn-zen" data-bs-dismiss="modal">Đóng</button>
-                        <button class="btn-zen primary" onclick="location.reload()">Làm Lại</button>
+                        <button type="button" class="btn-zen" id="reviewResultButton">Xem lại bài làm</button>
+                        <button class="btn-zen primary" onclick="location.reload()">Quay Lại Danh Sách</button>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content" style="background: var(--bg-washi); border-radius: 0;">
+            <div class="modal-header">
+                <h5 class="modal-title font-serif">Chi tiết lượt làm bài</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="reviewModalBody"></div>
         </div>
     </div>
 </div>
@@ -73,61 +369,875 @@
 <script>
 (function () {
     const courseCode = '@Model.CourseCode';
-    const quizLoading = document.getElementById('quizLoading');
-    const quizEmpty = document.getElementById('quizEmpty');
-    const quizForm = document.getElementById('quizForm');
-    const quizQuestions = document.getElementById('quizQuestions');
+    const isLecturerOrAdmin = @(isLecturerOrAdmin ? "true" : "false");
+    const antiforgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    const jsonHeaders = {
+        'Content-Type': 'application/json',
+        'RequestVerificationToken': antiforgeryToken
+    };
 
-    // Load quiz questions
-    fetch(`/api/quiz?courseCode=${encodeURIComponent(courseCode)}`)
-        .then(res => res.json())
-        .then(data => {
-            quizLoading.style.display = 'none';
+    window.viewAttemptDetails = async function (attemptId, instructorView) {
+        const suffix = instructorView ? `&courseCode=${encodeURIComponent(courseCode)}` : '';
+        const response = await fetch(`/api/quiz?handler=AttemptReview&attemptId=${encodeURIComponent(attemptId)}${suffix}`);
+        const result = await response.json();
+        if (!response.ok) {
+            alert(result.error || 'Không thể xem chi tiết lượt làm bài.');
+            return;
+        }
+        const questions = result.questions || [];
+        document.getElementById('reviewModalBody').innerHTML = `
+            <div class="mb-4"><strong>${escapeHtml(result.quizTitle)}</strong> — lần ${result.attemptNumber}<br>
+            Điểm: <strong>${result.score}/${result.totalQuestions}</strong> (${result.percentage}%)</div>
+            ${questions.length === 0 ? '<p class="text-muted">Giảng viên chỉ cho phép xem điểm.</p>' : questions.map(q => `
+                <div class="border-top pt-3 mb-3">
+                    <div class="fw-bold mb-2">Câu ${q.displayOrder}: ${escapeHtml(q.questionText)}</div>
+                    <div>Đã chọn: <strong>${escapeHtml(q.selectedAnswer || 'Bỏ trống')}</strong>
+                    ${q.correctAnswer ? ` · Đáp án đúng: <strong>${escapeHtml(q.correctAnswer)}</strong>` : ''}</div>
+                    ${q.isCorrect === null || q.isCorrect === undefined ? '' : `<div class="${q.isCorrect ? 'text-success' : 'text-danger'}">${q.isCorrect ? 'Đúng' : 'Sai'}</div>`}
+                </div>`).join('')}`;
+        new bootstrap.Modal(document.getElementById('reviewModal')).show();
+    };
 
-            if (!data || data.length === 0) {
-                quizEmpty.style.display = 'block';
+    // Generic Pagination Helper State Class
+    class PaginationState {
+        constructor(pageSize = 10) {
+            this.pageSize = pageSize;
+            this.currentPage = 1;
+            this.data = [];
+        }
+        setData(newData) {
+            this.data = newData;
+            this.currentPage = 1;
+        }
+        getPageData() {
+            const start = (this.currentPage - 1) * this.pageSize;
+            return this.data.slice(start, start + this.pageSize);
+        }
+        totalPages() {
+            return Math.ceil(this.data.length / this.pageSize) || 1;
+        }
+        next() {
+            if (this.currentPage < this.totalPages()) {
+                this.currentPage++;
+                return true;
+            }
+            return false;
+        }
+        prev() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                return true;
+            }
+            return false;
+        }
+    }
+
+    if (isLecturerOrAdmin) {
+        // Lecturer States
+        let questionData = [];
+        let quizData = [];
+        let attemptData = [];
+
+        const questionPaginationState = new PaginationState(10);
+        const quizPaginationState = new PaginationState(10);
+        const attemptPaginationState = new PaginationState(10);
+
+        const questionModal = new bootstrap.Modal(document.getElementById('questionModal'));
+        const qForm = document.getElementById('questionForm');
+        const aiDocSelect = document.getElementById('aiDocSelect');
+        const quizDocSelect = document.getElementById('quizDocSelect');
+
+        // Switch Tabs Function
+        window.switchTab = function (tabName) {
+            const tabs = ['questionBank', 'quizBuilder', 'studentAttempts'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const sec = document.getElementById(`${t}Section`);
+                if (t === tabName) {
+                    btn.classList.add('active');
+                    sec.style.display = 'block';
+                } else {
+                    btn.classList.remove('active');
+                    sec.style.display = 'none';
+                }
+            });
+
+            if (tabName === 'quizBuilder') {
+                loadLecturerQuizzes();
+            } else if (tabName === 'studentAttempts') {
+                loadStudentAttempts();
+            }
+        };
+
+        // Load approved documents for AI selector and Quiz scope dropdown
+        function loadApprovedDocuments() {
+            fetch(`/api/quiz?handler=Documents&courseCode=${encodeURIComponent(courseCode)}`)
+                .then(res => res.json())
+                .then(data => {
+                    const dropdowns = [aiDocSelect, quizDocSelect];
+                    dropdowns.forEach(dd => {
+                        if (!dd) return;
+                        dd.innerHTML = '';
+                        if (!data || data.length === 0) {
+                            dd.innerHTML = '<option value="">-- Chưa có tài liệu đã duyệt nào --</option>';
+                            return;
+                        }
+                        
+                        dd.innerHTML = dd === quizDocSelect 
+                            ? '<option value="">Tất cả tài liệu môn học</option>' 
+                            : '<option value="">-- Lựa chọn tài liệu --</option>';
+                        data.forEach(d => {
+                            const opt = document.createElement('option');
+                            opt.value = d.id;
+                            opt.textContent = `${d.chapter} - ${d.fileName}`;
+                            dd.appendChild(opt);
+                        });
+                    });
+                })
+                .catch(err => {
+                    console.error('Lỗi tải danh sách tài liệu:', err);
+                });
+        }
+
+        loadApprovedDocuments();
+
+        // Trigger AI Generation Action
+        window.triggerAiGeneration = async function () {
+            const docId = aiDocSelect.value;
+            if (!docId || docId.length === 0) {
+                alert('Vui lòng chọn tài liệu để sinh câu hỏi!');
                 return;
             }
 
-            quizForm.style.display = 'block';
-            data.forEach((q, idx) => {
+            const btn = document.getElementById('generateAiBtn');
+            btn.disabled = true;
+            btn.querySelector('.gen-text').classList.add('d-none');
+            btn.querySelector('.gen-spinner').classList.remove('d-none');
+
+            try {
+                const response = await fetch('/api/quiz?handler=Generate', {
+                    method: 'POST',
+                    headers: jsonHeaders,
+                    body: JSON.stringify({ documentId: docId })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Đã sinh câu hỏi bằng AI thành công!');
+                    fetchQuestionBank(); // Refresh bank
+                } else {
+                    alert(result.error || 'Có lỗi xảy ra khi sinh câu hỏi.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Lỗi kết nối máy chủ.');
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('.gen-text').classList.remove('d-none');
+                btn.querySelector('.gen-spinner').classList.add('d-none');
+            }
+        };
+
+        // Load Question Bank
+        const quizLoadingBank = document.getElementById('quizLoadingBank');
+        const quizEmptyBank = document.getElementById('quizEmptyBank');
+        const questionBankList = document.getElementById('questionBankList');
+        const qCount = document.getElementById('qCount');
+
+        function fetchQuestionBank() {
+            fetch(`/api/quiz?courseCode=${encodeURIComponent(courseCode)}`)
+                .then(res => res.json())
+                .then(data => {
+                    quizLoadingBank.style.display = 'none';
+                    if (!data || data.length === 0) {
+                        quizEmptyBank.style.display = 'block';
+                        questionBankList.innerHTML = '';
+                        qCount.textContent = 0;
+                        return;
+                    }
+                    quizEmptyBank.style.display = 'none';
+                    questionData = data;
+                    qCount.textContent = data.length;
+                    
+                    questionPaginationState.setData(data);
+                    renderQuestions();
+                })
+                .catch(err => {
+                    quizLoadingBank.style.display = 'none';
+                    quizEmptyBank.style.display = 'block';
+                    console.error('Lỗi tải ngân hàng câu hỏi:', err);
+                });
+        }
+        
+        fetchQuestionBank();
+
+        function renderQuestions() {
+            questionBankList.innerHTML = '';
+            const pageData = questionPaginationState.getPageData();
+            
+            const globalIndexOffset = (questionPaginationState.currentPage - 1) * questionPaginationState.pageSize;
+
+            pageData.forEach((q, idx) => {
                 const card = document.createElement('div');
-                card.className = 'zen-list-item';
-                card.style.cssText = 'padding: 28px 0; border-bottom: 1px solid var(--border-light);';
+                card.className = 'zen-list-item q-card';
+                card.style.cssText = 'padding: 24px; border: 1px solid var(--border-light); margin-bottom: 16px; background: var(--bg-washi);';
+                
+                const buildOpt = (letter, text, correct) => {
+                    const isCorrect = correct === letter;
+                    return `
+                        <div class="d-flex align-items-center gap-2 p-2 ${isCorrect ? 'correct-option-badge' : ''}" style="font-size: 0.95rem;">
+                            <strong class="me-2">${letter}.</strong> ${escapeHtml(text)}
+                            ${isCorrect ? '<span class="ms-auto badge bg-success text-white small" style="font-size: 0.7rem; padding: 4px 8px;">Đáp án đúng</span>' : ''}
+                        </div>
+                    `;
+                };
+
                 card.innerHTML = `
-                    <div class="mb-3" style="font-weight: 500; font-size: 1.1rem;">
-                        <span class="text-accent me-2" style="font-family: var(--font-serif);">問 ${idx + 1}.</span>
-                        ${escapeHtml(q.questionText)}
+                    <div class="mb-3 d-flex justify-content-between align-items-start gap-3">
+                        <div style="font-weight: 500; font-size: 1.05rem; flex: 1;">
+                            <span class="text-accent me-2" style="font-family: var(--font-serif);">Câu ${globalIndexOffset + idx + 1}.</span>
+                            <span class="q-text">${escapeHtml(q.questionText)}</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-secondary py-1 px-2 border-light text-muted" onclick="openEditQuestionModal('${q.id}')" title="Chỉnh sửa câu hỏi" style="font-size: 0.8rem; border-radius: 0;">
+                                <i class="fa-solid fa-pen-to-square"></i> Sửa
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger py-1 px-2 border-light text-accent" onclick="deleteQuestion('${q.id}')" title="Xóa câu hỏi" style="font-size: 0.8rem; border-radius: 0;">
+                                <i class="fa-solid fa-trash-can"></i> Xóa
+                            </button>
+                        </div>
                     </div>
-                    <div class="d-flex flex-column gap-2 ps-3">
-                        ${buildOption(q.id, 'A', q.optionA)}
-                        ${buildOption(q.id, 'B', q.optionB)}
-                        ${buildOption(q.id, 'C', q.optionC)}
-                        ${buildOption(q.id, 'D', q.optionD)}
+                    <div class="d-flex flex-column gap-1 ps-2">
+                        ${buildOpt('A', q.optionA, q.correctAnswer)}
+                        ${buildOpt('B', q.optionB, q.correctAnswer)}
+                        ${buildOpt('C', q.optionC, q.correctAnswer)}
+                        ${buildOpt('D', q.optionD, q.correctAnswer)}
                     </div>
                 `;
-                quizQuestions.appendChild(card);
+                questionBankList.appendChild(card);
             });
 
-            // GSAP animation
-            if (typeof gsap !== 'undefined') {
-                gsap.fromTo('.zen-list-item', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.08, ease: 'power2.out' });
+            renderPaginationControls(questionPaginationState, 'questionBankPagination', renderQuestions);
+        }
+
+        window.filterQuestions = function () {
+            const query = document.getElementById('qSearch').value.toLowerCase().trim();
+            const filtered = questionData.filter(q => 
+                q.questionText.toLowerCase().includes(query) ||
+                q.optionA.toLowerCase().includes(query) ||
+                q.optionB.toLowerCase().includes(query) ||
+                q.optionC.toLowerCase().includes(query) ||
+                q.optionD.toLowerCase().includes(query)
+            );
+            questionPaginationState.setData(filtered);
+            renderQuestions();
+        };
+
+        // Question CRUD Handlers
+        window.openAddQuestionModal = function () {
+            document.getElementById('questionModalTitle').textContent = 'Thêm Câu Hỏi Thủ Công';
+            document.getElementById('qIdInput').value = '';
+            document.getElementById('qTextInput').value = '';
+            document.getElementById('qOptAInput').value = '';
+            document.getElementById('qOptBInput').value = '';
+            document.getElementById('qOptCInput').value = '';
+            document.getElementById('qOptDInput').value = '';
+            document.getElementById('qCorrectInput').value = 'A';
+            questionModal.show();
+        };
+
+        window.openEditQuestionModal = function (id) {
+            const q = questionData.find(item => item.id === id);
+            if (!q) return;
+
+            document.getElementById('questionModalTitle').textContent = 'Chỉnh Sửa Câu Hỏi';
+            document.getElementById('qIdInput').value = q.id;
+            document.getElementById('qTextInput').value = q.questionText;
+            document.getElementById('qOptAInput').value = q.optionA;
+            document.getElementById('qOptBInput').value = q.optionB;
+            document.getElementById('qOptCInput').value = q.optionC;
+            document.getElementById('qOptDInput').value = q.optionD;
+            document.getElementById('qCorrectInput').value = q.correctAnswer;
+            questionModal.show();
+        };
+
+        qForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('qIdInput').value;
+            const qText = document.getElementById('qTextInput').value;
+            const optA = document.getElementById('qOptAInput').value;
+            const optB = document.getElementById('qOptBInput').value;
+            const optC = document.getElementById('qOptCInput').value;
+            const optD = document.getElementById('qOptDInput').value;
+            const correct = document.getElementById('qCorrectInput').value;
+
+            const isEdit = id && id.length > 0;
+            const url = isEdit ? '/api/quiz?handler=UpdateQuestion' : '/api/quiz?handler=AddQuestion';
+
+            const payload = {
+                courseCode: courseCode,
+                questionText: qText,
+                optionA: optA,
+                optionB: optB,
+                optionC: optC,
+                optionD: optD,
+                correctAnswer: correct
+            };
+            if (isEdit) {
+                payload.id = id;
             }
-        })
-        .catch(err => {
-            quizLoading.style.display = 'none';
-            quizEmpty.style.display = 'block';
-            console.error('Quiz load error:', err);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: jsonHeaders,
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    questionModal.hide();
+                    fetchQuestionBank(); // Refresh list dynamically
+                } else {
+                    alert(result.error || 'Có lỗi xảy ra.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Không thể lưu câu hỏi. Vui lòng thử lại.');
+            }
         });
 
-    function buildOption(qId, letter, text) {
-        return `
-            <label class="d-flex align-items-center gap-3" style="cursor: pointer; padding: 10px 14px; border: 1px solid var(--border-light); transition: border-color 0.2s;"
-                   onmouseover="this.style.borderColor='var(--accent-shu)'" onmouseout="this.style.borderColor='var(--border-light)'">
-                <input type="radio" name="q_${qId}" value="${letter}" style="accent-color: var(--accent-shu); width: 16px; height: 16px;" required />
-                <span><strong>${letter}.</strong> ${escapeHtml(text)}</span>
-            </label>
-        `;
+        window.deleteQuestion = async function (id) {
+            if (!confirm('Xác nhận xóa câu hỏi này?')) return;
+
+            try {
+                const response = await fetch('/api/quiz?handler=DeleteQuestion', {
+                    method: 'POST',
+                    headers: jsonHeaders,
+                    body: JSON.stringify({ id: id, courseCode: courseCode })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    fetchQuestionBank(); // Refresh list dynamically
+                } else {
+                    alert(result.error || 'Có lỗi xảy ra.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Không thể xóa câu hỏi. Vui lòng thử lại.');
+            }
+        };
+
+        // Load & Manage Lecturer Quizzes
+        const quizzesLoading = document.getElementById('quizzesLoading');
+        const quizzesEmpty = document.getElementById('quizzesEmpty');
+        const quizzesTableWrapper = document.getElementById('quizzesTableWrapper');
+        const quizzesList = document.getElementById('quizzesList');
+        const quizCount = document.getElementById('quizCount');
+        let quizzesLoaded = false;
+
+        function loadLecturerQuizzes() {
+            quizzesLoading.style.display = 'block';
+            quizzesEmpty.style.display = 'none';
+            quizzesTableWrapper.style.display = 'none';
+
+            fetch(`/api/quiz?handler=Quizzes&courseCode=${encodeURIComponent(courseCode)}`)
+                .then(res => res.json())
+                .then(data => {
+                    quizzesLoading.style.display = 'none';
+                    quizzesLoaded = true;
+
+                    if (!data || data.length === 0) {
+                        quizzesEmpty.style.display = 'block';
+                        quizCount.textContent = 0;
+                        return;
+                    }
+
+                    quizCount.textContent = data.length;
+                    quizzesTableWrapper.style.display = 'block';
+                    quizData = data;
+                    
+                    quizPaginationState.setData(data);
+                    renderLecturerQuizzes();
+                })
+                .catch(err => {
+                    quizzesLoading.style.display = 'none';
+                    quizzesEmpty.style.display = 'block';
+                    console.error('Lỗi tải danh sách bài trắc nghiệm:', err);
+                });
+        }
+
+        function renderLecturerQuizzes() {
+            quizzesList.innerHTML = '';
+            const pageData = quizPaginationState.getPageData();
+
+            pageData.forEach(q => {
+                const tr = document.createElement('tr');
+                const dateFormatted = new Date(q.createdAt).toLocaleDateString('vi-VN');
+
+                tr.innerHTML = `
+                    <td class="ps-4" style="font-weight: 500;">${escapeHtml(q.title)}</td>
+                    <td>${q.questionCount} câu hỏi</td>
+                    <td><span class="text-muted small">${q.documentId ? 'Giới hạn tài liệu' : 'Toàn bộ môn học'}</span></td>
+                    <td>${dateFormatted}</td>
+                    <td class="pe-4 text-end">
+                        <button class="btn btn-sm btn-outline-danger border-light text-accent py-1 px-3" onclick="deleteQuiz('${q.id}')" style="font-size: 0.8rem; border-radius: 0;">
+                            <i class="fa-solid fa-trash-can"></i> Xóa
+                        </button>
+                    </td>
+                `;
+                quizzesList.appendChild(tr);
+            });
+
+            renderPaginationControls(quizPaginationState, 'quizPagination', renderLecturerQuizzes);
+        }
+
+        // Create Quiz form handler
+        const createQuizForm = document.getElementById('createQuizForm');
+        createQuizForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const title = document.getElementById('quizTitleInput').value;
+            const count = parseInt(document.getElementById('quizQuestionCountInput').value, 10);
+            const docId = quizDocSelect.value;
+
+            const payload = {
+                courseCode: courseCode,
+                title: title,
+                questionCount: count,
+                documentId: docId && docId.length > 0 ? docId : null,
+                maxAttempts: parseInt(document.getElementById('quizMaxAttemptsInput').value, 10),
+                password: document.getElementById('quizPasswordInput').value || null,
+                reviewPolicy: parseInt(document.getElementById('quizReviewPolicyInput').value, 10),
+                shuffleQuestions: document.getElementById('quizShuffleQuestionsInput').checked,
+                shuffleOptions: document.getElementById('quizShuffleOptionsInput').checked
+            };
+
+            try {
+                const response = await fetch('/api/quiz?handler=CreateQuiz', {
+                    method: 'POST',
+                    headers: jsonHeaders,
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('quizTitleInput').value = '';
+                    loadLecturerQuizzes(); // Refresh list
+                } else {
+                    alert(result.error || 'Lỗi khi tạo đề thi.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Không thể tạo đề thi.');
+            }
+        });
+
+        window.deleteQuiz = async function (id) {
+            if (!confirm('Xác nhận xóa đề thi này? Học viên sẽ không thể làm đề thi này nữa.')) return;
+
+            try {
+                const response = await fetch('/api/quiz?handler=DeleteQuiz', {
+                    method: 'POST',
+                    headers: jsonHeaders,
+                    body: JSON.stringify({ id: id, courseCode: courseCode })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    loadLecturerQuizzes();
+                } else {
+                    alert(result.error || 'Có lỗi xảy ra.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Không thể xóa đề thi.');
+            }
+        };
+
+        // Load Student Attempts
+        const attemptsLoading = document.getElementById('attemptsLoading');
+        const attemptsEmpty = document.getElementById('attemptsEmpty');
+        const attemptsTableWrapper = document.getElementById('attemptsTableWrapper');
+        const attemptsList = document.getElementById('attemptsList');
+        const aCount = document.getElementById('aCount');
+        let attemptsLoaded = false;
+
+        function loadStudentAttempts() {
+            attemptsLoading.style.display = 'block';
+            attemptsEmpty.style.display = 'none';
+            attemptsTableWrapper.style.display = 'none';
+
+            fetch(`/api/quiz?handler=Attempts&courseCode=${encodeURIComponent(courseCode)}`)
+                .then(res => res.json())
+                .then(data => {
+                    attemptsLoading.style.display = 'none';
+                    attemptsLoaded = true;
+
+                    if (!data || data.length === 0) {
+                        attemptsEmpty.style.display = 'block';
+                        aCount.textContent = 0;
+                        return;
+                    }
+
+                    aCount.textContent = data.length;
+                    attemptsTableWrapper.style.display = 'block';
+                    attemptData = data;
+
+                    attemptPaginationState.setData(data);
+                    renderAttempts();
+                })
+                .catch(err => {
+                    attemptsLoading.style.display = 'none';
+                    attemptsEmpty.style.display = 'block';
+                    console.error('Lỗi tải lượt làm bài:', err);
+                });
+        }
+
+        function renderAttempts() {
+            attemptsList.innerHTML = '';
+            const pageData = attemptPaginationState.getPageData();
+
+            pageData.forEach(a => {
+                const tr = document.createElement('tr');
+                
+                let badgeColor = '#64748b'; // Gray
+                let badgeText = 'Cần ôn thêm';
+                if (a.percentage >= 80) {
+                    badgeColor = '#10b981'; // Green
+                    badgeText = 'Xuất sắc';
+                } else if (a.percentage >= 50) {
+                    badgeColor = '#3b82f6'; // Blue
+                    badgeText = 'Khá tốt';
+                }
+
+                const dateFormatted = new Date(a.attemptedAt).toLocaleString('vi-VN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                tr.innerHTML = `
+                    <td class="ps-4" style="font-weight: 500;">${escapeHtml(a.studentName)}</td>
+                    <td><code style="color: var(--text-sumi); font-size: 0.9rem;">${escapeHtml(a.studentUsername)}</code></td>
+                    <td><span class="badge bg-secondary text-white fw-light">${escapeHtml(a.quizTitle)}</span></td>
+                    <td>${dateFormatted}</td>
+                    <td>${a.score} / ${a.totalQuestions}</td>
+                    <td><strong style="color: var(--accent-shu);">${a.percentage}%</strong></td>
+                    <td class="pe-4 text-end">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="viewAttemptDetails('${a.id}', true)">
+                            <i class="fa-solid fa-eye"></i> Xem từng câu
+                        </button>
+                    </td>
+                `;
+                attemptsList.appendChild(tr);
+            });
+
+            renderPaginationControls(attemptPaginationState, 'attemptsPagination', renderAttempts);
+        }
+
+        // Generic pagination renderer utility
+        function renderPaginationControls(paginationState, containerId, onPageChange) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const total = paginationState.totalPages();
+            const current = paginationState.currentPage;
+            
+            if (total <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="d-flex justify-content-center align-items-center gap-3 mt-4">
+                    <button class="btn btn-sm btn-outline-secondary px-3 py-1 border-light text-muted" 
+                            ${current === 1 ? 'disabled' : ''} 
+                            onclick="triggerPageChange('${containerId}', -1)" style="border-radius: 0;">
+                        &larr; Trang trước
+                    </button>
+                    <span class="small text-muted">Trang <strong>${current}</strong> / ${total}</span>
+                    <button class="btn btn-sm btn-outline-secondary px-3 py-1 border-light text-muted" 
+                            ${current === total ? 'disabled' : ''} 
+                            onclick="triggerPageChange('${containerId}', 1)" style="border-radius: 0;">
+                        Trang sau &rarr;
+                    </button>
+                </div>
+            `;
+        }
+
+        window.triggerPageChange = function (cId, direction) {
+            let state;
+            let callback;
+            if (cId === 'questionBankPagination') {
+                state = questionPaginationState;
+                callback = renderQuestions;
+            } else if (cId === 'quizPagination') {
+                state = quizPaginationState;
+                callback = renderLecturerQuizzes;
+            } else if (cId === 'attemptsPagination') {
+                state = attemptPaginationState;
+                callback = renderAttempts;
+            }
+
+            if (state) {
+                if (direction === 1) state.next();
+                else state.prev();
+                callback();
+                renderPaginationControls(state, cId, callback);
+            }
+        };
+
+    } else {
+        // Student View Logic
+        const studentQuizListPanel = document.getElementById('studentQuizListPanel');
+        const studentQuizCards = document.getElementById('studentQuizCards');
+        const studentQuizzesLoading = document.getElementById('studentQuizzesLoading');
+        const studentQuizzesEmpty = document.getElementById('studentQuizzesEmpty');
+        
+        const quizLoading = document.getElementById('quizLoading');
+        const quizForm = document.getElementById('quizForm');
+        const studentQuizWizard = document.getElementById('studentQuizWizard');
+
+        // Quiz State for Student Taker
+        let currentQuizId = null;
+        let currentAttemptId = null;
+        let currentQuizTitle = '';
+        let availableQuizzes = [];
+        let studentQuestions = [];
+        let currentQuestionIndex = 0;
+        let studentAnswers = {}; // Map of qId -> selected option
+
+        // Fetch Quizzes List
+        fetch(`/api/quiz?handler=Quizzes&courseCode=${encodeURIComponent(courseCode)}`)
+            .then(res => res.json())
+            .then(data => {
+                studentQuizzesLoading.style.display = 'none';
+                availableQuizzes = data || [];
+
+                if (!data || data.length === 0) {
+                    studentQuizzesEmpty.style.display = 'block';
+                    return;
+                }
+
+                studentQuizCards.innerHTML = '';
+                data.forEach(q => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 col-lg-4';
+                    col.innerHTML = `
+                        <div class="card h-100" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0; transition: border-color 0.2s;" 
+                             onmouseover="this.style.borderColor='var(--accent-shu)'" onmouseout="this.style.borderColor='var(--border-light)'">
+                            <div class="card-body p-4 d-flex flex-column h-100">
+                                <h5 class="font-serif mb-2" style="font-size: 1.15rem; color: var(--text-sumi);">${escapeHtml(q.title)}</h5>
+                                <div class="text-muted small mb-4 flex-grow-1">
+                                    <div class="mb-1"><i class="fa-solid fa-circle-question me-2"></i>Số lượng: <strong>${q.questionCount} câu hỏi</strong></div>
+                                    <div><i class="fa-solid fa-book-open me-2"></i>Nội dung: <strong>${q.documentId ? 'Giới hạn theo tài liệu' : 'Toàn bộ bài giảng'}</strong></div>
+                                </div>
+                                <div class="small text-muted mb-3">Đã làm ${q.attemptsUsed}/${q.maxAttempts} lần ${q.hasPassword ? ' · cần mật khẩu' : ''}</div>
+                                <button type="button" class="btn-zen primary w-100 py-2" ${q.attemptsUsed >= q.maxAttempts ? 'disabled' : ''} onclick="startStudentQuiz('${q.id}', ${q.hasPassword ? 'true' : 'false'})">
+                                    <i class="fa-solid fa-file-signature me-2"></i>Làm Bài Thi
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    studentQuizCards.appendChild(col);
+                });
+            })
+            .catch(err => {
+                studentQuizzesLoading.style.display = 'none';
+                studentQuizzesEmpty.style.display = 'block';
+                console.error('Lỗi tải danh sách bài thi:', err);
+            });
+
+        async function loadMyAttempts() {
+            const response = await fetch(`/api/quiz?handler=MyAttempts&courseCode=${encodeURIComponent(courseCode)}`);
+            const data = response.ok ? await response.json() : [];
+            const container = document.getElementById('myAttemptsList');
+            container.innerHTML = data.length === 0 ? '<span class="text-muted">Chưa có lượt làm bài.</span>' : data.map(a => `
+                <div class="d-flex justify-content-between align-items-center border-top py-3">
+                    <span>${escapeHtml(a.quizTitle)} — lần ${a.attemptNumber}: <strong>${a.score}/${a.totalQuestions}</strong> (${a.percentage}%)</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="viewAttemptDetails('${a.id}', false)">Xem lại</button>
+                </div>`).join('');
+        }
+        loadMyAttempts();
+
+        window.startStudentQuiz = function (quizId, hasPassword) {
+            currentQuizId = quizId;
+            currentQuizTitle = availableQuizzes.find(q => q.id === quizId)?.title || 'Bài trắc nghiệm';
+            studentAnswers = {};
+            currentQuestionIndex = 0;
+
+            let password = null;
+            if (hasPassword) {
+                password = prompt('Nhập mật khẩu để bắt đầu lượt làm bài:');
+                if (password === null) return;
+            }
+
+            studentQuizListPanel.style.display = 'none';
+            quizLoading.style.display = 'block';
+
+            fetch('/api/quiz?handler=StartAttempt', {
+                method: 'POST',
+                headers: jsonHeaders,
+                body: JSON.stringify({ quizId, password })
+            })
+                .then(async res => ({ ok: res.ok, data: await res.json() }))
+                .then(({ ok, data }) => {
+                    quizLoading.style.display = 'none';
+                    if (!ok || !data.questions || data.questions.length === 0) {
+                        alert('Bài trắc nghiệm này chưa có câu hỏi nào trong ngân hàng đề. Vui lòng liên hệ giảng viên.');
+                        studentQuizListPanel.style.display = 'block';
+                        return;
+                    }
+
+                    currentAttemptId = data.attemptId;
+                    studentQuestions = data.questions;
+                    quizForm.style.display = 'block';
+                    renderStudentQuestion();
+                })
+                .catch(err => {
+                    quizLoading.style.display = 'none';
+                    studentQuizListPanel.style.display = 'block';
+                    alert('Lỗi tải đề thi. Vui lòng tải lại trang.');
+                    console.error(err);
+                });
+        };
+
+        // Render Wizard Question
+        function renderStudentQuestion() {
+            studentQuizWizard.innerHTML = '';
+            
+            const q = studentQuestions[currentQuestionIndex];
+            const total = studentQuestions.length;
+            const progressPercent = Math.round((currentQuestionIndex + 1) * 100 / total);
+            const savedAnswer = studentAnswers[q.id] || '';
+
+            const buildOptionRadio = (letter, text) => {
+                const isChecked = savedAnswer === letter ? 'checked' : '';
+                return `
+                    <label class="d-flex align-items-center gap-3 p-3 mb-2" style="cursor: pointer; border: 1px solid var(--border-light); transition: all 0.2s; background: var(--bg-washi);"
+                           onmouseover="this.style.borderColor='var(--accent-shu)'" onmouseout="this.style.borderColor='var(--border-light)'">
+                        <input type="radio" name="student_q" value="${letter}" ${isChecked} 
+                               onchange="saveStudentAnswer('${q.id}', '${letter}')"
+                               style="accent-color: var(--accent-shu); width: 18px; height: 18px;" />
+                        <span><strong>${letter}.</strong> ${escapeHtml(text)}</span>
+                    </label>
+                `;
+            };
+
+            studentQuizWizard.innerHTML = `
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small text-accent fw-bold text-uppercase tracking-wider">Đề thi: ${escapeHtml(currentQuizTitle)}</span>
+                        <span class="small text-muted">Câu <strong>${currentQuestionIndex + 1}</strong> / ${total}</span>
+                    </div>
+                    <div class="progress" style="height: 6px; border-radius: 0; background-color: var(--border-light); box-shadow: none;">
+                        <div class="progress-bar" role="progressbar" style="width: ${progressPercent}%; background-color: var(--accent-shu);" aria-valuenow="${progressPercent}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0; box-shadow: none;">
+                    <div class="card-body p-4">
+                        <h5 class="font-serif mb-4" style="line-height: 1.5; font-size: 1.15rem; color: var(--text-sumi);">
+                            <span class="text-accent me-2">Câu ${currentQuestionIndex + 1}.</span>
+                            ${escapeHtml(q.questionText)}
+                        </h5>
+                        <div class="d-flex flex-column gap-2">
+                            ${buildOptionRadio('A', q.optionA)}
+                            ${buildOptionRadio('B', q.optionB)}
+                            ${buildOptionRadio('C', q.optionC)}
+                            ${buildOptionRadio('D', q.optionD)}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-secondary border-light text-muted px-4 py-2" 
+                            ${currentQuestionIndex === 0 ? 'disabled' : ''} 
+                            onclick="navigateQuestion(-1)" style="border-radius: 0;">
+                        &larr; Câu trước
+                    </button>
+                    
+                    ${currentQuestionIndex === total - 1 
+                        ? `<button type="button" class="btn-zen primary px-5 py-2" onclick="submitWizardQuiz()">Nộp Bài Thi</button>`
+                        : `<button type="button" class="btn-zen px-5 py-2" onclick="navigateQuestion(1)">Câu sau &rarr;</button>`
+                    }
+                </div>
+            `;
+        }
+
+        window.saveStudentAnswer = function (questionId, selectedLetter) {
+            studentAnswers[questionId] = selectedLetter;
+        };
+
+        window.navigateQuestion = function (direction) {
+            currentQuestionIndex += direction;
+            renderStudentQuestion();
+        };
+
+        window.submitWizardQuiz = async function () {
+            // Check if all questions are answered
+            const total = studentQuestions.length;
+            const answeredCount = Object.keys(studentAnswers).length;
+            
+            if (answeredCount < total) {
+                if (!confirm(`Bạn mới trả lời ${answeredCount} / ${total} câu hỏi. Xác nhận nộp bài thi?`)) {
+                    return;
+                }
+            } else {
+                if (!confirm('Xác nhận nộp bài thi?')) return;
+            }
+
+            const btn = document.getElementById('submitQuizBtn');
+            // Mock submit triggers
+            const answersArray = studentQuestions.map(q => ({
+                questionId: q.id,
+                selectedAnswer: studentAnswers[q.id] || ''
+            }));
+
+            try {
+                const response = await fetch('/api/quiz?handler=Submit', {
+                    method: 'POST',
+                    headers: jsonHeaders,
+                    body: JSON.stringify({
+                        attemptId: currentAttemptId,
+                        answers: answersArray
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('resultScore').textContent = result.score;
+                    document.getElementById('resultTotal').textContent = result.totalQuestions;
+                    document.getElementById('resultPercent').textContent = result.percentage;
+                    document.getElementById('reviewResultButton').onclick = () =>
+                        viewAttemptDetails(result.attemptId || currentAttemptId, false);
+
+                    if (result.percentage >= 80) {
+                        document.getElementById('resultSeal').textContent = '優';
+                        document.getElementById('resultTitle').textContent = 'Xuất Sắc!';
+                    } else if (result.percentage >= 50) {
+                        document.getElementById('resultSeal').textContent = '良';
+                        document.getElementById('resultTitle').textContent = 'Khá Tốt!';
+                    } else {
+                        document.getElementById('resultSeal').textContent = '再';
+                        document.getElementById('resultTitle').textContent = 'Cần Ôn Thêm';
+                    }
+
+                    new bootstrap.Modal(document.getElementById('resultModal')).show();
+                } else {
+                    alert(result.error || 'Có lỗi xảy ra khi chấm bài.');
+                }
+            } catch (err) {
+                alert('Không thể kết nối tới máy chủ. Vui lòng thử lại.');
+                console.error(err);
+            }
+        };
     }
 
     function escapeHtml(str) {
@@ -135,62 +1245,6 @@
         div.textContent = str || '';
         return div.innerHTML;
     }
-
-    // Submit quiz
-    quizForm.addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        const btn = document.getElementById('submitQuizBtn');
-        btn.disabled = true;
-        btn.querySelector('.submit-text').classList.add('d-none');
-        btn.querySelector('.submit-spinner').classList.remove('d-none');
-
-        // Collect answers
-        const answers = [];
-        const radios = quizForm.querySelectorAll('input[type="radio"]:checked');
-        radios.forEach(r => {
-            const qId = r.name.replace('q_', '');
-            answers.push({ questionId: qId, selectedAnswer: r.value });
-        });
-
-        try {
-            const response = await fetch('/api/quiz?handler=Submit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ courseCode: courseCode, answers: answers })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                document.getElementById('resultScore').textContent = result.score;
-                document.getElementById('resultTotal').textContent = result.totalQuestions;
-                document.getElementById('resultPercent').textContent = result.percentage;
-
-                if (result.percentage >= 80) {
-                    document.getElementById('resultSeal').textContent = '優';
-                    document.getElementById('resultTitle').textContent = 'Xuất Sắc!';
-                } else if (result.percentage >= 50) {
-                    document.getElementById('resultSeal').textContent = '良';
-                    document.getElementById('resultTitle').textContent = 'Khá Tốt!';
-                } else {
-                    document.getElementById('resultSeal').textContent = '再';
-                    document.getElementById('resultTitle').textContent = 'Cần Ôn Thêm';
-                }
-
-                new bootstrap.Modal(document.getElementById('resultModal')).show();
-            } else {
-                alert(result.error || 'Có lỗi xảy ra khi chấm bài.');
-            }
-        } catch (err) {
-            alert('Không thể kết nối tới máy chủ. Vui lòng thử lại.');
-            console.error(err);
-        } finally {
-            btn.disabled = false;
-            btn.querySelector('.submit-text').classList.remove('d-none');
-            btn.querySelector('.submit-spinner').classList.add('d-none');
-        }
-    });
 })();
 </script>
 }

@@ -22,6 +22,9 @@ namespace RAGChatBot.DAL.Context
         public DbSet<ChatThread> ChatThreads => Set<ChatThread>();
         public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
         public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
+        public DbSet<Quiz> Quizzes => Set<Quiz>();
+        public DbSet<QuizAttemptAnswer> QuizAttemptAnswers => Set<QuizAttemptAnswer>();
+        public DbSet<ChatTrackerLog> ChatTrackerLogs => Set<ChatTrackerLog>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -107,6 +110,39 @@ modelBuilder.Entity<ChatSession>(entity =>
     entity.HasKey(e => e.Id);
     entity.HasIndex(e => e.UserId);
     entity.HasIndex(e => e.CreatedAt);
+});
+
+modelBuilder.Entity<Quiz>(entity =>
+{
+    entity.HasKey(e => e.Id);
+    entity.HasIndex(e => e.CourseCode);
+    entity.Property(e => e.PasswordHash).HasMaxLength(200);
+});
+
+modelBuilder.Entity<QuizAttempt>(entity =>
+{
+    entity.HasKey(e => e.Id);
+    entity.HasIndex(e => new { e.UserId, e.QuizId, e.AttemptNumber }).IsUnique();
+    entity.HasIndex(e => new { e.QuizId, e.UserId, e.Status });
+});
+
+modelBuilder.Entity<QuizAttemptAnswer>(entity =>
+{
+    entity.HasKey(e => e.Id);
+    entity.HasIndex(e => new { e.AttemptId, e.DisplayOrder }).IsUnique();
+    entity.HasOne(e => e.Attempt)
+          .WithMany(attempt => attempt.Answers)
+          .HasForeignKey(e => e.AttemptId)
+          .OnDelete(DeleteBehavior.Cascade);
+});
+
+modelBuilder.Entity<ChatTrackerLog>(entity =>
+{
+    entity.HasKey(e => e.Id);
+    entity.HasIndex(e => e.UserId);
+    entity.HasIndex(e => e.CreatedAt);
+    entity.Property(e => e.Question).IsRequired();
+    entity.Property(e => e.Answer).IsRequired();
 });
 
         }

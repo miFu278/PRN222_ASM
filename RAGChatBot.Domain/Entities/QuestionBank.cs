@@ -7,6 +7,7 @@ namespace RAGChatBot.Domain.Entities
         public Guid Id { get; set; } = Guid.NewGuid();
         public Guid DocumentId { get; set; }
         public string CourseCode { get; set; } = string.Empty;
+        public string Chapter { get; set; } = string.Empty;
         public string QuestionText { get; set; } = string.Empty;
         public string OptionA { get; set; } = string.Empty;
         public string OptionB { get; set; } = string.Empty;
