@@ -57,7 +57,7 @@ namespace RAGChatBot.BLL.Services
             }
 
             transaction.TransactionNo = callbackResult.TransactionNo;
-            var isSuccessfulPayment = callbackResult.IsSuccess;
+            var isSuccessfulPayment = callbackResult.IsSuccess && callbackResult.Amount == transaction.Amount;
             transaction.Status = isSuccessfulPayment ? "Success" : "Failed";
             transaction.PaidAt = isSuccessfulPayment ? DateTime.UtcNow : null;
 
@@ -73,16 +73,6 @@ namespace RAGChatBot.BLL.Services
 
             await _transactionRepository.SaveChangesAsync();
             return isSuccessfulPayment;
-        }
-
-        public async Task CancelTransactionAsync(string orderId)
-        {
-            var transaction = await _transactionRepository.GetByOrderIdAsync(orderId);
-            if (transaction != null && transaction.Status == "Pending")
-            {
-                transaction.Status = "Cancelled";
-                await _transactionRepository.SaveChangesAsync();
-            }
         }
 
         public async Task<IEnumerable<PaymentTransactionDto>> GetAllTransactionsAsync()
