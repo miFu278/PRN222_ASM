@@ -1,6 +1,6 @@
 namespace RAGChatBot.BLL.Services
 {
-    public class VnPayCallbackResult
+    public class PayOSCallbackResult
     {
         public string OrderId { get; set; } = string.Empty;
         public string ResponseCode { get; set; } = string.Empty;

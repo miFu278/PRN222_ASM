@@ -17,12 +17,12 @@ namespace RAGChatBot.BLL.Services
             _transactionRepository = transactionRepository;
         }
 
-        public async Task<string> CreatePendingTransactionAsync(Guid userId, long amount)
+        public async Task<string> CreatePendingTransactionAsync(Guid userId, long amount, string? orderId = null)
         {
             var user = await _userRepository.GetByIdAsync(userId)
                 ?? throw new InvalidOperationException("User was not found.");
 
-            var orderId = $"ORDER-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}";
+            orderId ??= $"ORDER-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}";
             await _transactionRepository.AddAsync(new PaymentTransaction
             {
                 OrderId = orderId,
@@ -36,7 +36,7 @@ namespace RAGChatBot.BLL.Services
         }
 
         public async Task<bool> ProcessPaymentCallbackAsync(
-            VnPayCallbackResult callbackResult,
+            PayOSCallbackResult callbackResult,
             Guid userId)
         {
             if (!callbackResult.IsValid)
@@ -57,7 +57,7 @@ namespace RAGChatBot.BLL.Services
             }
 
             transaction.TransactionNo = callbackResult.TransactionNo;
-            var isSuccessfulPayment = callbackResult.IsSuccess && callbackResult.Amount == transaction.Amount;
+            var isSuccessfulPayment = callbackResult.IsSuccess;
             transaction.Status = isSuccessfulPayment ? "Success" : "Failed";
             transaction.PaidAt = isSuccessfulPayment ? DateTime.UtcNow : null;
 
@@ -73,6 +73,16 @@ namespace RAGChatBot.BLL.Services
 
             await _transactionRepository.SaveChangesAsync();
             return isSuccessfulPayment;
+        }
+
+        public async Task CancelTransactionAsync(string orderId)
+        {
+            var transaction = await _transactionRepository.GetByOrderIdAsync(orderId);
+            if (transaction != null && transaction.Status == "Pending")
+            {
+                transaction.Status = "Cancelled";
+                await _transactionRepository.SaveChangesAsync();
+            }
         }
 
         public async Task<IEnumerable<PaymentTransactionDto>> GetAllTransactionsAsync()
