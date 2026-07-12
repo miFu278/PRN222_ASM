@@ -33,7 +33,7 @@ namespace RAGChatBot.Presentation.Pages.Subscription
                 item => item.Key,
                 item => item.Value.ToString(),
                 StringComparer.OrdinalIgnoreCase);
-            var callbackResult = _payOSService.ValidateCallback(callbackParameters);
+            var callbackResult = await _payOSService.ValidateReturnAsync(callbackParameters);
 
             _logger.LogInformation("[PayOS Callback] OrderId={OrderId}, ResponseCode={ResponseCode}, Valid={IsValid}, Success={IsSuccess}",
                 callbackResult.OrderId, callbackResult.ResponseCode, callbackResult.IsValid, callbackResult.IsSuccess);
@@ -41,7 +41,7 @@ namespace RAGChatBot.Presentation.Pages.Subscription
             if (!callbackResult.IsValid)
             {
                 IsSuccess = false;
-                Message = "Chữ ký giao dịch không hợp lệ. Vui lòng liên hệ hỗ trợ.";
+                Message = callbackResult.Message;
                 return Page();
             }
 

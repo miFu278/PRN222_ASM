@@ -67,6 +67,20 @@ namespace RAGChatBot.DAL.Repositories
             await _db.SaveChangesAsync();
         }
 
+        public Task<QuizAttempt?> GetAttemptWithAnswersAsync(Guid attemptId)
+            => _db.QuizAttempts
+                .Include(attempt => attempt.Answers.OrderBy(answer => answer.DisplayOrder))
+                .FirstOrDefaultAsync(attempt => attempt.Id == attemptId);
+
+        public Task<QuizAttempt?> GetInProgressAttemptAsync(Guid userId, Guid quizId)
+            => _db.QuizAttempts
+                .Include(attempt => attempt.Answers.OrderBy(answer => answer.DisplayOrder))
+                .FirstOrDefaultAsync(attempt => attempt.UserId == userId &&
+                    attempt.QuizId == quizId && attempt.Status == QuizAttemptStatus.InProgress);
+
+        public Task<int> GetAttemptCountAsync(Guid userId, Guid quizId)
+            => _db.QuizAttempts.CountAsync(attempt => attempt.UserId == userId && attempt.QuizId == quizId);
+
         public async Task<IReadOnlyList<QuizAttempt>> GetAttemptsByCourseAsync(string courseCode)
         {
             var normalizedCourseCode = courseCode.Trim().ToLower();
@@ -75,6 +89,18 @@ namespace RAGChatBot.DAL.Repositories
                 .Where(attempt => attempt.CourseCode.ToLower() == normalizedCourseCode)
                 .OrderByDescending(attempt => attempt.AttemptedAt)
                 .ToListAsync();
+        }
+
+        public async Task<IReadOnlyList<QuizAttempt>> GetAttemptsByUserAsync(Guid userId, string? courseCode = null)
+        {
+            var query = _db.QuizAttempts.AsNoTracking().Where(attempt => attempt.UserId == userId);
+            if (!string.IsNullOrWhiteSpace(courseCode))
+            {
+                var normalized = courseCode.Trim().ToLower();
+                query = query.Where(attempt => attempt.CourseCode.ToLower() == normalized);
+            }
+
+            return await query.OrderByDescending(attempt => attempt.StartedAt).ToListAsync();
         }
 
         public async Task AddQuestionAsync(QuestionBank question)
@@ -134,7 +160,7 @@ namespace RAGChatBot.DAL.Repositories
             var quiz = await _db.Quizzes.FindAsync(id);
             if (quiz != null)
             {
-                _db.Quizzes.Remove(quiz);
+                quiz.IsPublished = false;
                 await _db.SaveChangesAsync();
             }
         }
@@ -144,5 +170,7 @@ namespace RAGChatBot.DAL.Repositories
             return await _db.Quizzes
                 .FirstOrDefaultAsync(q => q.Id == id);
         }
+
+        public Task SaveChangesAsync() => _db.SaveChangesAsync();
     }
 }

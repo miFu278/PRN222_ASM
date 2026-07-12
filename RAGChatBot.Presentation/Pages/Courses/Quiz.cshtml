@@ -5,6 +5,8 @@
     var isLecturerOrAdmin = User.IsInRole("Lecturer") || User.IsInRole("Admin");
 }
 
+<div class="d-none">@Html.AntiForgeryToken()</div>
+
 <style>
     .tab-btn {
         font-size: 0.95rem;
@@ -139,6 +141,28 @@
                             </select>
                         </div>
                     </div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-2">
+                            <label class="text-muted mb-2 small text-uppercase">Số lần làm tối đa</label>
+                            <input type="number" id="quizMaxAttemptsInput" class="input-zen" min="1" max="100" value="1" required />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted mb-2 small text-uppercase">Mật khẩu (không bắt buộc)</label>
+                            <input type="password" id="quizPasswordInput" class="input-zen" autocomplete="new-password" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted mb-2 small text-uppercase">Quyền xem lại</label>
+                            <select id="quizReviewPolicyInput" class="form-select">
+                                <option value="0">Chỉ xem điểm</option>
+                                <option value="1">Xem câu đã làm</option>
+                                <option value="2">Xem cả đáp án đúng</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end gap-4 pb-2">
+                            <label><input type="checkbox" id="quizShuffleQuestionsInput" checked /> Trộn câu hỏi</label>
+                            <label><input type="checkbox" id="quizShuffleOptionsInput" checked /> Trộn đáp án</label>
+                        </div>
+                    </div>
                     
                     <div class="d-flex justify-content-end">
                         <button type="submit" class="btn-zen primary">Tạo Bài Trắc Nghiệm</button>
@@ -230,6 +254,8 @@
             </div>
 
             <div id="studentQuizCards" class="row g-4"></div>
+            <h5 class="font-serif mt-5 mb-3">Lịch sử làm bài của tôi</h5>
+            <div id="myAttemptsList" class="d-flex flex-column gap-2"></div>
         </div>
 
         <!-- Student Quiz Taker Loading Screen -->
@@ -318,6 +344,7 @@ else
                         Tỷ lệ đúng: <strong id="resultPercent">0</strong>%
                     </div>
                     <div class="d-flex gap-3 justify-content-center">
+                        <button type="button" class="btn-zen" id="reviewResultButton">Xem lại bài làm</button>
                         <button class="btn-zen primary" onclick="location.reload()">Quay Lại Danh Sách</button>
                     </div>
                 </div>
@@ -326,11 +353,50 @@ else
     </div>
 }
 
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content" style="background: var(--bg-washi); border-radius: 0;">
+            <div class="modal-header">
+                <h5 class="modal-title font-serif">Chi tiết lượt làm bài</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="reviewModalBody"></div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
 (function () {
     const courseCode = '@Model.CourseCode';
     const isLecturerOrAdmin = @(isLecturerOrAdmin ? "true" : "false");
+    const antiforgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    const jsonHeaders = {
+        'Content-Type': 'application/json',
+        'RequestVerificationToken': antiforgeryToken
+    };
+
+    window.viewAttemptDetails = async function (attemptId, instructorView) {
+        const suffix = instructorView ? `&courseCode=${encodeURIComponent(courseCode)}` : '';
+        const response = await fetch(`/api/quiz?handler=AttemptReview&attemptId=${encodeURIComponent(attemptId)}${suffix}`);
+        const result = await response.json();
+        if (!response.ok) {
+            alert(result.error || 'Không thể xem chi tiết lượt làm bài.');
+            return;
+        }
+        const questions = result.questions || [];
+        document.getElementById('reviewModalBody').innerHTML = `
+            <div class="mb-4"><strong>${escapeHtml(result.quizTitle)}</strong> — lần ${result.attemptNumber}<br>
+            Điểm: <strong>${result.score}/${result.totalQuestions}</strong> (${result.percentage}%)</div>
+            ${questions.length === 0 ? '<p class="text-muted">Giảng viên chỉ cho phép xem điểm.</p>' : questions.map(q => `
+                <div class="border-top pt-3 mb-3">
+                    <div class="fw-bold mb-2">Câu ${q.displayOrder}: ${escapeHtml(q.questionText)}</div>
+                    <div>Đã chọn: <strong>${escapeHtml(q.selectedAnswer || 'Bỏ trống')}</strong>
+                    ${q.correctAnswer ? ` · Đáp án đúng: <strong>${escapeHtml(q.correctAnswer)}</strong>` : ''}</div>
+                    ${q.isCorrect === null || q.isCorrect === undefined ? '' : `<div class="${q.isCorrect ? 'text-success' : 'text-danger'}">${q.isCorrect ? 'Đúng' : 'Sai'}</div>`}
+                </div>`).join('')}`;
+        new bootstrap.Modal(document.getElementById('reviewModal')).show();
+    };
 
     // Generic Pagination Helper State Class
     class PaginationState {
@@ -451,7 +517,7 @@ else
             try {
                 const response = await fetch('/api/quiz?handler=Generate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: jsonHeaders,
                     body: JSON.stringify({ documentId: docId })
                 });
 
@@ -625,7 +691,7 @@ else
             try {
                 const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: jsonHeaders,
                     body: JSON.stringify(payload)
                 });
 
@@ -648,8 +714,8 @@ else
             try {
                 const response = await fetch('/api/quiz?handler=DeleteQuestion', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: id })
+                    headers: jsonHeaders,
+                    body: JSON.stringify({ id: id, courseCode: courseCode })
                 });
 
                 const result = await response.json();
@@ -741,13 +807,18 @@ else
                 courseCode: courseCode,
                 title: title,
                 questionCount: count,
-                documentId: docId && docId.length > 0 ? docId : null
+                documentId: docId && docId.length > 0 ? docId : null,
+                maxAttempts: parseInt(document.getElementById('quizMaxAttemptsInput').value, 10),
+                password: document.getElementById('quizPasswordInput').value || null,
+                reviewPolicy: parseInt(document.getElementById('quizReviewPolicyInput').value, 10),
+                shuffleQuestions: document.getElementById('quizShuffleQuestionsInput').checked,
+                shuffleOptions: document.getElementById('quizShuffleOptionsInput').checked
             };
 
             try {
                 const response = await fetch('/api/quiz?handler=CreateQuiz', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: jsonHeaders,
                     body: JSON.stringify(payload)
                 });
 
@@ -770,8 +841,8 @@ else
             try {
                 const response = await fetch('/api/quiz?handler=DeleteQuiz', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: id })
+                    headers: jsonHeaders,
+                    body: JSON.stringify({ id: id, courseCode: courseCode })
                 });
 
                 const result = await response.json();
@@ -858,9 +929,9 @@ else
                     <td>${a.score} / ${a.totalQuestions}</td>
                     <td><strong style="color: var(--accent-shu);">${a.percentage}%</strong></td>
                     <td class="pe-4 text-end">
-                        <span class="badge" style="background-color: ${badgeColor}; padding: 6px 12px; font-weight: 500;">
-                            ${badgeText}
-                        </span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="viewAttemptDetails('${a.id}', true)">
+                            <i class="fa-solid fa-eye"></i> Xem từng câu
+                        </button>
                     </td>
                 `;
                 attemptsList.appendChild(tr);
@@ -934,7 +1005,9 @@ else
 
         // Quiz State for Student Taker
         let currentQuizId = null;
+        let currentAttemptId = null;
         let currentQuizTitle = '';
+        let availableQuizzes = [];
         let studentQuestions = [];
         let currentQuestionIndex = 0;
         let studentAnswers = {}; // Map of qId -> selected option
@@ -944,6 +1017,7 @@ else
             .then(res => res.json())
             .then(data => {
                 studentQuizzesLoading.style.display = 'none';
+                availableQuizzes = data || [];
 
                 if (!data || data.length === 0) {
                     studentQuizzesEmpty.style.display = 'block';
@@ -963,7 +1037,8 @@ else
                                     <div class="mb-1"><i class="fa-solid fa-circle-question me-2"></i>Số lượng: <strong>${q.questionCount} câu hỏi</strong></div>
                                     <div><i class="fa-solid fa-book-open me-2"></i>Nội dung: <strong>${q.documentId ? 'Giới hạn theo tài liệu' : 'Toàn bộ bài giảng'}</strong></div>
                                 </div>
-                                <button type="button" class="btn-zen primary w-100 py-2" onclick="startStudentQuiz('${q.id}', '${escapeHtml(q.title)}')">
+                                <div class="small text-muted mb-3">Đã làm ${q.attemptsUsed}/${q.maxAttempts} lần ${q.hasPassword ? ' · cần mật khẩu' : ''}</div>
+                                <button type="button" class="btn-zen primary w-100 py-2" ${q.attemptsUsed >= q.maxAttempts ? 'disabled' : ''} onclick="startStudentQuiz('${q.id}', ${q.hasPassword ? 'true' : 'false'})">
                                     <i class="fa-solid fa-file-signature me-2"></i>Làm Bài Thi
                                 </button>
                             </div>
@@ -978,26 +1053,49 @@ else
                 console.error('Lỗi tải danh sách bài thi:', err);
             });
 
-        window.startStudentQuiz = function (quizId, quizTitle) {
+        async function loadMyAttempts() {
+            const response = await fetch(`/api/quiz?handler=MyAttempts&courseCode=${encodeURIComponent(courseCode)}`);
+            const data = response.ok ? await response.json() : [];
+            const container = document.getElementById('myAttemptsList');
+            container.innerHTML = data.length === 0 ? '<span class="text-muted">Chưa có lượt làm bài.</span>' : data.map(a => `
+                <div class="d-flex justify-content-between align-items-center border-top py-3">
+                    <span>${escapeHtml(a.quizTitle)} — lần ${a.attemptNumber}: <strong>${a.score}/${a.totalQuestions}</strong> (${a.percentage}%)</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="viewAttemptDetails('${a.id}', false)">Xem lại</button>
+                </div>`).join('');
+        }
+        loadMyAttempts();
+
+        window.startStudentQuiz = function (quizId, hasPassword) {
             currentQuizId = quizId;
-            currentQuizTitle = quizTitle;
+            currentQuizTitle = availableQuizzes.find(q => q.id === quizId)?.title || 'Bài trắc nghiệm';
             studentAnswers = {};
             currentQuestionIndex = 0;
+
+            let password = null;
+            if (hasPassword) {
+                password = prompt('Nhập mật khẩu để bắt đầu lượt làm bài:');
+                if (password === null) return;
+            }
 
             studentQuizListPanel.style.display = 'none';
             quizLoading.style.display = 'block';
 
-            fetch(`/api/quiz?handler=QuizQuestions&quizId=${encodeURIComponent(quizId)}`)
-                .then(res => res.json())
-                .then(data => {
+            fetch('/api/quiz?handler=StartAttempt', {
+                method: 'POST',
+                headers: jsonHeaders,
+                body: JSON.stringify({ quizId, password })
+            })
+                .then(async res => ({ ok: res.ok, data: await res.json() }))
+                .then(({ ok, data }) => {
                     quizLoading.style.display = 'none';
-                    if (!data || data.length === 0) {
+                    if (!ok || !data.questions || data.questions.length === 0) {
                         alert('Bài trắc nghiệm này chưa có câu hỏi nào trong ngân hàng đề. Vui lòng liên hệ giảng viên.');
                         studentQuizListPanel.style.display = 'block';
                         return;
                     }
 
-                    studentQuestions = data;
+                    currentAttemptId = data.attemptId;
+                    studentQuestions = data.questions;
                     quizForm.style.display = 'block';
                     renderStudentQuestion();
                 })
@@ -1104,10 +1202,9 @@ else
             try {
                 const response = await fetch('/api/quiz?handler=Submit', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: jsonHeaders,
                     body: JSON.stringify({
-                        courseCode: courseCode,
-                        quizId: currentQuizId,
+                        attemptId: currentAttemptId,
                         answers: answersArray
                     })
                 });
@@ -1118,6 +1215,8 @@ else
                     document.getElementById('resultScore').textContent = result.score;
                     document.getElementById('resultTotal').textContent = result.totalQuestions;
                     document.getElementById('resultPercent').textContent = result.percentage;
+                    document.getElementById('reviewResultButton').onclick = () =>
+                        viewAttemptDetails(result.attemptId || currentAttemptId, false);
 
                     if (result.percentage >= 80) {
                         document.getElementById('resultSeal').textContent = '優';

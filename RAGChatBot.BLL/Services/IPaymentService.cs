@@ -10,6 +10,6 @@ namespace RAGChatBot.BLL.Services
         Task<string> CreatePendingTransactionAsync(Guid userId, long amount, string? orderId = null);
         Task<bool> ProcessPaymentCallbackAsync(VnPayCallbackResult callbackResult, Guid userId);
         Task<IEnumerable<PaymentTransactionDto>> GetAllTransactionsAsync();
-        Task CancelTransactionAsync(string orderId);
+        Task CancelTransactionAsync(string orderId, Guid userId);
     }
 }

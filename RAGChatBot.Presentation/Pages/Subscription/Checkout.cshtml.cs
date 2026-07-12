@@ -9,6 +9,7 @@ namespace RAGChatBot.Presentation.Pages.Subscription
     [Authorize]
     public class CheckoutModel : PageModel
     {
+        private static long _lastOrderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         private readonly IPayOSService _payOSService;
         private readonly IPaymentService _paymentService;
 
@@ -48,14 +49,22 @@ namespace RAGChatBot.Presentation.Pages.Subscription
 
             const long amount = 199000;
 
-            // Tạo orderCode số dương unique cho PayOS (dùng timestamp, max 9 chữ số)
-            var orderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() % 1_000_000_000;
+            var orderCode = Interlocked.Increment(ref _lastOrderCode);
 
             // Lưu vào DB với OrderId = orderCode (dạng string)
             await _paymentService.CreatePendingTransactionAsync(userId, amount, orderCode.ToString());
 
-            var paymentUrl = await _payOSService.CreatePaymentUrl(orderCode, amount);
-            return Redirect(paymentUrl);
+            try
+            {
+                var paymentUrl = await _payOSService.CreatePaymentUrl(orderCode, amount);
+                return Redirect(paymentUrl);
+            }
+            catch
+            {
+                await _paymentService.CancelTransactionAsync(orderCode.ToString(), userId);
+                ErrorMessage = "Không thể khởi tạo thanh toán PayOS. Vui lòng thử lại.";
+                return Page();
+            }
         }
     }
 }

@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using PayOS;
 using PayOS.Models.V2.PaymentRequests;
@@ -14,14 +11,12 @@ namespace RAGChatBot.BLL.Services
         private readonly PayOSClient _payOSClient;
         private readonly string _returnUrl;
         private readonly string _cancelUrl;
-        private readonly string _checksumKey;
 
         public PayOSService(PayOSClient payOSClient, string returnUrl, string cancelUrl)
         {
             _payOSClient = payOSClient;
             _returnUrl = returnUrl;
             _cancelUrl = cancelUrl;
-            _checksumKey = payOSClient.ChecksumKey;
         }
 
         public async Task<string> CreatePaymentUrl(long orderCode, long amount)
@@ -39,71 +34,47 @@ namespace RAGChatBot.BLL.Services
             return response.CheckoutUrl;
         }
 
-        public VnPayCallbackResult ValidateCallback(IReadOnlyDictionary<string, string> parameters)
+        public async Task<VnPayCallbackResult> ValidateReturnAsync(IReadOnlyDictionary<string, string> parameters)
         {
-            bool isSignatureValid = VerifyRedirectSignature(parameters);
-
             parameters.TryGetValue("orderCode", out var orderCodeStr);
-            parameters.TryGetValue("status", out var status);
             parameters.TryGetValue("id", out var paymentLinkId);
             parameters.TryGetValue("code", out var responseCode);
-
-            bool isSuccess = isSignatureValid && string.Equals(status, "PAID", StringComparison.OrdinalIgnoreCase) && string.Equals(responseCode, "00", StringComparison.OrdinalIgnoreCase);
-
-            long amount = 0;
-            if (isSignatureValid && long.TryParse(orderCodeStr, out var orderCode))
+            if (!long.TryParse(orderCodeStr, out var orderCode))
             {
-                try
+                return new VnPayCallbackResult
                 {
-                    // Fetch real payment link details from PayOS to verify the amount securely
-                    var paymentLink = Task.Run(() => _payOSClient.PaymentRequests.GetAsync(orderCode)).GetAwaiter().GetResult();
-                    if (paymentLink != null)
-                    {
-                        amount = paymentLink.Amount;
-                        if (paymentLink.Status == PaymentLinkStatus.Paid)
-                        {
-                            isSuccess = true;
-                        }
-                    }
-                }
-                catch
-                {
-                    // Fallback if API call fails
-                }
+                    OrderId = orderCodeStr ?? string.Empty,
+                    ResponseCode = responseCode ?? string.Empty,
+                    IsValid = false,
+                    Message = "Mã giao dịch PayOS không hợp lệ."
+                };
             }
 
-            return new VnPayCallbackResult
+            try
             {
-                OrderId = orderCodeStr ?? string.Empty,
-                ResponseCode = responseCode ?? string.Empty,
-                IsValid = isSignatureValid,
-                IsSuccess = isSuccess,
-                Message = isSuccess ? "Giao dịch Premium thành công!" : "Giao dịch thất bại hoặc bị hủy.",
-                TransactionNo = paymentLinkId,
-                Amount = amount
-            };
-        }
-
-        private bool VerifyRedirectSignature(IReadOnlyDictionary<string, string> parameters)
-        {
-            if (!parameters.TryGetValue("signature", out var signature) || string.IsNullOrEmpty(signature))
-            {
-                return false;
+                // PayOS return URLs are not signed. Verify the transaction against PayOS itself.
+                var paymentLink = await _payOSClient.PaymentRequests.GetAsync(orderCode);
+                var isSuccess = paymentLink.Status == PaymentLinkStatus.Paid;
+                return new VnPayCallbackResult
+                {
+                    OrderId = orderCodeStr!,
+                    ResponseCode = responseCode ?? string.Empty,
+                    IsValid = true,
+                    IsSuccess = isSuccess,
+                    Message = isSuccess ? "Giao dịch Premium thành công!" : "Giao dịch thất bại hoặc bị hủy.",
+                    TransactionNo = paymentLinkId,
+                    Amount = paymentLink.Amount
+                };
             }
-
-            // Exclude signature and sort keys alphabetically
-            var sortedParams = parameters
-                .Where(p => !string.Equals(p.Key, "signature", StringComparison.OrdinalIgnoreCase))
-                .OrderBy(p => p.Key, StringComparer.Ordinal)
-                .Select(p => $"{p.Key}={p.Value}");
-
-            var rawData = string.Join("&", sortedParams);
-
-            using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_checksumKey)))
+            catch
             {
-                var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(rawData));
-                var computedSignature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-                return string.Equals(computedSignature, signature, StringComparison.OrdinalIgnoreCase);
+                return new VnPayCallbackResult
+                {
+                    OrderId = orderCodeStr!,
+                    ResponseCode = responseCode ?? string.Empty,
+                    IsValid = false,
+                    Message = "Không thể xác minh giao dịch với PayOS."
+                };
             }
         }
     }

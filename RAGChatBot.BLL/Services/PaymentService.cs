@@ -91,10 +91,10 @@ namespace RAGChatBot.BLL.Services
             }).ToList();
         }
 
-        public async Task CancelTransactionAsync(string orderId)
+        public async Task CancelTransactionAsync(string orderId, Guid userId)
         {
             var transaction = await _transactionRepository.GetByOrderIdAsync(orderId);
-            if (transaction != null && transaction.Status == "Pending")
+            if (transaction != null && transaction.UserId == userId && transaction.Status == "Pending")
             {
                 transaction.Status = "Failed";
                 await _transactionRepository.SaveChangesAsync();

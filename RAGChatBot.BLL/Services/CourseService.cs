@@ -131,22 +131,9 @@ namespace RAGChatBot.BLL.Services
             var oldCode = course.Code;
             var newCode = courseDto.Code.Trim().ToUpper();
 
-            // Nếu thay đổi mã môn, kiểm tra xem có bị trùng với môn khác không
             if (!oldCode.Equals(newCode, StringComparison.OrdinalIgnoreCase))
             {
-                var courses = await _courseRepository.GetAllAsync();
-                if (courses.Any(c => c.Code.Equals(newCode, StringComparison.OrdinalIgnoreCase)))
-                {
-                    throw new InvalidOperationException($"Mã môn học '{newCode}' đã tồn tại!");
-                }
-
-                // Cập nhật mã môn trong tất cả tài liệu cũ sang mã mới
-                var courseDocs = await _documentRepository.GetByCourseCodeAsync(oldCode);
-                foreach (var doc in courseDocs)
-                {
-                    doc.CourseCode = newCode;
-                }
-                await _documentRepository.SaveChangesAsync();
+                throw new InvalidOperationException("Không thể đổi mã môn sau khi đã tạo vì mã này liên kết với tài liệu, quiz và lịch sử chat.");
             }
 
             // Kiểm tra phân quyền Trưởng bộ môn nếu có chỉ định

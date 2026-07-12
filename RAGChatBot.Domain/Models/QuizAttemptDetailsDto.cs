@@ -14,5 +14,9 @@ namespace RAGChatBot.Domain.Models
         public double Percentage { get; set; }
         public DateTime AttemptedAt { get; set; }
         public string? QuizTitle { get; set; }
+        public Guid QuizId { get; set; }
+        public int AttemptNumber { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public DateTime? SubmittedAt { get; set; }
     }
 }

@@ -10,19 +10,18 @@ namespace RAGChatBot.Domain.Interfaces
     {
         Task GenerateQuizForDocumentAsync(Guid documentId);
         Task<IReadOnlyList<QuizQuestionModel>> GetQuizByCourseAsync(string courseCode);
-        Task<QuizAttemptResult> SubmitQuizAttemptAsync(
-            Guid userId,
-            string courseCode,
-            Guid? quizId,
-            IReadOnlyList<UserAnswerDto> answers);
+        Task<QuizStartResult> StartQuizAttemptAsync(Guid userId, Guid quizId, string? password);
+        Task<QuizAttemptResult> SubmitQuizAttemptAsync(Guid userId, Guid attemptId, IReadOnlyList<UserAnswerDto> answers);
         Task<IReadOnlyList<QuestionBank>> GetQuestionBankByCourseAsync(string courseCode);
         Task<IReadOnlyList<QuizAttemptDetailsDto>> GetAttemptsByCourseAsync(string courseCode);
         Task<QuestionBank> AddQuestionAsync(QuestionBank question);
         Task<QuestionBank> UpdateQuestionAsync(QuestionBank question);
-        Task DeleteQuestionAsync(Guid id);
-        Task<IReadOnlyList<Quiz>> GetQuizzesByCourseAsync(string courseCode);
-        Task<Quiz> CreateQuizAsync(string courseCode, string title, int questionCount, Guid? documentId);
-        Task DeleteQuizAsync(Guid id);
-        Task<IReadOnlyList<QuizQuestionModel>> GetQuizQuestionsAsync(Guid quizId);
+        Task DeleteQuestionAsync(Guid id, string courseCode);
+        Task<IReadOnlyList<QuizSummaryModel>> GetQuizzesByCourseAsync(string courseCode, Guid? userId = null, bool includeUnpublished = false);
+        Task<Quiz> CreateQuizAsync(string courseCode, string title, int questionCount, Guid? documentId,
+            int maxAttempts, string? password, QuizReviewPolicy reviewPolicy, bool shuffleQuestions, bool shuffleOptions);
+        Task DeleteQuizAsync(Guid id, string courseCode);
+        Task<IReadOnlyList<QuizAttemptDetailsDto>> GetStudentAttemptsAsync(Guid userId, string? courseCode = null);
+        Task<QuizReviewModel> GetAttemptReviewAsync(Guid requesterId, Guid attemptId, bool instructorView, string? managedCourseCode = null);
     }
 }

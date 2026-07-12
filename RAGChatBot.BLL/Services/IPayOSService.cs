@@ -6,6 +6,6 @@ namespace RAGChatBot.BLL.Services
     public interface IPayOSService
     {
         Task<string> CreatePaymentUrl(long orderCode, long amount);
-        VnPayCallbackResult ValidateCallback(IReadOnlyDictionary<string, string> parameters);
+        Task<VnPayCallbackResult> ValidateReturnAsync(IReadOnlyDictionary<string, string> parameters);
     }
 }

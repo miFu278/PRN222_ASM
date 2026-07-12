@@ -18,21 +18,22 @@ namespace RAGChatBot.BLL.Services
         public async Task<(bool allowed, int remaining)> CheckAndDeductCreditAsync(Guid userId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
-            if (user != null && user.SubscriptionTier == "Premium")
+            if (user != null &&
+                string.Equals(user.SubscriptionTier, "Premium", StringComparison.OrdinalIgnoreCase) &&
+                (!user.SubscriptionExpiresAt.HasValue || user.SubscriptionExpiresAt.Value > DateTime.UtcNow))
             {
                 return (true, 9999);
             }
 
             // Đối với tài khoản Free, giới hạn là 10 lượt hỏi mỗi ngày
-            var currentCredit = _userCredits.GetOrAdd(userId, 10);
-            if (currentCredit <= 0)
+            while (true)
             {
-                return (false, 0);
+                var currentCredit = _userCredits.GetOrAdd(userId, 10);
+                if (currentCredit <= 0) return (false, 0);
+                var nextCredit = currentCredit - 1;
+                if (_userCredits.TryUpdate(userId, nextCredit, currentCredit))
+                    return (true, nextCredit);
             }
-
-            var nextCredit = currentCredit - 1;
-            _userCredits[userId] = nextCredit;
-            return (true, nextCredit);
         }
 
         public async Task ResetDailyCreditsForFreeStudentsAsync()

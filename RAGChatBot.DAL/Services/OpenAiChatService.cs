@@ -146,7 +146,7 @@ namespace RAGChatBot.DAL.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi xảy ra trong quá trình xử lý Chatbot RAG cho môn {CourseCode}", courseCode);
-                return $"Đã xảy ra lỗi ngoài ý muốn khi xử lý câu hỏi của bạn: {ex.Message}";
+                return "Đã xảy ra lỗi khi xử lý câu hỏi. Vui lòng thử lại sau.";
             }
         }
 

@@ -61,9 +61,9 @@ namespace RAGChatBot.BLL.Services
                 };
             }
 
-            var effectiveCourseCode = !string.IsNullOrWhiteSpace(courseCode)
-                ? courseCode.Trim()
-                : existingThread?.CourseCode ?? "General";
+            // An existing thread owns its course context; the browser cannot switch it mid-thread.
+            var effectiveCourseCode = existingThread?.CourseCode
+                ?? (!string.IsNullOrWhiteSpace(courseCode) ? courseCode.Trim() : "General");
 
             var activeThread = existingThread;
             if (activeThread is null)
@@ -77,7 +77,7 @@ namespace RAGChatBot.BLL.Services
                     userId,
                     effectiveCourseCode,
                     title,
-                    DateTime.UtcNow.AddHours(7));
+                    DateTime.UtcNow);
             }
 
             var historyItems = history
@@ -93,7 +93,7 @@ namespace RAGChatBot.BLL.Services
                 activeThread.Id,
                 message,
                 reply,
-                DateTime.UtcNow.AddHours(7));
+                DateTime.UtcNow);
 
             var log = new ChatTrackerLog
             {
@@ -101,7 +101,7 @@ namespace RAGChatBot.BLL.Services
                 UserId = userId,
                 Question = message,
                 Answer = reply.Length > 2000 ? reply[..2000] : reply,
-                CourseCode = courseCode,
+                CourseCode = effectiveCourseCode,
                 CreatedAt = DateTime.UtcNow
             };
             await _chatLogRepository.AddAsync(log);
