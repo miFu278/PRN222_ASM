@@ -113,7 +113,13 @@
                     <div class="zen-sidebar-user">
                         <span class="zen-user-avatar">@(displayName.Length > 0 ? displayName[0].ToString().ToUpper() : "?")</span>
                         <div class="zen-sidebar-user-info">
-                            <span class="zen-user-name">@displayName</span>
+                            <span class="zen-user-name">
+                                @displayName
+                                @if (User.FindFirst("SubscriptionTier")?.Value == "Premium")
+                                {
+                                    <i class="fa-solid fa-crown" style="color: #f59e0b; font-size: 0.7rem; margin-left: 4px;" title="Premium"></i>
+                                }
+                            </span>
                             <span class="zen-user-role">@userRole</span>
                         </div>
                     </div>

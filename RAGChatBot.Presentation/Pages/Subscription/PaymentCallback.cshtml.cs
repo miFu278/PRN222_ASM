@@ -11,13 +11,13 @@ namespace RAGChatBot.Presentation.Pages.Subscription
     [Authorize]
     public class PaymentCallbackModel : PageModel
     {
-        private readonly IVnPayService _vnPayService;
+        private readonly IPayOSService _payOSService;
         private readonly IPaymentService _paymentService;
         private readonly ILogger<PaymentCallbackModel> _logger;
 
-        public PaymentCallbackModel(IVnPayService vnPayService, IPaymentService paymentService, ILogger<PaymentCallbackModel> logger)
+        public PaymentCallbackModel(IPayOSService payOSService, IPaymentService paymentService, ILogger<PaymentCallbackModel> logger)
         {
-            _vnPayService = vnPayService;
+            _payOSService = payOSService;
             _paymentService = paymentService;
             _logger = logger;
         }
@@ -33,9 +33,9 @@ namespace RAGChatBot.Presentation.Pages.Subscription
                 item => item.Key,
                 item => item.Value.ToString(),
                 StringComparer.OrdinalIgnoreCase);
-            var callbackResult = _vnPayService.ValidateCallback(callbackParameters);
+            var callbackResult = _payOSService.ValidateCallback(callbackParameters);
 
-            _logger.LogInformation("[VNPay Callback] OrderId={OrderId}, ResponseCode={ResponseCode}, Valid={IsValid}, Success={IsSuccess}",
+            _logger.LogInformation("[PayOS Callback] OrderId={OrderId}, ResponseCode={ResponseCode}, Valid={IsValid}, Success={IsSuccess}",
                 callbackResult.OrderId, callbackResult.ResponseCode, callbackResult.IsValid, callbackResult.IsSuccess);
 
             if (!callbackResult.IsValid)

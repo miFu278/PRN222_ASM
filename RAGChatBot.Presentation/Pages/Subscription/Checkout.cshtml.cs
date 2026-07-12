@@ -9,12 +9,12 @@ namespace RAGChatBot.Presentation.Pages.Subscription
     [Authorize]
     public class CheckoutModel : PageModel
     {
-        private readonly IVnPayService _vnPayService;
+        private readonly IPayOSService _payOSService;
         private readonly IPaymentService _paymentService;
 
-        public CheckoutModel(IVnPayService vnPayService, IPaymentService paymentService)
+        public CheckoutModel(IPayOSService payOSService, IPaymentService paymentService)
         {
-            _vnPayService = vnPayService;
+            _payOSService = payOSService;
             _paymentService = paymentService;
         }
 
@@ -46,11 +46,15 @@ namespace RAGChatBot.Presentation.Pages.Subscription
                 return Page();
             }
 
-            var ipAddress = HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "127.0.0.1";
             const long amount = 199000;
-            var orderId = await _paymentService.CreatePendingTransactionAsync(userId, amount);
-            var paymentUrl = _vnPayService.CreatePaymentUrl(userId, ipAddress, orderId);
 
+            // Tạo orderCode số dương unique cho PayOS (dùng timestamp, max 9 chữ số)
+            var orderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() % 1_000_000_000;
+
+            // Lưu vào DB với OrderId = orderCode (dạng string)
+            await _paymentService.CreatePendingTransactionAsync(userId, amount, orderCode.ToString());
+
+            var paymentUrl = await _payOSService.CreatePaymentUrl(orderCode, amount);
             return Redirect(paymentUrl);
         }
     }
