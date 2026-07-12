@@ -1,7 +1,7 @@
 @page "/Subscription/Checkout"
 @model RAGChatBot.Presentation.Pages.Subscription.CheckoutModel
 @{
-    ViewData["Title"] = "Thanh Toán VNPay";
+    ViewData["Title"] = "Thanh Toán PayOS";
 }
 
 <div class="zen-container">
@@ -11,7 +11,7 @@
             <h1>Nâng Cấp <i>Premium</i></h1>
         </div>
         <div class="zen-hero-desc gsap-fade-up">
-            Thanh toán an toàn qua cổng VNPay. Sau khi hoàn tất, bạn sẽ được nâng cấp lên gói Premium với đầy đủ quyền lợi.
+            Thanh toán an toàn qua cổng PayOS. Sau khi hoàn tất, bạn sẽ được nâng cấp lên gói Premium với đầy đủ quyền lợi.
         </div>
     </div>
 
@@ -32,7 +32,7 @@
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--border-light);">
                     <span style="font-weight: 300;">Phương thức thanh toán</span>
-                    <span style="font-weight: 500;">VNPay QR / ATM / Visa</span>
+                    <span style="font-weight: 500;">PayOS (QR / Chuyển khoản / Thẻ)</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 16px 0; margin-bottom: 20px;">
                     <span style="font-family: var(--font-serif); font-size: 1.3rem;">Tổng cộng</span>
@@ -45,7 +45,7 @@
                     <i class="fa-solid fa-shield-halved" style="font-size: 3rem; color: var(--accent-shu); margin-bottom: 16px;"></i>
                     <div style="font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: 8px;">Thanh toán an toàn</div>
                     <div style="font-weight: 300; color: var(--text-muted); font-size: 0.95rem;">
-                        Bạn sẽ được chuyển đến cổng thanh toán VNPay để hoàn tất giao dịch.
+                        Bạn sẽ được chuyển đến cổng thanh toán PayOS để hoàn tất giao dịch.
                     </div>
                 </div>
 
@@ -53,7 +53,7 @@
                     @Html.AntiForgeryToken()
                     <button type="submit" class="btn-zen primary w-100 d-flex justify-content-center align-items-center magnetic-btn" style="padding: 16px 28px; font-size: 1.1rem; gap: 12px;">
                         <i class="fa-solid fa-credit-card"></i>
-                        <span>Thanh Toán Qua VNPay</span>
+                        <span>Thanh Toán Qua PayOS</span>
                     </button>
                 </form>
 

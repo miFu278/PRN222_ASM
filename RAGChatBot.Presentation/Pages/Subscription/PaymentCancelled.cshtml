@@ -1,0 +1,72 @@
+@page "/Subscription/PaymentCancelled"
+@model RAGChatBot.Presentation.Pages.Subscription.PaymentCancelledModel
+@{
+    ViewData["Title"] = "Đã Hủy Đơn Hàng";
+}
+
+<div class="zen-container">
+    <div class="zen-hero" style="min-height: auto; margin-bottom: 60px;">
+        <div class="zen-hero-title gsap-fade-up">
+            <span class="text-accent" style="color: #f59e0b;">悟 ĐÃ HỦY</span>
+            <h1>Đơn Hàng <i>Đã Hủy</i></h1>
+        </div>
+    </div>
+
+    <div class="gsap-fade-up" style="border-top: 1px solid var(--border-light); padding-top: 40px; max-width: 600px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background: #f59e0b; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                <i class="fa-solid fa-ban" style="font-size: 2rem; color: white;"></i>
+            </div>
+            <div style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 12px; color: #d97706;">
+                Bạn đã hủy giao dịch thanh toán.
+            </div>
+            <div style="font-weight: 300; color: var(--text-muted);">
+                Đơn hàng đã được cập nhật trạng thái hủy. Bạn có thể đăng ký lại bất cứ lúc nào.
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 40px;">
+            <div style="font-weight: 300; color: var(--text-muted); font-size: 0.95rem;">
+                Tự động chuyển về trang chủ sau <span id="countdown" style="font-weight: 700; color: #d97706;">10</span> giây
+            </div>
+            <div style="width: 100%; height: 4px; background: var(--border-light); border-radius: 4px; margin-top: 16px; overflow: hidden;">
+                <div id="progressBar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #f59e0b, #d97706); border-radius: 4px; transition: width 1s linear;"></div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-3 justify-content-center">
+            <a href="/" class="btn-zen magnetic-btn" style="padding: 14px 28px;">
+                <i class="fa-solid fa-home me-2"></i> Trang chủ
+            </a>
+            <a href="/Subscription/Checkout" class="btn-zen primary magnetic-btn" style="padding: 14px 28px;">
+                <i class="fa-solid fa-rotate-right me-2"></i> Thử lại
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.zenInteract !== 'undefined') {
+                window.zenInteract.initPageReveal();
+                window.zenInteract.initMagneticButtons();
+            }
+
+            var seconds = 10;
+            var countdownEl = document.getElementById('countdown');
+            var progressBar = document.getElementById('progressBar');
+
+            var timer = setInterval(function () {
+                seconds--;
+                countdownEl.textContent = seconds;
+                progressBar.style.width = ((seconds / 10) * 100) + '%';
+
+                if (seconds <= 0) {
+                    clearInterval(timer);
+                    window.location.href = '/';
+                }
+            }, 1000);
+        });
+    </script>
+}
