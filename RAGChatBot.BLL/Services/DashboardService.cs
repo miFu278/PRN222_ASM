@@ -135,27 +135,14 @@ namespace RAGChatBot.BLL.Services
             int? endMonth,
             IReadOnlyList<DateTime> expiryDates)
         {
-            var documentCount = await _dashboardRepository.CountDocumentsAsync(
-                year,
-                startMonth,
-                endMonth);
-            var chatCount = await _dashboardRepository.CountChatSessionsAsync(
-                year,
-                startMonth,
-                endMonth);
-
-            var paymentCount = expiryDates.Count(expiryDate =>
-            {
-                var paymentDate = expiryDate.AddMonths(-1);
-                return paymentDate.Year == year &&
-                       (!startMonth.HasValue || paymentDate.Month >= startMonth.Value) &&
-                       (!endMonth.HasValue || paymentDate.Month <= endMonth.Value);
-            });
+            var documentCount = await _dashboardRepository.CountDocumentsAsync(year, startMonth, endMonth);
+            var chatCount = await _dashboardRepository.CountChatSessionsAsync(year, startMonth, endMonth);
+            var revenue = await _dashboardRepository.GetRevenueAsync(year, startMonth, endMonth);
 
             return new MonthlyRevenueDto
             {
                 Label = label,
-                Revenue = paymentCount * PremiumMonthlyPrice,
+                Revenue = revenue,
                 DocumentCount = documentCount,
                 ChatCount = chatCount
             };
