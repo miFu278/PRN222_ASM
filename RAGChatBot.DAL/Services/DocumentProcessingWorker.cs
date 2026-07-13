@@ -1,7 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using RAGChatBot.Domain.Interfaces;
+using RAGChatBot.Domain.Models;
 using RAGChatBot.Domain.Enums;
 using RAGChatBot.Domain.Entities;
 using RAGChatBot.DAL.Context;
@@ -58,24 +60,43 @@ namespace RAGChatBot.DAL.Services
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             // 1. Quét tìm tài liệu chưa được xử lý VÀ đã được phê duyệt
-            var document = dbContext.KnowledgeDocuments
+            var documentId = await dbContext.KnowledgeDocuments
+                .AsNoTracking()
                 .Where(d => d.Status == DocumentStatus.Pending && d.IsApproved)
                 .OrderBy(d => d.UploadedAt)
-                .FirstOrDefault();
+                .Select(d => d.Id)
+                .FirstOrDefaultAsync(stoppingToken);
 
-            if (document == null)
+            if (documentId == Guid.Empty)
             {
                 return;
+            }
+
+            // Claim atomically so multiple worker instances cannot process the same file.
+            var claimed = await dbContext.KnowledgeDocuments
+                .Where(d => d.Id == documentId && d.Status == DocumentStatus.Pending && d.IsApproved)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(d => d.Status, DocumentStatus.Processing), stoppingToken);
+            if (claimed == 0) return;
+
+            var document = await dbContext.KnowledgeDocuments
+                .FirstAsync(d => d.Id == documentId, stoppingToken);
+            var documentEventService = scope.ServiceProvider.GetService<IDocumentEventService>();
+            if (documentEventService is not null)
+            {
+                await documentEventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+                {
+                    Type = "DocumentStatusChanged",
+                    CourseCode = document.CourseCode,
+                    EntityId = document.Id,
+                    Status = DocumentStatus.Processing.ToString()
+                }, stoppingToken);
             }
 
             _logger.LogInformation("Tìm thấy tài liệu chưa xử lý: ID={DocId}, FileName='{FileName}'", document.Id, document.FileName);
 
             try
             {
-                // Cập nhật trạng thái sang Processing
-                document.Status = DocumentStatus.Processing;
-                await dbContext.SaveChangesAsync(stoppingToken);
-
                 var textExtractor = scope.ServiceProvider.GetRequiredService<ITextExtractor>();
                 var chunkingService = scope.ServiceProvider.GetRequiredService<IChunkingService>();
                 var embeddingService = scope.ServiceProvider.GetRequiredService<IEmbeddingService>();
@@ -115,7 +136,7 @@ namespace RAGChatBot.DAL.Services
                 if (string.IsNullOrWhiteSpace(fullText))
                 {
                     _logger.LogWarning("Tài liệu '{FileName}' rỗng hoặc không có chữ để trích xuất.", document.FileName);
-                    return;
+                    throw new InvalidOperationException("Tài liệu rỗng hoặc không trích xuất được văn bản.");
                 }
 
                 // 4. Chia nhỏ văn bản thành các Chunk — Benchmark: Chunking
@@ -149,7 +170,20 @@ namespace RAGChatBot.DAL.Services
                 _logger.LogInformation("Đang sinh vector hàng loạt (Batch) cho {Count}/{Total} chunks hợp lệ...", cleanChunks.Count, textChunks.Count);
                 
                 var chunksTexts = cleanChunks.Select(c => c.Text).ToList();
+                if (chunksTexts.Count == 0)
+                {
+                    throw new InvalidOperationException("Tài liệu không tạo được chunk hợp lệ.");
+                }
                 var embeddings = await embeddingService.GenerateEmbeddingsAsync(chunksTexts);
+                if (embeddings.Count != cleanChunks.Count)
+                {
+                    throw new InvalidOperationException("Số vector trả về không khớp với số chunk.");
+                }
+
+                // Retry must replace old chunks instead of duplicating them.
+                await dbContext.DocumentChunks
+                    .Where(c => c.DocumentId == document.Id)
+                    .ExecuteDeleteAsync(stoppingToken);
 
                 for (int i = 0; i < cleanChunks.Count; i++)
                 {
@@ -179,22 +213,37 @@ namespace RAGChatBot.DAL.Services
                 // 6. Cập nhật trạng thái hoàn thành
                 document.Status = DocumentStatus.Success;
                 await dbContext.SaveChangesAsync(stoppingToken);
+                if (documentEventService is not null)
+                {
+                    await documentEventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+                    {
+                        Type = "DocumentStatusChanged",
+                        CourseCode = document.CourseCode,
+                        EntityId = document.Id,
+                        Status = document.Status.ToString()
+                    }, stoppingToken);
+                }
                 _logger.LogInformation("Đã xử lý xong tài liệu: '{FileName}'", document.FileName);
 
                 // Tự động sinh quiz cho tài liệu mới — Benchmark: QuizGeneration
                 try
                 {
-                    var quizService = scope.ServiceProvider.GetRequiredService<IQuizService>();
-                    sw.Restart();
-                    await quizService.GenerateQuizForDocumentAsync(document.Id);
-                    sw.Stop();
-                    await benchmarkRepo.AddAsync(new PerformanceBenchmark
+                    var alreadyHasQuestionBank = await dbContext.QuestionBanks
+                        .AnyAsync(question => question.DocumentId == document.Id, stoppingToken);
+                    if (!alreadyHasQuestionBank)
                     {
-                        OperationType = "QuizGeneration",
-                        DurationMs = sw.Elapsed.TotalMilliseconds,
-                        DocumentName = document.FileName,
-                        Notes = $"DocumentId: {document.Id}"
-                    });
+                        var quizService = scope.ServiceProvider.GetRequiredService<IQuizService>();
+                        sw.Restart();
+                        await quizService.GenerateQuizForDocumentAsync(document.Id);
+                        sw.Stop();
+                        await benchmarkRepo.AddAsync(new PerformanceBenchmark
+                        {
+                            OperationType = "QuizGeneration",
+                            DurationMs = sw.Elapsed.TotalMilliseconds,
+                            DocumentName = document.FileName,
+                            Notes = $"DocumentId: {document.Id}"
+                        });
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -207,13 +256,15 @@ namespace RAGChatBot.DAL.Services
                 // Đánh dấu Failed để tránh loop kẹt và cho phép Retry
                 document.Status = DocumentStatus.Failed;
                 await dbContext.SaveChangesAsync(stoppingToken);
-            }
-            finally
-            {
-                if (document.Status == DocumentStatus.Success || document.Status == DocumentStatus.Failed)
+                if (documentEventService is not null)
                 {
-                    var eventService = scope.ServiceProvider.GetService<IDocumentEventService>();
-                    eventService?.NotifyDocumentChanged(document.CourseCode);
+                    await documentEventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+                    {
+                        Type = "DocumentStatusChanged",
+                        CourseCode = document.CourseCode,
+                        EntityId = document.Id,
+                        Status = document.Status.ToString()
+                    }, stoppingToken);
                 }
             }
         }

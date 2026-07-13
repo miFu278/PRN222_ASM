@@ -45,6 +45,14 @@ namespace RAGChatBot.DAL.Repositories
             return await _context.Courses.FindAsync(id);
         }
 
+        public Task<Course?> GetByCodeAsync(string code)
+        {
+            var normalizedCode = code.Trim().ToUpper();
+            return _context.Courses
+                .AsNoTracking()
+                .FirstOrDefaultAsync(course => course.Code == normalizedCode);
+        }
+
         public async Task UpdateAsync(Course course)
         {
             _context.Courses.Update(course);

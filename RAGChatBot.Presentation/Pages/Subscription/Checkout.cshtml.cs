@@ -9,13 +9,19 @@ namespace RAGChatBot.Presentation.Pages.Subscription
     [Authorize]
     public class CheckoutModel : PageModel
     {
-        private readonly IVnPayService _vnPayService;
+        private static long _lastOrderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        private readonly IPayOSService _payOSService;
         private readonly IPaymentService _paymentService;
+        private readonly ILogger<CheckoutModel> _logger;
 
-        public CheckoutModel(IVnPayService vnPayService, IPaymentService paymentService)
+        public CheckoutModel(
+            IPayOSService payOSService,
+            IPaymentService paymentService,
+            ILogger<CheckoutModel> logger)
         {
-            _vnPayService = vnPayService;
+            _payOSService = payOSService;
             _paymentService = paymentService;
+            _logger = logger;
         }
 
         public string? ErrorMessage { get; set; }
@@ -46,12 +52,41 @@ namespace RAGChatBot.Presentation.Pages.Subscription
                 return Page();
             }
 
-            var ipAddress = HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "127.0.0.1";
             const long amount = 199000;
-            var orderId = await _paymentService.CreatePendingTransactionAsync(userId, amount);
-            var paymentUrl = _vnPayService.CreatePaymentUrl(userId, ipAddress, orderId);
 
-            return Redirect(paymentUrl);
+            var orderCode = Interlocked.Increment(ref _lastOrderCode);
+
+            // Lưu vào DB với OrderId = orderCode (dạng string)
+            await _paymentService.CreatePendingTransactionAsync(userId, amount, orderCode.ToString());
+
+            try
+            {
+                var paymentUrl = await _payOSService.CreatePaymentUrl(orderCode, amount);
+                return Redirect(paymentUrl);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(
+                    exception,
+                    "PayOS payment initialization failed for OrderCode={OrderCode}, UserId={UserId}",
+                    orderCode,
+                    userId);
+
+                try
+                {
+                    await _paymentService.CancelTransactionAsync(orderCode.ToString(), userId);
+                }
+                catch (Exception cancellationException)
+                {
+                    _logger.LogError(
+                        cancellationException,
+                        "Could not mark failed PayOS transaction for OrderCode={OrderCode}",
+                        orderCode);
+                }
+
+                ErrorMessage = "Không thể khởi tạo thanh toán PayOS. Vui lòng thử lại.";
+                return Page();
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ using RAGChatBot.DAL.Context;
 using RAGChatBot.Domain.Interfaces;
 using RAGChatBot.Domain.Entities;
 using RAGChatBot.Domain.Enums;
+using RAGChatBot.Domain.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -51,13 +52,31 @@ namespace RAGChatBot.DAL.Repositories
             _context.KnowledgeDocuments.Remove(document);
             await Task.CompletedTask;
         }
-        public async Task<IEnumerable<DocumentChunk>> SearchSimilarChunksAsync(string? courseCode, float[] queryEmbedding, int topK = 5)
+        public async Task<IReadOnlyList<RelevantDocumentChunk>> SearchSimilarChunksAsync(
+            string courseCode,
+            float[] queryEmbedding,
+            int topK = 8,
+            double maxDistance = 0.55)
         {
             var pgVector = new Pgvector.Vector(queryEmbedding);
+            var normalizedCourseCode = courseCode.Trim().ToUpper();
             return await _context.DocumentChunks
-                .Include(c => c.Document)
-                .Where(c => (string.IsNullOrEmpty(courseCode) || c.Document.CourseCode == courseCode) && c.Document.IsApproved && c.Document.Status == DocumentStatus.Success)
-                .OrderBy(c => c.Embedding!.CosineDistance(pgVector))
+                .AsNoTracking()
+                .Where(c => c.Embedding != null &&
+                            c.Document.CourseCode == normalizedCourseCode &&
+                            c.Document.IsApproved &&
+                            c.Document.Status == DocumentStatus.Success)
+                .Select(c => new RelevantDocumentChunk
+                {
+                    DocumentId = c.DocumentId,
+                    FileName = c.Document.FileName,
+                    CourseCode = c.Document.CourseCode,
+                    ChunkIndex = c.ChunkIndex,
+                    Content = c.Content,
+                    Distance = c.Embedding!.CosineDistance(pgVector)
+                })
+                .Where(match => match.Distance <= maxDistance)
+                .OrderBy(match => match.Distance)
                 .Take(topK)
                 .ToListAsync();
         }

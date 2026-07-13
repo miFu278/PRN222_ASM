@@ -28,6 +28,14 @@ namespace RAGChatBot.Presentation.Pages
                 return new JsonResult(new { reply = "Vui lòng nhập câu hỏi." });
             }
 
+            if (request.Message.Length > 4000)
+            {
+                return new JsonResult(new { reply = "Câu hỏi quá dài. Vui lòng giới hạn trong 4.000 ký tự." })
+                {
+                    StatusCode = StatusCodes.Status400BadRequest
+                };
+            }
+
             var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!Guid.TryParse(userIdValue, out var userId))
             {
@@ -58,7 +66,16 @@ namespace RAGChatBot.Presentation.Pages
                     reply = result.Reply,
                     remaining = result.Remaining,
                     threadId = result.ThreadId,
-                    outOfCredits = result.OutOfCredits
+                    outOfCredits = result.OutOfCredits,
+                    isError = result.IsError,
+                    sources = result.Sources.Select(source => new
+                    {
+                        documentId = source.DocumentId,
+                        fileName = source.FileName,
+                        courseCode = source.CourseCode,
+                        chunkIndex = source.ChunkIndex,
+                        relevance = source.Relevance
+                    })
                 });
             }
             catch (Exception ex)
@@ -69,7 +86,7 @@ namespace RAGChatBot.Presentation.Pages
                     reply = "Xin lỗi, hệ thống đang gặp sự cố. Vui lòng thử lại sau."
                 })
                 {
-                    StatusCode = StatusCodes.Status200OK
+                    StatusCode = StatusCodes.Status500InternalServerError
                 };
             }
         }

@@ -60,6 +60,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
         public async Task<IActionResult> OnPostUploadAsync()
         {
             await LoadCourseDetails();
+            if (!CanUpload) return Forbid();
             
             if (UploadedFile == null || string.IsNullOrWhiteSpace(Chapter))
             {
@@ -109,6 +110,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
         public async Task<IActionResult> OnPostApproveAsync(Guid documentId)
         {
             await LoadCourseDetails();
+            if (!CanApprove) return Forbid();
             try
             {
                 await _documentService.ApproveDocumentAsync(documentId, CurrentUserId);
@@ -124,6 +126,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
         public async Task<IActionResult> OnPostDeleteAsync(Guid documentId)
         {
             await LoadCourseDetails();
+            if (!CanDelete) return Forbid();
             try
             {
                 await _documentService.DeleteDocumentAsync(documentId, CurrentUserId);
@@ -151,9 +154,33 @@ namespace RAGChatBot.Presentation.Pages.Courses
             return RedirectToPage(new { CourseCode });
         }
 
+        public async Task<IActionResult> OnPostReindexCourseAsync()
+        {
+            await LoadCourseDetails();
+            if (!CanApprove) return Forbid();
+
+            try
+            {
+                var count = await _documentService.ReindexCourseDocumentsAsync(CourseCode, CurrentUserId);
+                TempData["SuccessMessage"] = count == 0
+                    ? "Không có tài liệu nào cần re-index."
+                    : $"Đã đưa {count} tài liệu vào hàng đợi re-index.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Lỗi re-index: {ex.Message}";
+            }
+
+            return RedirectToPage(new { CourseCode });
+        }
+
         public async Task<IActionResult> OnGetStatusAsync()
         {
             var documents = await _documentService.GetDocumentsByCourseAsync(CourseCode);
+            if (User.IsInRole(RoleNames.Student))
+            {
+                documents = documents.Where(d => d.IsApproved && d.Status == Domain.Enums.DocumentStatus.Success);
+            }
             var statusList = documents.Select(d => new
             {
                 id = d.Id,
@@ -183,7 +210,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
 
             var isLecturer = User.IsInRole(RoleNames.Lecturer);
             var isAdmin = User.IsInRole(RoleNames.Admin);
-            CanUpload = isLecturer; // Admin không được upload document
+            CanUpload = false;
 
             var courses = await _courseService.GetAllCoursesAsync();
             var course = courses.FirstOrDefault(c => c.Code.Equals(CourseCode, StringComparison.OrdinalIgnoreCase));
@@ -195,14 +222,19 @@ namespace RAGChatBot.Presentation.Pages.Courses
                 SubjectLeaderName = course.SubjectLeaderName;
 
                 var isLeader = course.SubjectLeaderId == CurrentUserId;
+                CanUpload = isLeader || isAdmin;
                 CanApprove = isLeader || isAdmin;
-                CanDelete = isLeader;
+                CanDelete = isLeader || isAdmin;
             }
         }
 
         private async Task LoadDocuments()
         {
             Documents = await _documentService.GetDocumentsByCourseAsync(CourseCode);
+            if (User.IsInRole(RoleNames.Student))
+            {
+                Documents = Documents.Where(d => d.IsApproved && d.Status == Domain.Enums.DocumentStatus.Success);
+            }
         }
     }
 }

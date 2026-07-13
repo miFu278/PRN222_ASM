@@ -113,7 +113,13 @@
                     <div class="zen-sidebar-user">
                         <span class="zen-user-avatar">@(displayName.Length > 0 ? displayName[0].ToString().ToUpper() : "?")</span>
                         <div class="zen-sidebar-user-info">
-                            <span class="zen-user-name">@displayName</span>
+                            <span class="zen-user-name">
+                                @displayName
+                                @if (User.FindFirst("SubscriptionTier")?.Value == "Premium")
+                                {
+                                    <i class="fa-solid fa-crown" style="color: #f59e0b; font-size: 0.7rem; margin-left: 4px;" title="Premium"></i>
+                                }
+                            </span>
                             <span class="zen-user-role">@userRole</span>
                         </div>
                     </div>
@@ -145,6 +151,22 @@
         </div>
     </div>
 
+    <div class="modal fade" id="globalDialogModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0;">
+                <div class="modal-header" style="border-bottom: 1px solid var(--border-light);">
+                    <h5 class="modal-title font-serif" id="globalDialogTitle">Xác nhận</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body p-4" id="globalDialogMessage" style="white-space: pre-line;"></div>
+                <div class="modal-footer" style="border-top: 1px solid var(--border-light);">
+                    <button type="button" class="zen-action-link" id="globalDialogCancel">Hủy</button>
+                    <button type="button" class="btn-zen primary" id="globalDialogConfirm">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
@@ -152,7 +174,53 @@
     <script src="~/js/zen-interact.js" asp-append-version="true"></script>
 
     <script>
+        window.openGlobalDialog = function ({ title, message, notice = false }) {
+            return new Promise(resolve => {
+                const element = document.getElementById('globalDialogModal');
+                const modal = bootstrap.Modal.getOrCreateInstance(element);
+                const cancelButton = document.getElementById('globalDialogCancel');
+                const confirmButton = document.getElementById('globalDialogConfirm');
+                let settled = false;
+
+                document.getElementById('globalDialogTitle').textContent = title;
+                document.getElementById('globalDialogMessage').textContent = message;
+                cancelButton.style.display = notice ? 'none' : '';
+                confirmButton.textContent = notice ? 'Đóng' : 'Xác nhận';
+
+                const finish = value => {
+                    if (settled) return;
+                    settled = true;
+                    modal.hide();
+                    resolve(value);
+                };
+                cancelButton.onclick = () => finish(false);
+                confirmButton.onclick = () => finish(true);
+                element.addEventListener('hidden.bs.modal', () => {
+                    if (!settled) {
+                        settled = true;
+                        resolve(false);
+                    }
+                }, { once: true });
+                modal.show();
+            });
+        };
+        window.appConfirm = message => window.openGlobalDialog({ title: 'Xác nhận', message });
+        window.appNotice = message => window.openGlobalDialog({ title: 'Thông báo', message, notice: true });
+
         document.addEventListener("DOMContentLoaded", function () {
+            document.addEventListener('submit', function (event) {
+                const form = event.target.closest('form[data-confirm]');
+                if (!form || form.dataset.confirmed === 'true') return;
+
+                event.preventDefault();
+                const submitter = event.submitter;
+                window.appConfirm(form.dataset.confirm).then(confirmed => {
+                    if (!confirmed) return;
+                    form.dataset.confirmed = 'true';
+                    submitter ? form.requestSubmit(submitter) : form.requestSubmit();
+                });
+            });
+
             // Khởi tạo các hiệu ứng Zen
             if (window.zenInteract) {
                 window.zenInteract.initLenis();

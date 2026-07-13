@@ -27,6 +27,17 @@ namespace RAGChatBot.DAL.Repositories
         public async Task<int> CountByYearAsync(int year)
             => await _db.ChatSessions.CountAsync(c => c.CreatedAt.Year == year);
 
+        public async Task<int> GetTodayMessageCountAsync(Guid userId)
+        {
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+            return await _db.ChatSessions
+                .Where(session => session.UserId == userId &&
+                                  session.CreatedAt >= today &&
+                                  session.CreatedAt < tomorrow)
+                .SumAsync(session => session.MessageCount);
+        }
+
         public async Task IncrementAsync(Guid userId, string courseCode)
         {
             var session = await _db.ChatSessions
@@ -38,6 +49,7 @@ namespace RAGChatBot.DAL.Repositories
                 {
                     UserId = userId,
                     CourseCode = courseCode,
+                    CreatedAt = DateTime.UtcNow,
                     MessageCount = 1
                 });
             }

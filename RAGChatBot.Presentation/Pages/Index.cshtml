@@ -81,6 +81,25 @@
 
             <!-- Khu vực nhập liệu Chat -->
             <div class="zen-input-area gsap-fade-up">
+                <div class="mb-3">
+                    <label for="chatCourseCode" class="small text-muted d-block mb-2" style="letter-spacing: 0.08em; text-transform: uppercase;">
+                        Phạm vi tài liệu
+                    </label>
+                    <select id="chatCourseCode" class="input-zen" style="width: 100%;">
+                        @if (Model.Courses.Count == 0)
+                        {
+                            <option value="">Chưa có môn học khả dụng</option>
+                        }
+                        else
+                        {
+                            <option value="">Chọn môn học để bắt đầu</option>
+                            @foreach (var course in Model.Courses)
+                            {
+                                <option value="@course.Code">@course.Code — @course.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
                 <div class="zen-input-wrapper">
                     <div class="flex-grow-1">
                         <input type="text" class="input-zen" placeholder="Hãy đặt câu hỏi về nội dung bài giảng hoặc tài liệu môn học..." id="chatInputField" autocomplete="off" />
@@ -107,6 +126,7 @@
     const threadsLoading = document.getElementById('threadsLoading');
     const creditDisplay = document.getElementById('creditDisplay');
     const newThreadBtn = document.getElementById('newThreadBtn');
+    const courseSelect = document.getElementById('chatCourseCode');
     let isLoading = false;
     let activeThreadId = null;
 
@@ -150,6 +170,41 @@
         scrollToBottom();
     }
 
+    function appendSources(sources) {
+        if (!Array.isArray(sources) || sources.length === 0) return;
+
+        const uniqueSources = [];
+        const seen = new Set();
+        sources.forEach(source => {
+            const key = `${source.documentId}:${source.chunkIndex}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueSources.push(source);
+            }
+        });
+
+        const container = document.createElement('div');
+        container.className = 'zen-msg zen-msg-bot';
+        const bubble = document.createElement('div');
+        bubble.className = 'zen-msg-bubble';
+
+        const title = document.createElement('div');
+        title.className = 'small text-muted mb-2';
+        title.textContent = 'Nguồn tài liệu đã sử dụng';
+        bubble.appendChild(title);
+
+        uniqueSources.forEach((source, index) => {
+            const item = document.createElement('div');
+            item.className = 'small';
+            item.textContent = `[Nguồn ${index + 1}] ${source.fileName} — đoạn ${source.chunkIndex + 1} (${Math.round(source.relevance * 100)}%)`;
+            bubble.appendChild(item);
+        });
+
+        container.appendChild(bubble);
+        chatMessages.appendChild(container);
+        scrollToBottom();
+    }
+
     function appendTyping() {
         if (washiSkeleton) {
             washiSkeleton.style.display = 'flex';
@@ -188,7 +243,7 @@
                     <span><i class="fa-regular fa-comment thread-icon"></i> ${escapeHtml(t.title)}</span>
                     <i class="fa-solid fa-angle-right small text-muted"></i>
                 `;
-                item.addEventListener('click', () => loadThread(t.id, t.title));
+                item.addEventListener('click', () => loadThread(t.id, t.title, t.courseCode));
                 threadsList.appendChild(item);
             });
 
@@ -206,8 +261,17 @@
     }
 
     // ── Load tin nhắn của thread ──
-    async function loadThread(threadId, title) {
+    async function loadThread(threadId, title, courseCode) {
         activeThreadId = threadId;
+        if (!courseCode || courseCode.toLowerCase() === 'general') {
+            if (window.zenInteract) {
+                window.zenInteract.showToast('Luồng chat cũ chưa gắn môn học. Hãy tạo cuộc trò chuyện mới.');
+            }
+            activeThreadId = null;
+            return;
+        }
+        courseSelect.value = courseCode;
+        courseSelect.disabled = true;
         chatMessages.innerHTML = '';
         suggestions.style.display = 'none';
         setLoading(true);
@@ -240,6 +304,15 @@
         const text = inputField.value.trim();
         if (!text || isLoading) return;
 
+        const selectedCourseCode = courseSelect.value;
+        if (!selectedCourseCode) {
+            if (window.zenInteract) {
+                window.zenInteract.showToast('Vui lòng chọn môn học trước khi gửi câu hỏi.');
+            }
+            courseSelect.focus();
+            return;
+        }
+
         suggestions.style.display = 'none';
         appendMessage('user', text);
         inputField.value = '';
@@ -247,7 +320,7 @@
         appendTyping();
 
         try {
-            const body = { message: text };
+            const body = { message: text, courseCode: selectedCourseCode };
             if (activeThreadId) body.threadId = activeThreadId;
 
             const response = await fetch('/api/chat', {
@@ -261,9 +334,13 @@
             if (response.ok) {
                 const data = await response.json();
                 appendMessage('bot', data.reply ?? data.message ?? 'Không có phản hồi.');
+                appendSources(data.sources);
 
                 // Cập nhật threadId từ response để duy trì luồng
-                if (data.threadId) activeThreadId = data.threadId;
+                if (data.threadId) {
+                    activeThreadId = data.threadId;
+                    courseSelect.disabled = true;
+                }
 
                 // Cập nhật credit counter
                 if (data.remaining !== undefined) {
@@ -298,6 +375,7 @@
     // ── Cuộc trò chuyện mới ──
     newThreadBtn.addEventListener('click', function () {
         activeThreadId = null;
+        courseSelect.disabled = false;
         chatMessages.innerHTML = '';
         suggestions.style.display = '';
         document.querySelectorAll('.zen-thread-item').forEach(el => el.classList.remove('active'));

@@ -1,7 +1,9 @@
-﻿namespace RAGChatBot.Domain.Interfaces
+﻿using RAGChatBot.Domain.Models;
+
+namespace RAGChatBot.Domain.Interfaces
 {
     public interface IDocumentEventService
     {
-        void NotifyDocumentChanged(string courseCode);
+        Task NotifyDocumentChangedAsync(RealtimeChangeEvent change, CancellationToken cancellationToken = default);
     }
 }

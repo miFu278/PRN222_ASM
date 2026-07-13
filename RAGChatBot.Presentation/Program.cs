@@ -85,6 +85,7 @@ builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IChatTrackerLogRepository, ChatTrackerLogRepository>();
 builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+builder.Services.AddScoped<IChatSessionRepository, ChatSessionRepository>();
 
 // Đăng ký dịch vụ RAG & AI (Tự động Chunking & Vector hóa)
 builder.Services.AddHttpClient();
@@ -97,28 +98,22 @@ builder.Services.AddHttpClient<IEmailService, BrevoEmailService>();
 
 // Dịch vụ Credit & Thanh toán
 builder.Services.AddScoped<ICreditService, CreditService>();
-builder.Services.AddSingleton<IVnPayService, VnPayService>();
-builder.Services.AddScoped<IPaymentService, PaymentService>();
-builder.Services.AddHostedService<DocumentProcessingWorker>();
-builder.Services.AddHostedService<DailyCreditResetService>();
 
-// Dashboard & Benchmark services
-builder.Services.AddScoped<IBenchmarkRepository, BenchmarkRepository>();
-builder.Services.AddScoped<IDashboardService, DashboardService>();
-
-// 4. Đăng ký Razor Pages
-builder.Services.AddRazorPages();
-
-// Cấu hình BackgroundService không crash host khi TaskCanceledException xảy ra lúc shutdown
-builder.Services.Configure<HostOptions>(options =>
+// Đăng ký PayOS Client & Service
+var payosSection = builder.Configuration.GetSection("PayOS");
+var payosClient = new PayOS.PayOSClient(new PayOS.PayOSOptions
 {
-    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+    ClientId = payosSection["ClientId"] ?? throw new InvalidOperationException("Missing PayOS:ClientId"),
+    ApiKey = payosSection["ApiKey"] ?? throw new InvalidOperationException("Missing PayOS:ApiKey"),
+    ChecksumKey = payosSection["ChecksumKey"] ?? throw new InvalidOperationException("Missing PayOS:ChecksumKey")
 });
+builder.Services.AddSingleton(payosClient);
+builder.Services.AddSingleton<IPayOSService>(sp => new PayOSService(
+    sp.GetRequiredService<PayOS.PayOSClient>(),
+    payosSection["ReturnUrl"] ?? "http://localhost:5178/Subscription/PaymentCallback",
+    payosSection["CancelUrl"] ?? "http://localhost:5178/Subscription/Checkout"
+));
 
-
-// Dịch vụ Credit & Thanh toán
-builder.Services.AddScoped<ICreditService, CreditService>();
-builder.Services.AddSingleton<IVnPayService, VnPayService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddHostedService<DocumentProcessingWorker>();
 builder.Services.AddHostedService<DailyCreditResetService>();
@@ -146,6 +141,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<RAGChatBot.Domain.Interfaces.IDocumentEventService, DocumentEventService>();
 builder.Services.AddSingleton<DocumentEventService>(sp => (DocumentEventService)sp.GetRequiredService<RAGChatBot.Domain.Interfaces.IDocumentEventService>());
 builder.Services.AddSingleton<RAGChatBot.Domain.Interfaces.ICourseEventService, CourseEventService>();
+builder.Services.AddSingleton<RAGChatBot.Domain.Interfaces.IQuizEventService, QuizEventService>();
 
 builder.Services.AddSignalR();
 
@@ -298,8 +294,8 @@ app.UseHttpsRedirection();
 app.MapStaticAssets();
 
 // Kích hoạt Middleware
-app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 // Đăng ký các controller định tuyến (AccountController)
@@ -310,5 +306,6 @@ app.MapRazorPages();
 
 app.MapHub<RAGChatBot.Presentation.Hubs.DocumentHub>("/documentHub");
 app.MapHub<RAGChatBot.Presentation.Hubs.CourseHub>("/courseHub");
+app.MapHub<RAGChatBot.Presentation.Hubs.QuizHub>("/quizHub");
 
 app.Run();

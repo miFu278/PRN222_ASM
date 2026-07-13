@@ -16,13 +16,32 @@
             <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">Quản lý tài liệu</div>
             <h2 class="font-serif m-0" style="font-size: 2.5rem;">@Model.CourseCode - @Model.CourseName</h2>
         </div>
-        <div class="zen-hero-desc">
-            @if (!string.IsNullOrEmpty(Model.CourseDescription))
-            {
-                <p class="text-muted m-0 mb-2">@Model.CourseDescription</p>
-            }
-            <div class="text-muted small" style="letter-spacing: 0.1em; text-transform: uppercase;">
-                Giám sát: @(Model.SubjectLeaderName ?? "Chưa phân công")
+        @{
+            var isLecturerOrAdmin = User.IsInRole("Lecturer") || User.IsInRole("Admin");
+        }
+        <div class="zen-hero-desc d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                @if (!string.IsNullOrEmpty(Model.CourseDescription))
+                {
+                    <p class="text-muted m-0 mb-2">@Model.CourseDescription</p>
+                }
+                <div class="text-muted small" style="letter-spacing: 0.1em; text-transform: uppercase;">
+                    Giám sát: @(Model.SubjectLeaderName ?? "Chưa phân công")
+                </div>
+            </div>
+            <div>
+                @if (Model.CanApprove)
+                {
+                    <form method="post" asp-page-handler="ReindexCourse" class="d-inline" data-confirm="Re-index sẽ tạo lại toàn bộ vector của các tài liệu đã duyệt trong môn học này. Tiếp tục?">
+                        <input type="hidden" asp-for="CourseCode" />
+                        <button type="submit" class="btn-zen me-2">
+                            <i class="fa-solid fa-arrows-rotate me-2"></i>Re-index vectors
+                        </button>
+                    </form>
+                }
+                <a href="/Courses/@Model.CourseCode/Quiz" class="btn-zen">
+                    <i class="fa-solid fa-circle-question me-2"></i>@(isLecturerOrAdmin ? "Ngân hàng câu hỏi & Kết quả" : "Làm bài trắc nghiệm")
+                </a>
             </div>
         </div>
     </div>
@@ -175,11 +194,11 @@
                                             <i class="fa-solid fa-eye"></i>
                                         </button>
 
-                                        @if (doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Failed && (Model.CanApprove || doc.UploadedBy == Model.CurrentUserId))
+                                        @if ((doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Failed || doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Success) && (Model.CanApprove || doc.UploadedBy == Model.CurrentUserId))
                                         {
-                                            <form method="post" asp-page-handler="Retry" class="d-inline">
+                                            <form method="post" asp-page-handler="Retry" class="d-inline" data-confirm="Tạo lại vector cho tài liệu này?">
                                                 <input type="hidden" name="documentId" value="@doc.Id" />
-                                                <button type="submit" class="zen-action-link" style="color: #007bff; background: none; border: none; padding: 0;" title="Thử lại">
+                                                <button type="submit" class="zen-action-link" style="color: #007bff; background: none; border: none; padding: 0;" title="@(doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Success ? "Re-index vector" : "Thử lại")">
                                                     <i class="fa-solid fa-rotate-right"></i>
                                                 </button>
                                             </form>
@@ -197,7 +216,7 @@
 
                                         @if (Model.CanDelete || doc.UploadedBy == Model.CurrentUserId)
                                         {
-                                            <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài liệu này?');">
+                                        <form method="post" asp-page-handler="Delete" class="d-inline" data-confirm="Bạn có chắc chắn muốn xóa tài liệu này?">
                                                 <input type="hidden" name="documentId" value="@doc.Id" />
                                                 <button type="submit" class="zen-action-link danger" style="background: none; border: none; padding: 0;" title="Xóa">
                                                     <i class="fa-solid fa-trash-can"></i>
@@ -294,12 +313,19 @@
             // SignalR Connection
             const connection = new signalR.HubConnectionBuilder()
                 .withUrl("/documentHub")
+                .withAutomaticReconnect([0, 2000, 5000, 10000])
                 .configureLogging(signalR.LogLevel.Warning)
                 .build();
 
-            connection.on("DocumentChanged", function (code) {
-                if (code.toLowerCase() === courseCode.toLowerCase()) {
-                    syncDocumentStatuses();
+            let documentSyncTimer = null;
+            function scheduleDocumentSync() {
+                clearTimeout(documentSyncTimer);
+                documentSyncTimer = setTimeout(syncDocumentStatuses, 200);
+            }
+
+            connection.on("DocumentChanged", function (change) {
+                if (change?.courseCode?.toLowerCase() === courseCode.toLowerCase()) {
+                    scheduleDocumentSync();
                 }
             });
 
@@ -309,6 +335,12 @@
                 });
             }).catch(function (err) {
                 console.error("SignalR Connect error:", err.toString());
+            });
+
+            connection.onreconnected(function () {
+                connection.invoke("JoinCourseGroup", courseCode)
+                    .then(scheduleDocumentSync)
+                    .catch(err => console.error("SignalR Rejoin error:", err.toString()));
             });
 
             function syncDocumentStatuses() {

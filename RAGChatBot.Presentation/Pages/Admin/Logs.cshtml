@@ -19,7 +19,7 @@
             </a>
             @if (!string.IsNullOrEmpty(Model.SelectedFile))
             {
-                <form method="post" asp-page-handler="ClearLog" asp-route-logFile="@Model.SelectedFile" onsubmit="return confirm('Bạn có chắc chắn muốn xóa rỗng tệp log này?');" style="display:inline;">
+            <form method="post" asp-page-handler="ClearLog" asp-route-logFile="@Model.SelectedFile" data-confirm="Bạn có chắc chắn muốn xóa rỗng tệp log này?" style="display:inline;">
                     <button type="submit" class="btn-zen" style="padding: 10px 20px; font-size: 0.85rem; background: var(--accent-shu); color: white; border: none;">
                         <i class="fa-solid fa-trash-can me-1"></i> Xóa Rỗng Log
                     </button>
@@ -158,7 +158,7 @@
             if (window.zenInteract) {
                 window.zenInteract.showToast('Đã copy logs vào clipboard.');
             } else {
-                alert('Đã copy logs vào Clipboard!');
+            window.appNotice('Đã copy logs vào Clipboard!');
             }
         }).catch(err => {
             console.error('Lỗi khi copy: ', err);

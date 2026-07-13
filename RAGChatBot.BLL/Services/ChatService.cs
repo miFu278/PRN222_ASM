@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using RAGChatBot.BLL.DTOs;
 using RAGChatBot.Domain.Entities;
 using RAGChatBot.Domain.Interfaces;
@@ -12,19 +13,25 @@ namespace RAGChatBot.BLL.Services
         private readonly IChatTrackerLogRepository _chatLogRepository;
         private readonly ICreditService _creditService;
         private readonly IChatSessionRepository _chatSessionRepository;
+        private readonly ICourseRepository _courseRepository;
+        private readonly ILogger<ChatService> _logger;
 
         public ChatService(
             IChatRepository chatRepository,
             IChatResponseService chatResponseService,
             IChatTrackerLogRepository chatLogRepository,
             ICreditService creditService,
-            IChatSessionRepository chatSessionRepository)
+            IChatSessionRepository chatSessionRepository,
+            ICourseRepository courseRepository,
+            ILogger<ChatService> logger)
         {
             _chatRepository = chatRepository;
             _chatResponseService = chatResponseService;
             _chatLogRepository = chatLogRepository;
             _creditService = creditService;
             _chatSessionRepository = chatSessionRepository;
+            _courseRepository = courseRepository;
+            _logger = logger;
         }
 
         public async Task<ChatReplyDto?> SendMessageAsync(
@@ -33,6 +40,18 @@ namespace RAGChatBot.BLL.Services
             string? courseCode,
             Guid? threadId)
         {
+            var normalizedMessage = message.Trim();
+            if (normalizedMessage.Length == 0 || normalizedMessage.Length > 4000)
+            {
+                return new ChatReplyDto
+                {
+                    Reply = normalizedMessage.Length > 4000
+                        ? "Câu hỏi quá dài. Vui lòng giới hạn trong 4.000 ký tự."
+                        : "Vui lòng nhập câu hỏi.",
+                    IsError = true
+                };
+            }
+
             ChatThread? existingThread = null;
             IReadOnlyList<ChatMessage> history = Array.Empty<ChatMessage>();
 
@@ -49,6 +68,34 @@ namespace RAGChatBot.BLL.Services
                     HistoryMessageLimit);
             }
 
+            var requestedCourseCode = courseCode?.Trim().ToUpper();
+            var effectiveCourseCode = existingThread?.CourseCode.Trim().ToUpper()
+                ?? requestedCourseCode;
+
+            if (string.IsNullOrWhiteSpace(effectiveCourseCode) ||
+                effectiveCourseCode.Equals("GENERAL", StringComparison.OrdinalIgnoreCase))
+            {
+                return new ChatReplyDto
+                {
+                    Reply = existingThread is null
+                        ? "Vui lòng chọn môn học trước khi bắt đầu cuộc trò chuyện."
+                        : "Luồng chat cũ chưa được gắn với môn học. Vui lòng tạo cuộc trò chuyện mới và chọn môn học.",
+                    ThreadId = existingThread?.Id,
+                    IsError = true
+                };
+            }
+
+            var course = await _courseRepository.GetByCodeAsync(effectiveCourseCode);
+            if (course is null)
+            {
+                return new ChatReplyDto
+                {
+                    Reply = "Môn học đã chọn không tồn tại hoặc không còn khả dụng.",
+                    ThreadId = existingThread?.Id,
+                    IsError = true
+                };
+            }
+
             var (allowed, remaining) = await _creditService.CheckAndDeductCreditAsync(userId);
             if (!allowed)
             {
@@ -61,14 +108,29 @@ namespace RAGChatBot.BLL.Services
                 };
             }
 
-            var effectiveCourseCode = !string.IsNullOrWhiteSpace(courseCode)
-                ? courseCode.Trim()
-                : existingThread?.CourseCode ?? "General";
+            var historyItems = history
+                .Select(item => new ChatHistoryItem(item.Role, item.Content))
+                .ToList();
+
+            var response = await _chatResponseService.GetChatResponseAsync(
+                normalizedMessage,
+                effectiveCourseCode,
+                historyItems);
+
+            if (!response.IsSuccessful)
+            {
+                return new ChatReplyDto
+                {
+                    Reply = response.Reply,
+                    Remaining = remaining >= 9999 ? remaining : Math.Min(10, remaining + 1),
+                    ThreadId = existingThread?.Id,
+                    IsError = true
+                };
+            }
 
             var activeThread = existingThread;
             if (activeThread is null)
             {
-                var normalizedMessage = message.Trim();
                 var title = normalizedMessage.Length > 60
                     ? normalizedMessage[..57] + "..."
                     : normalizedMessage;
@@ -77,42 +139,56 @@ namespace RAGChatBot.BLL.Services
                     userId,
                     effectiveCourseCode,
                     title,
-                    DateTime.UtcNow.AddHours(7));
+                    DateTime.UtcNow);
             }
-
-            var historyItems = history
-                .Select(item => new ChatHistoryItem(item.Role, item.Content))
-                .ToList();
-
-            var reply = await _chatResponseService.GetChatResponseAsync(
-                message,
-                effectiveCourseCode,
-                historyItems);
 
             await _chatRepository.AddExchangeAsync(
                 activeThread.Id,
-                message,
-                reply,
-                DateTime.UtcNow.AddHours(7));
+                normalizedMessage,
+                response.Reply,
+                DateTime.UtcNow);
 
-            var log = new ChatTrackerLog
+            try
             {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                Question = message,
-                Answer = reply.Length > 2000 ? reply[..2000] : reply,
-                CourseCode = courseCode,
-                CreatedAt = DateTime.UtcNow
-            };
-            await _chatLogRepository.AddAsync(log);
-            await _chatLogRepository.SaveChangesAsync();
-            await _chatSessionRepository.IncrementAsync(userId, effectiveCourseCode);
+                var log = new ChatTrackerLog
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    Question = normalizedMessage,
+                    Answer = response.Reply.Length > 2000 ? response.Reply[..2000] : response.Reply,
+                    CourseCode = effectiveCourseCode,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _chatLogRepository.AddAsync(log);
+                await _chatLogRepository.SaveChangesAsync();
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "Không thể ghi audit log cho UserId={UserId}", userId);
+            }
+
+            try
+            {
+                await _chatSessionRepository.IncrementAsync(userId, effectiveCourseCode);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "Không thể ghi nhận lượt chat cho UserId={UserId}", userId);
+            }
 
             return new ChatReplyDto
             {
-                Reply = reply,
+                Reply = response.Reply,
                 Remaining = remaining,
-                ThreadId = activeThread.Id
+                ThreadId = activeThread.Id,
+                Sources = response.Sources.Select(source => new ChatSourceDto
+                {
+                    DocumentId = source.DocumentId,
+                    FileName = source.FileName,
+                    CourseCode = source.CourseCode,
+                    ChunkIndex = source.ChunkIndex,
+                    Relevance = Math.Clamp(1d - source.Distance, 0d, 1d)
+                }).ToList()
             };
         }
 

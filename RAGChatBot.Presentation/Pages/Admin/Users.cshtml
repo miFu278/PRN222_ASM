@@ -77,7 +77,7 @@
                             </div>
                         </td>
                         <td style="text-align: right;">
-                            <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Xác nhận xóa tài khoản @user.Username?');">
+                                    <form method="post" asp-page-handler="Delete" data-confirm="Xác nhận xóa tài khoản @user.Username?">
                                 <input type="hidden" name="id" value="@user.Id" />
                                 <button type="submit" class="zen-action-link danger" style="padding: 0; background: none; border: none;">
                                     Xóa bỏ

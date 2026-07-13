@@ -49,7 +49,7 @@ namespace RAGChatBot.BLL.Services
             courseDto.Id = course.Id;
             courseDto.CreatedAt = course.CreatedAt;
 
-            _courseEventService.NotifyCourseChanged();
+            await _courseEventService.NotifyCourseChangedAsync("CourseCreated", course.Id, course.Code);
 
             return courseDto;
         }
@@ -117,7 +117,7 @@ namespace RAGChatBot.BLL.Services
             course.SubjectLeaderId = subjectLeaderId;
             await _courseRepository.UpdateAsync(course);
 
-            _courseEventService.NotifyCourseChanged();
+            await _courseEventService.NotifyCourseChangedAsync("SubjectLeaderChanged", course.Id, course.Code);
         }
 
         public async Task UpdateCourseAsync(CourseDto courseDto)
@@ -131,22 +131,9 @@ namespace RAGChatBot.BLL.Services
             var oldCode = course.Code;
             var newCode = courseDto.Code.Trim().ToUpper();
 
-            // Nếu thay đổi mã môn, kiểm tra xem có bị trùng với môn khác không
             if (!oldCode.Equals(newCode, StringComparison.OrdinalIgnoreCase))
             {
-                var courses = await _courseRepository.GetAllAsync();
-                if (courses.Any(c => c.Code.Equals(newCode, StringComparison.OrdinalIgnoreCase)))
-                {
-                    throw new InvalidOperationException($"Mã môn học '{newCode}' đã tồn tại!");
-                }
-
-                // Cập nhật mã môn trong tất cả tài liệu cũ sang mã mới
-                var courseDocs = await _documentRepository.GetByCourseCodeAsync(oldCode);
-                foreach (var doc in courseDocs)
-                {
-                    doc.CourseCode = newCode;
-                }
-                await _documentRepository.SaveChangesAsync();
+                throw new InvalidOperationException("Không thể đổi mã môn sau khi đã tạo vì mã này liên kết với tài liệu, quiz và lịch sử chat.");
             }
 
             // Kiểm tra phân quyền Trưởng bộ môn nếu có chỉ định
@@ -168,7 +155,7 @@ namespace RAGChatBot.BLL.Services
 
             await _courseRepository.UpdateAsync(course);
 
-            _courseEventService.NotifyCourseChanged();
+            await _courseEventService.NotifyCourseChangedAsync("CourseUpdated", course.Id, course.Code);
         }
 
         public async Task DeleteCourseAsync(Guid id)
@@ -198,7 +185,7 @@ namespace RAGChatBot.BLL.Services
             // Xóa môn học
             await _courseRepository.DeleteAsync(course);
 
-            _courseEventService.NotifyCourseChanged();
+            await _courseEventService.NotifyCourseChangedAsync("CourseDeleted", course.Id, course.Code);
         }
 
         public async Task<IEnumerable<CourseDto>> GetCoursesBySubjectLeaderAsync(Guid userId)

@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="MiniExcel" Version="1.44.1" />
+    <PackageReference Include="payOS" Version="2.1.0" />
   </ItemGroup>
 
 </Project>
