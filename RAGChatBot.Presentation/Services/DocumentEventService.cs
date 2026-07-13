@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using RAGChatBot.Presentation.Hubs;
+using RAGChatBot.Domain.Models;
 using System;
 using System.Threading.Tasks;
 
@@ -8,19 +9,28 @@ namespace RAGChatBot.Presentation.Services
     public class DocumentEventService : RAGChatBot.Domain.Interfaces.IDocumentEventService
     {
         private readonly IHubContext<DocumentHub> _hubContext;
+        private readonly ILogger<DocumentEventService> _logger;
         
-        public event Action<string>? OnDocumentChanged;
-
-        public DocumentEventService(IHubContext<DocumentHub> hubContext)
+        public DocumentEventService(IHubContext<DocumentHub> hubContext, ILogger<DocumentEventService> logger)
         {
             _hubContext = hubContext;
+            _logger = logger;
         }
 
-        public void NotifyDocumentChanged(string courseCode)
+        public async Task NotifyDocumentChangedAsync(RealtimeChangeEvent change, CancellationToken cancellationToken = default)
         {
-            OnDocumentChanged?.Invoke(courseCode);
-            // Kích hoạt SignalR event cho client đang xem môn học này
-            _hubContext.Clients.Group(courseCode.ToLowerInvariant()).SendAsync("DocumentChanged", courseCode).GetAwaiter().GetResult();
+            if (string.IsNullOrWhiteSpace(change.CourseCode)) return;
+            try
+            {
+                await _hubContext.Clients
+                    .Group(RealtimeGroupNames.ForCourse(change.CourseCode))
+                    .SendAsync("DocumentChanged", change, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception, "Không thể phát DocumentChanged cho môn {CourseCode}", change.CourseCode);
+            }
         }
     }
 }

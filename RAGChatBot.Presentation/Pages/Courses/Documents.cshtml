@@ -207,7 +207,7 @@
 
                                         @if (Model.CanDelete || doc.UploadedBy == Model.CurrentUserId)
                                         {
-                                            <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài liệu này?');">
+                                        <form method="post" asp-page-handler="Delete" class="d-inline" data-confirm="Bạn có chắc chắn muốn xóa tài liệu này?">
                                                 <input type="hidden" name="documentId" value="@doc.Id" />
                                                 <button type="submit" class="zen-action-link danger" style="background: none; border: none; padding: 0;" title="Xóa">
                                                     <i class="fa-solid fa-trash-can"></i>
@@ -304,12 +304,19 @@
             // SignalR Connection
             const connection = new signalR.HubConnectionBuilder()
                 .withUrl("/documentHub")
+                .withAutomaticReconnect([0, 2000, 5000, 10000])
                 .configureLogging(signalR.LogLevel.Warning)
                 .build();
 
-            connection.on("DocumentChanged", function (code) {
-                if (code.toLowerCase() === courseCode.toLowerCase()) {
-                    syncDocumentStatuses();
+            let documentSyncTimer = null;
+            function scheduleDocumentSync() {
+                clearTimeout(documentSyncTimer);
+                documentSyncTimer = setTimeout(syncDocumentStatuses, 200);
+            }
+
+            connection.on("DocumentChanged", function (change) {
+                if (change?.courseCode?.toLowerCase() === courseCode.toLowerCase()) {
+                    scheduleDocumentSync();
                 }
             });
 
@@ -319,6 +326,12 @@
                 });
             }).catch(function (err) {
                 console.error("SignalR Connect error:", err.toString());
+            });
+
+            connection.onreconnected(function () {
+                connection.invoke("JoinCourseGroup", courseCode)
+                    .then(scheduleDocumentSync)
+                    .catch(err => console.error("SignalR Rejoin error:", err.toString()));
             });
 
             function syncDocumentStatuses() {

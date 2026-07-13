@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using RAGChatBot.Domain.Interfaces;
+using RAGChatBot.Domain.Models;
 using RAGChatBot.Domain.Enums;
 using RAGChatBot.Domain.Entities;
 using RAGChatBot.DAL.Context;
@@ -80,6 +81,17 @@ namespace RAGChatBot.DAL.Services
 
             var document = await dbContext.KnowledgeDocuments
                 .FirstAsync(d => d.Id == documentId, stoppingToken);
+            var documentEventService = scope.ServiceProvider.GetService<IDocumentEventService>();
+            if (documentEventService is not null)
+            {
+                await documentEventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+                {
+                    Type = "DocumentStatusChanged",
+                    CourseCode = document.CourseCode,
+                    EntityId = document.Id,
+                    Status = DocumentStatus.Processing.ToString()
+                }, stoppingToken);
+            }
 
             _logger.LogInformation("Tìm thấy tài liệu chưa xử lý: ID={DocId}, FileName='{FileName}'", document.Id, document.FileName);
 
@@ -124,9 +136,7 @@ namespace RAGChatBot.DAL.Services
                 if (string.IsNullOrWhiteSpace(fullText))
                 {
                     _logger.LogWarning("Tài liệu '{FileName}' rỗng hoặc không có chữ để trích xuất.", document.FileName);
-                    document.Status = DocumentStatus.Failed;
-                    await dbContext.SaveChangesAsync(stoppingToken);
-                    return;
+                    throw new InvalidOperationException("Tài liệu rỗng hoặc không trích xuất được văn bản.");
                 }
 
                 // 4. Chia nhỏ văn bản thành các Chunk — Benchmark: Chunking
@@ -203,6 +213,16 @@ namespace RAGChatBot.DAL.Services
                 // 6. Cập nhật trạng thái hoàn thành
                 document.Status = DocumentStatus.Success;
                 await dbContext.SaveChangesAsync(stoppingToken);
+                if (documentEventService is not null)
+                {
+                    await documentEventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+                    {
+                        Type = "DocumentStatusChanged",
+                        CourseCode = document.CourseCode,
+                        EntityId = document.Id,
+                        Status = document.Status.ToString()
+                    }, stoppingToken);
+                }
                 _logger.LogInformation("Đã xử lý xong tài liệu: '{FileName}'", document.FileName);
 
                 // Tự động sinh quiz cho tài liệu mới — Benchmark: QuizGeneration
@@ -231,13 +251,15 @@ namespace RAGChatBot.DAL.Services
                 // Đánh dấu Failed để tránh loop kẹt và cho phép Retry
                 document.Status = DocumentStatus.Failed;
                 await dbContext.SaveChangesAsync(stoppingToken);
-            }
-            finally
-            {
-                if (document.Status == DocumentStatus.Success || document.Status == DocumentStatus.Failed)
+                if (documentEventService is not null)
                 {
-                    var eventService = scope.ServiceProvider.GetService<IDocumentEventService>();
-                    eventService?.NotifyDocumentChanged(document.CourseCode);
+                    await documentEventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+                    {
+                        Type = "DocumentStatusChanged",
+                        CourseCode = document.CourseCode,
+                        EntityId = document.Id,
+                        Status = document.Status.ToString()
+                    }, stoppingToken);
                 }
             }
         }

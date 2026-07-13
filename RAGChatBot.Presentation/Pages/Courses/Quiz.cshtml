@@ -365,7 +365,27 @@ else
     </div>
 </div>
 
+<div class="modal fade" id="appDialogModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0;">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border-light);">
+                <h5 class="modal-title font-serif" id="appDialogTitle">Thông báo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p id="appDialogMessage" class="mb-0" style="white-space: pre-line;"></p>
+                <input type="password" id="appDialogInput" class="input-zen mt-3" style="display: none;" autocomplete="current-password" />
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid var(--border-light);">
+                <button type="button" class="zen-action-link" id="appDialogCancel">Hủy</button>
+                <button type="button" class="btn-zen primary" id="appDialogConfirm">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 <script>
 (function () {
     const courseCode = '@Model.CourseCode';
@@ -375,13 +395,62 @@ else
         'Content-Type': 'application/json',
         'RequestVerificationToken': antiforgeryToken
     };
+    let handleQuizRealtime = () => {};
+
+    function openAppDialog({ title, message, mode = 'notice', confirmText = 'Đồng ý' }) {
+        return new Promise(resolve => {
+            const element = document.getElementById('appDialogModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(element);
+            const input = document.getElementById('appDialogInput');
+            const cancelButton = document.getElementById('appDialogCancel');
+            const confirmButton = document.getElementById('appDialogConfirm');
+            let settled = false;
+
+            document.getElementById('appDialogTitle').textContent = title;
+            document.getElementById('appDialogMessage').textContent = message;
+            confirmButton.textContent = confirmText;
+            cancelButton.style.display = mode === 'notice' ? 'none' : '';
+            input.style.display = mode === 'prompt' ? '' : 'none';
+            input.value = '';
+
+            const finish = value => {
+                if (settled) return;
+                settled = true;
+                modal.hide();
+                resolve(value);
+            };
+
+            confirmButton.onclick = () => finish(mode === 'prompt' ? input.value : true);
+            cancelButton.onclick = () => finish(mode === 'prompt' ? null : false);
+            element.addEventListener('hidden.bs.modal', () => {
+                if (!settled) {
+                    settled = true;
+                    resolve(mode === 'prompt' ? null : false);
+                }
+            }, { once: true });
+            element.addEventListener('shown.bs.modal', () => {
+                if (mode === 'prompt') input.focus();
+            }, { once: true });
+            input.onkeydown = event => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    confirmButton.click();
+                }
+            };
+            modal.show();
+        });
+    }
+
+    const showNotice = message => openAppDialog({ title: 'Thông báo', message, mode: 'notice', confirmText: 'Đóng' });
+    const showConfirm = message => openAppDialog({ title: 'Xác nhận', message, mode: 'confirm', confirmText: 'Xác nhận' });
+    const showPasswordPrompt = message => openAppDialog({ title: 'Mật khẩu bài thi', message, mode: 'prompt', confirmText: 'Bắt đầu' });
 
     window.viewAttemptDetails = async function (attemptId, instructorView) {
         const suffix = instructorView ? `&courseCode=${encodeURIComponent(courseCode)}` : '';
         const response = await fetch(`/api/quiz?handler=AttemptReview&attemptId=${encodeURIComponent(attemptId)}${suffix}`);
         const result = await response.json();
         if (!response.ok) {
-            alert(result.error || 'Không thể xem chi tiết lượt làm bài.');
+            showNotice(result.error || 'Không thể xem chi tiết lượt làm bài.');
             return;
         }
         const questions = result.questions || [];
@@ -447,6 +516,14 @@ else
         const aiDocSelect = document.getElementById('aiDocSelect');
         const quizDocSelect = document.getElementById('quizDocSelect');
 
+        function setAiGenerationBusy(isBusy) {
+            const button = document.getElementById('generateAiBtn');
+            if (!button) return;
+            button.disabled = isBusy;
+            button.querySelector('.gen-text').classList.toggle('d-none', isBusy);
+            button.querySelector('.gen-spinner').classList.toggle('d-none', !isBusy);
+        }
+
         // Switch Tabs Function
         window.switchTab = function (tabName) {
             const tabs = ['questionBank', 'quizBuilder', 'studentAttempts'];
@@ -505,14 +582,11 @@ else
         window.triggerAiGeneration = async function () {
             const docId = aiDocSelect.value;
             if (!docId || docId.length === 0) {
-                alert('Vui lòng chọn tài liệu để sinh câu hỏi!');
+                showNotice('Vui lòng chọn tài liệu để sinh câu hỏi!');
                 return;
             }
 
-            const btn = document.getElementById('generateAiBtn');
-            btn.disabled = true;
-            btn.querySelector('.gen-text').classList.add('d-none');
-            btn.querySelector('.gen-spinner').classList.remove('d-none');
+            setAiGenerationBusy(true);
 
             try {
                 const response = await fetch('/api/quiz?handler=Generate', {
@@ -523,18 +597,16 @@ else
 
                 const result = await response.json();
                 if (result.success) {
-                    alert('Đã sinh câu hỏi bằng AI thành công!');
+                    showNotice('Đã sinh câu hỏi bằng AI thành công!');
                     fetchQuestionBank(); // Refresh bank
                 } else {
-                    alert(result.error || 'Có lỗi xảy ra khi sinh câu hỏi.');
+                    showNotice(result.error || 'Có lỗi xảy ra khi sinh câu hỏi.');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Lỗi kết nối máy chủ.');
+                showNotice('Lỗi kết nối máy chủ.');
             } finally {
-                btn.disabled = false;
-                btn.querySelector('.gen-text').classList.remove('d-none');
-                btn.querySelector('.gen-spinner').classList.add('d-none');
+                setAiGenerationBusy(false);
             }
         };
 
@@ -700,16 +772,16 @@ else
                     questionModal.hide();
                     fetchQuestionBank(); // Refresh list dynamically
                 } else {
-                    alert(result.error || 'Có lỗi xảy ra.');
+                    showNotice(result.error || 'Có lỗi xảy ra.');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Không thể lưu câu hỏi. Vui lòng thử lại.');
+                showNotice('Không thể lưu câu hỏi. Vui lòng thử lại.');
             }
         });
 
         window.deleteQuestion = async function (id) {
-            if (!confirm('Xác nhận xóa câu hỏi này?')) return;
+            if (!await showConfirm('Xác nhận xóa câu hỏi này?')) return;
 
             try {
                 const response = await fetch('/api/quiz?handler=DeleteQuestion', {
@@ -722,11 +794,11 @@ else
                 if (result.success) {
                     fetchQuestionBank(); // Refresh list dynamically
                 } else {
-                    alert(result.error || 'Có lỗi xảy ra.');
+                    showNotice(result.error || 'Có lỗi xảy ra.');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Không thể xóa câu hỏi. Vui lòng thử lại.');
+                showNotice('Không thể xóa câu hỏi. Vui lòng thử lại.');
             }
         };
 
@@ -827,16 +899,16 @@ else
                     document.getElementById('quizTitleInput').value = '';
                     loadLecturerQuizzes(); // Refresh list
                 } else {
-                    alert(result.error || 'Lỗi khi tạo đề thi.');
+                    showNotice(result.error || 'Lỗi khi tạo đề thi.');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Không thể tạo đề thi.');
+                showNotice('Không thể tạo đề thi.');
             }
         });
 
         window.deleteQuiz = async function (id) {
-            if (!confirm('Xác nhận xóa đề thi này? Học viên sẽ không thể làm đề thi này nữa.')) return;
+            if (!await showConfirm('Xác nhận xóa đề thi này? Học viên sẽ không thể làm đề thi này nữa.')) return;
 
             try {
                 const response = await fetch('/api/quiz?handler=DeleteQuiz', {
@@ -849,11 +921,11 @@ else
                 if (result.success) {
                     loadLecturerQuizzes();
                 } else {
-                    alert(result.error || 'Có lỗi xảy ra.');
+                    showNotice(result.error || 'Có lỗi xảy ra.');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Không thể xóa đề thi.');
+                showNotice('Không thể xóa đề thi.');
             }
         };
 
@@ -992,6 +1064,27 @@ else
             }
         };
 
+        const realtimeRefreshTimers = new Map();
+        handleQuizRealtime = function (change) {
+            if (!change?.type) return;
+            clearTimeout(realtimeRefreshTimers.get(change.type));
+            realtimeRefreshTimers.set(change.type, setTimeout(() => {
+                if (change.type === 'QuizCatalogChanged') {
+                    loadLecturerQuizzes();
+                } else if (change.type === 'QuestionBankChanged') {
+                    setAiGenerationBusy(false);
+                    fetchQuestionBank();
+                } else if (change.type === 'AttemptSubmitted') {
+                    loadStudentAttempts();
+                } else if (change.type === 'QuestionBankGenerationStarted') {
+                    setAiGenerationBusy(true);
+                } else if (change.type === 'QuestionBankGenerationFailed') {
+                    setAiGenerationBusy(false);
+                    showNotice('Sinh câu hỏi bằng AI thất bại. Vui lòng kiểm tra tài liệu và thử lại.');
+                }
+            }, 200));
+        };
+
     } else {
         // Student View Logic
         const studentQuizListPanel = document.getElementById('studentQuizListPanel');
@@ -1012,14 +1105,17 @@ else
         let currentQuestionIndex = 0;
         let studentAnswers = {}; // Map of qId -> selected option
 
-        // Fetch Quizzes List
-        fetch(`/api/quiz?handler=Quizzes&courseCode=${encodeURIComponent(courseCode)}`)
+        function loadStudentQuizCatalog() {
+            studentQuizzesEmpty.style.display = 'none';
+            if (studentQuizCards.children.length === 0) studentQuizzesLoading.style.display = 'block';
+            fetch(`/api/quiz?handler=Quizzes&courseCode=${encodeURIComponent(courseCode)}`)
             .then(res => res.json())
             .then(data => {
                 studentQuizzesLoading.style.display = 'none';
                 availableQuizzes = data || [];
 
                 if (!data || data.length === 0) {
+                    studentQuizCards.innerHTML = '';
                     studentQuizzesEmpty.style.display = 'block';
                     return;
                 }
@@ -1052,6 +1148,12 @@ else
                 studentQuizzesEmpty.style.display = 'block';
                 console.error('Lỗi tải danh sách bài thi:', err);
             });
+        }
+        loadStudentQuizCatalog();
+
+        handleQuizRealtime = function (change) {
+            if (change?.type === 'QuizCatalogChanged') loadStudentQuizCatalog();
+        };
 
         async function loadMyAttempts() {
             const response = await fetch(`/api/quiz?handler=MyAttempts&courseCode=${encodeURIComponent(courseCode)}`);
@@ -1065,7 +1167,7 @@ else
         }
         loadMyAttempts();
 
-        window.startStudentQuiz = function (quizId, hasPassword) {
+        window.startStudentQuiz = async function (quizId, hasPassword) {
             currentQuizId = quizId;
             currentQuizTitle = availableQuizzes.find(q => q.id === quizId)?.title || 'Bài trắc nghiệm';
             studentAnswers = {};
@@ -1073,7 +1175,7 @@ else
 
             let password = null;
             if (hasPassword) {
-                password = prompt('Nhập mật khẩu để bắt đầu lượt làm bài:');
+                password = await showPasswordPrompt('Nhập mật khẩu để bắt đầu lượt làm bài:');
                 if (password === null) return;
             }
 
@@ -1089,7 +1191,7 @@ else
                 .then(({ ok, data }) => {
                     quizLoading.style.display = 'none';
                     if (!ok || !data.questions || data.questions.length === 0) {
-                        alert('Bài trắc nghiệm này chưa có câu hỏi nào trong ngân hàng đề. Vui lòng liên hệ giảng viên.');
+                        showNotice(data.error || 'Bài trắc nghiệm này chưa có câu hỏi nào trong ngân hàng đề. Vui lòng liên hệ giảng viên.');
                         studentQuizListPanel.style.display = 'block';
                         return;
                     }
@@ -1102,7 +1204,7 @@ else
                 .catch(err => {
                     quizLoading.style.display = 'none';
                     studentQuizListPanel.style.display = 'block';
-                    alert('Lỗi tải đề thi. Vui lòng tải lại trang.');
+                    showNotice('Lỗi tải đề thi. Vui lòng tải lại trang.');
                     console.error(err);
                 });
         };
@@ -1185,11 +1287,11 @@ else
             const answeredCount = Object.keys(studentAnswers).length;
             
             if (answeredCount < total) {
-                if (!confirm(`Bạn mới trả lời ${answeredCount} / ${total} câu hỏi. Xác nhận nộp bài thi?`)) {
+                if (!await showConfirm(`Bạn mới trả lời ${answeredCount} / ${total} câu hỏi. Xác nhận nộp bài thi?`)) {
                     return;
                 }
             } else {
-                if (!confirm('Xác nhận nộp bài thi?')) return;
+                if (!await showConfirm('Xác nhận nộp bài thi?')) return;
             }
 
             const btn = document.getElementById('submitQuizBtn');
@@ -1231,14 +1333,32 @@ else
 
                     new bootstrap.Modal(document.getElementById('resultModal')).show();
                 } else {
-                    alert(result.error || 'Có lỗi xảy ra khi chấm bài.');
+                    showNotice(result.error || 'Có lỗi xảy ra khi chấm bài.');
                 }
             } catch (err) {
-                alert('Không thể kết nối tới máy chủ. Vui lòng thử lại.');
+                showNotice('Không thể kết nối tới máy chủ. Vui lòng thử lại.');
                 console.error(err);
             }
         };
     }
+
+    const quizConnection = new signalR.HubConnectionBuilder()
+        .withUrl('/quizHub')
+        .withAutomaticReconnect([0, 2000, 5000, 10000])
+        .configureLogging(signalR.LogLevel.Warning)
+        .build();
+
+    const joinQuizCourse = () => quizConnection.invoke('JoinCourseGroup', courseCode);
+    quizConnection.on('QuizChanged', change => {
+        if (change?.courseCode?.toLowerCase() === courseCode.toLowerCase()) {
+            handleQuizRealtime(change);
+        }
+    });
+    quizConnection.start()
+        .then(joinQuizCourse)
+        .catch(error => console.error('SignalR QuizHub connect error:', error.toString()));
+    quizConnection.onreconnected(() => joinQuizCourse()
+        .catch(error => console.error('SignalR QuizHub rejoin error:', error.toString())));
 
     function escapeHtml(str) {
         const div = document.createElement('div');

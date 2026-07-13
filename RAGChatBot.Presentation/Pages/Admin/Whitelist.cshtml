@@ -69,7 +69,7 @@
                             <td class="text-muted">@(string.IsNullOrEmpty(item.StudentId) ? "-" : item.StudentId)</td>
                             <td class="text-muted small">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
                             <td style="text-align: right;">
-                                <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Xác nhận xóa email @item.Email khỏi Whitelist?');">
+                                <form method="post" asp-page-handler="Delete" data-confirm="Xác nhận xóa email @item.Email khỏi Whitelist?">
                                     <input type="hidden" name="id" value="@item.Id" />
                                     <button type="submit" class="zen-action-link danger" style="padding: 0; background: none; border: none;">
                                         Xóa bỏ

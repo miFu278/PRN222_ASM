@@ -12,6 +12,7 @@ namespace RAGChatBot.BLL.Services
         private readonly IQuizGenerationService _quizGenerationService;
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IQuizEventService _quizEventService;
         private readonly ILogger<QuizService> _logger;
 
         public QuizService(
@@ -19,12 +20,14 @@ namespace RAGChatBot.BLL.Services
             IQuizGenerationService quizGenerationService,
             IUserRepository userRepository,
             IPasswordHasher passwordHasher,
+            IQuizEventService quizEventService,
             ILogger<QuizService> logger)
         {
             _quizRepository = quizRepository;
             _quizGenerationService = quizGenerationService;
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
+            _quizEventService = quizEventService;
             _logger = logger;
         }
 
@@ -33,47 +36,73 @@ namespace RAGChatBot.BLL.Services
             var document = await _quizRepository.GetDocumentAsync(documentId);
             if (document is null) return;
 
-            var chunks = await _quizRepository.GetDocumentChunkContentsAsync(documentId);
-            if (chunks.Count == 0) return;
-
-            var blocks = BuildBlocks(chunks, 5_000);
-            var selectedBlocks = SelectEvenlyDistributed(blocks, 10);
-            var generatedQuestions = new List<GeneratedQuizQuestion>();
-
-            foreach (var block in selectedBlocks)
+            await _quizEventService.NotifyQuizChangedAsync(new RealtimeChangeEvent
             {
-                var count = selectedBlocks.Count == 1 ? 20 : 10;
-                generatedQuestions.AddRange(await _quizGenerationService.GenerateQuestionsAsync(
-                    BuildGenerationPrompt(block, count, document.Chapter)));
-            }
+                Type = "QuestionBankGenerationStarted",
+                CourseCode = document.CourseCode,
+                EntityId = documentId,
+                Status = "Processing"
+            });
 
-            var questions = generatedQuestions
-                .Where(IsValidGeneratedQuestion)
-                .GroupBy(question => question.Question.Trim(), StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
-                .Select(question => new QuestionBank
+            try
+            {
+                var chunks = await _quizRepository.GetDocumentChunkContentsAsync(documentId);
+                if (chunks.Count == 0) throw new InvalidOperationException("Tài liệu chưa có nội dung đã vector hóa.");
+
+                var blocks = BuildBlocks(chunks, 5_000);
+                var selectedBlocks = SelectEvenlyDistributed(blocks, 10);
+                var generatedQuestions = new List<GeneratedQuizQuestion>();
+
+                foreach (var block in selectedBlocks)
                 {
-                    Id = Guid.NewGuid(),
-                    DocumentId = documentId,
+                    var count = selectedBlocks.Count == 1 ? 20 : 10;
+                    generatedQuestions.AddRange(await _quizGenerationService.GenerateQuestionsAsync(
+                        BuildGenerationPrompt(block, count, document.Chapter)));
+                }
+
+                var questions = generatedQuestions
+                    .Where(IsValidGeneratedQuestion)
+                    .GroupBy(question => question.Question.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .Select(group => group.First())
+                    .Select(question => new QuestionBank
+                    {
+                        Id = Guid.NewGuid(),
+                        DocumentId = documentId,
+                        CourseCode = document.CourseCode,
+                        Chapter = document.Chapter,
+                        QuestionText = question.Question.Trim(),
+                        OptionA = question.OptionA.Trim(),
+                        OptionB = question.OptionB.Trim(),
+                        OptionC = question.OptionC.Trim(),
+                        OptionD = question.OptionD.Trim(),
+                        CorrectAnswer = NormalizeCorrectAnswer(question.CorrectAnswer),
+                        CreatedAt = DateTime.UtcNow
+                    })
+                    .ToList();
+
+                if (questions.Count == 0)
+                    throw new InvalidOperationException("AI không trả về câu hỏi hợp lệ.");
+
+                await _quizRepository.ReplaceQuestionsAsync(documentId, questions);
+                await _quizEventService.NotifyQuizChangedAsync(new RealtimeChangeEvent
+                {
+                    Type = "QuestionBankChanged",
                     CourseCode = document.CourseCode,
-                    Chapter = document.Chapter,
-                    QuestionText = question.Question.Trim(),
-                    OptionA = question.OptionA.Trim(),
-                    OptionB = question.OptionB.Trim(),
-                    OptionC = question.OptionC.Trim(),
-                    OptionD = question.OptionD.Trim(),
-                    CorrectAnswer = NormalizeCorrectAnswer(question.CorrectAnswer),
-                    CreatedAt = DateTime.UtcNow
-                })
-                .ToList();
-
-            if (questions.Count == 0)
-            {
-                _logger.LogWarning("[QuizGenerator] AI did not return valid questions for document {DocumentId}", documentId);
-                return;
+                    EntityId = documentId,
+                    Status = "Completed"
+                });
             }
-
-            await _quizRepository.ReplaceQuestionsAsync(documentId, questions);
+            catch
+            {
+                await _quizEventService.NotifyQuizChangedAsync(new RealtimeChangeEvent
+                {
+                    Type = "QuestionBankGenerationFailed",
+                    CourseCode = document.CourseCode,
+                    EntityId = documentId,
+                    Status = "Failed"
+                });
+                throw;
+            }
         }
 
         public async Task<IReadOnlyList<QuizQuestionModel>> GetQuizByCourseAsync(string courseCode)
@@ -169,6 +198,13 @@ namespace RAGChatBot.BLL.Services
             attempt.SubmittedAt = DateTime.UtcNow;
             attempt.AttemptedAt = attempt.SubmittedAt.Value;
             await _quizRepository.SaveChangesAsync();
+            await _quizEventService.NotifyQuizChangedAsync(new RealtimeChangeEvent
+            {
+                Type = "AttemptSubmitted",
+                CourseCode = attempt.CourseCode,
+                EntityId = attempt.Id,
+                Status = attempt.Status.ToString()
+            });
 
             return new QuizAttemptResult
             {
@@ -232,6 +268,13 @@ namespace RAGChatBot.BLL.Services
             question.CorrectAnswer = NormalizeCorrectAnswer(question.CorrectAnswer);
             question.CreatedAt = DateTime.UtcNow;
             await _quizRepository.AddQuestionAsync(question);
+            await _quizEventService.NotifyQuizChangedAsync(new RealtimeChangeEvent
+            {
+                Type = "QuestionBankChanged",
+                CourseCode = question.CourseCode,
+                EntityId = question.Id,
+                Status = "Created"
+            });
             return question;
         }
 
@@ -248,6 +291,13 @@ namespace RAGChatBot.BLL.Services
             existing.OptionD = RequireText(question.OptionD, "Đáp án D");
             existing.CorrectAnswer = NormalizeCorrectAnswer(question.CorrectAnswer);
             await _quizRepository.UpdateQuestionAsync(existing);
+            await _quizEventService.NotifyQuizChangedAsync(new RealtimeChangeEvent
+            {
+                Type = "QuestionBankChanged",
+                CourseCode = existing.CourseCode,
+                EntityId = existing.Id,
+                Status = "Updated"
+            });
             return existing;
         }
 
@@ -258,6 +308,13 @@ namespace RAGChatBot.BLL.Services
             if (!string.Equals(question.CourseCode, courseCode, StringComparison.OrdinalIgnoreCase))
                 throw new UnauthorizedAccessException("Câu hỏi không thuộc môn học bạn đang quản lý.");
             await _quizRepository.DeleteQuestionAsync(id);
+            await _quizEventService.NotifyQuizChangedAsync(new RealtimeChangeEvent
+            {
+                Type = "QuestionBankChanged",
+                CourseCode = question.CourseCode,
+                EntityId = question.Id,
+                Status = "Deleted"
+            });
         }
 
         public async Task<IReadOnlyList<QuizSummaryModel>> GetQuizzesByCourseAsync(
@@ -322,6 +379,13 @@ namespace RAGChatBot.BLL.Services
                 CreatedAt = DateTime.UtcNow
             };
             await _quizRepository.AddQuizAsync(quiz);
+            await _quizEventService.NotifyQuizChangedAsync(new RealtimeChangeEvent
+            {
+                Type = "QuizCatalogChanged",
+                CourseCode = quiz.CourseCode,
+                EntityId = quiz.Id,
+                Status = "Created"
+            });
             return quiz;
         }
 
@@ -332,6 +396,13 @@ namespace RAGChatBot.BLL.Services
             if (!string.Equals(quiz.CourseCode, courseCode, StringComparison.OrdinalIgnoreCase))
                 throw new UnauthorizedAccessException("Bài trắc nghiệm không thuộc môn học bạn đang quản lý.");
             await _quizRepository.DeleteQuizAsync(id);
+            await _quizEventService.NotifyQuizChangedAsync(new RealtimeChangeEvent
+            {
+                Type = "QuizCatalogChanged",
+                CourseCode = quiz.CourseCode,
+                EntityId = quiz.Id,
+                Status = "Deleted"
+            });
         }
 
         private async Task<IReadOnlyList<QuizAttemptDetailsDto>> MapAttemptsAsync(IReadOnlyList<QuizAttempt> attempts)

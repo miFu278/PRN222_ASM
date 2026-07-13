@@ -2,6 +2,7 @@ namespace RAGChatBot.Domain.Interfaces
 {
     public interface ICourseEventService
     {
-        void NotifyCourseChanged();
+        Task NotifyCourseChangedAsync(string changeType, Guid? courseId = null, string? courseCode = null,
+            CancellationToken cancellationToken = default);
     }
 }

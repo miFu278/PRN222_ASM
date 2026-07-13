@@ -202,7 +202,7 @@
                                 <button type="button" class="zen-action-link btn-edit-course" data-bs-toggle="modal" data-bs-target="#editCourseModal" data-id="@course.Id" data-code="@course.Code" data-name="@course.Name" data-description="@course.Description" data-leader-id="@course.SubjectLeaderId">
                                     Chỉnh sửa
                                 </button>
-                                <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Xác nhận xóa môn @course.Code?');">
+                                    <form method="post" asp-page-handler="Delete" data-confirm="Xác nhận xóa môn @course.Code?">
                                     <input type="hidden" name="id" value="@course.Id" />
                                     <button type="submit" class="zen-action-link danger">
                                         Xóa bỏ
@@ -323,11 +323,14 @@
             // Kết nối SignalR tới /courseHub
             const connection = new signalR.HubConnectionBuilder()
                 .withUrl("/courseHub")
+                .withAutomaticReconnect([0, 2000, 5000, 10000])
                 .configureLogging(signalR.LogLevel.Warning)
                 .build();
 
+            let courseSyncTimer = null;
             connection.on("CourseChanged", function () {
-                syncCourseList();
+                clearTimeout(courseSyncTimer);
+                courseSyncTimer = setTimeout(syncCourseList, 200);
             });
 
             connection.start().then(function () {
@@ -335,6 +338,8 @@
             }).catch(function (err) {
                 console.error("SignalR CourseHub Connect error:", err.toString());
             });
+
+            connection.onreconnected(syncCourseList);
 
             function syncCourseList() {
                 fetch(window.location.href)
