@@ -12,11 +12,13 @@ namespace RAGChatBot.Presentation.Pages.Subscription
         private static long _lastOrderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         private readonly IPayOSService _payOSService;
         private readonly IPaymentService _paymentService;
+        private readonly ILogger<CheckoutModel> _logger;
 
-        public CheckoutModel(IPayOSService payOSService, IPaymentService paymentService)
+        public CheckoutModel(IPayOSService payOSService, IPaymentService paymentService, ILogger<CheckoutModel> logger)
         {
             _payOSService = payOSService;
             _paymentService = paymentService;
+            _logger = logger;
         }
 
         public string? ErrorMessage { get; set; }
@@ -59,8 +61,9 @@ namespace RAGChatBot.Presentation.Pages.Subscription
                 var paymentUrl = await _payOSService.CreatePaymentUrl(orderCode, amount);
                 return Redirect(paymentUrl);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "PayOS CreatePaymentUrl failed for orderCode {OrderCode}", orderCode);
                 await _paymentService.CancelTransactionAsync(orderCode.ToString(), userId);
                 ErrorMessage = "Không thể khởi tạo thanh toán PayOS. Vui lòng thử lại.";
                 return Page();
