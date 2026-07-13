@@ -25,7 +25,9 @@ namespace RAGChatBot.BLL.Services
             {
                 OrderCode = orderCode,
                 Amount = amount,
-                Description = $"Thanh toan don hang {orderCode}",
+                Description = $"DH {orderCode}".Length > 25
+                    ? $"DH {orderCode}"[..25]
+                    : $"DH {orderCode}",
                 ReturnUrl = _returnUrl,
                 CancelUrl = _cancelUrl
             };
