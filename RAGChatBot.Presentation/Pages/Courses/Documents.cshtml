@@ -30,6 +30,15 @@
                 </div>
             </div>
             <div>
+                @if (Model.CanApprove)
+                {
+                    <form method="post" asp-page-handler="ReindexCourse" class="d-inline" data-confirm="Re-index sẽ tạo lại toàn bộ vector của các tài liệu đã duyệt trong môn học này. Tiếp tục?">
+                        <input type="hidden" asp-for="CourseCode" />
+                        <button type="submit" class="btn-zen me-2">
+                            <i class="fa-solid fa-arrows-rotate me-2"></i>Re-index vectors
+                        </button>
+                    </form>
+                }
                 <a href="/Courses/@Model.CourseCode/Quiz" class="btn-zen">
                     <i class="fa-solid fa-circle-question me-2"></i>@(isLecturerOrAdmin ? "Ngân hàng câu hỏi & Kết quả" : "Làm bài trắc nghiệm")
                 </a>
@@ -185,11 +194,11 @@
                                             <i class="fa-solid fa-eye"></i>
                                         </button>
 
-                                        @if (doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Failed && (Model.CanApprove || doc.UploadedBy == Model.CurrentUserId))
+                                        @if ((doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Failed || doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Success) && (Model.CanApprove || doc.UploadedBy == Model.CurrentUserId))
                                         {
-                                            <form method="post" asp-page-handler="Retry" class="d-inline">
+                                            <form method="post" asp-page-handler="Retry" class="d-inline" data-confirm="Tạo lại vector cho tài liệu này?">
                                                 <input type="hidden" name="documentId" value="@doc.Id" />
-                                                <button type="submit" class="zen-action-link" style="color: #007bff; background: none; border: none; padding: 0;" title="Thử lại">
+                                                <button type="submit" class="zen-action-link" style="color: #007bff; background: none; border: none; padding: 0;" title="@(doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Success ? "Re-index vector" : "Thử lại")">
                                                     <i class="fa-solid fa-rotate-right"></i>
                                                 </button>
                                             </form>

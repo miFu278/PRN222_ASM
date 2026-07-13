@@ -8,6 +8,7 @@ namespace RAGChatBot.Domain.Interfaces
         Task<IEnumerable<Course>> GetAllAsync();
         Task<IEnumerable<Course>> SearchAsync(string keyword);
         Task<Course?> GetByIdAsync(Guid id);
+        Task<Course?> GetByCodeAsync(string code);
         Task UpdateAsync(Course course);
         Task DeleteAsync(Course course);
         Task<IEnumerable<Course>> GetBySubjectLeaderIdAsync(Guid userId);

@@ -28,6 +28,8 @@ namespace RAGChatBot.BLL.Services
 
         Task RetryDocumentAsync(Guid id, Guid userId);
 
+        Task<int> ReindexCourseDocumentsAsync(string courseCode, Guid userId);
+
         Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId);
 
         Task UpdateDocumentMetadataAsync(Guid id, string newFileName, string newChapter, Guid userId);
