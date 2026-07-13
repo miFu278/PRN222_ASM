@@ -141,6 +141,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<RAGChatBot.Domain.Interfaces.IDocumentEventService, DocumentEventService>();
 builder.Services.AddSingleton<DocumentEventService>(sp => (DocumentEventService)sp.GetRequiredService<RAGChatBot.Domain.Interfaces.IDocumentEventService>());
 builder.Services.AddSingleton<RAGChatBot.Domain.Interfaces.ICourseEventService, CourseEventService>();
+builder.Services.AddSingleton<RAGChatBot.Domain.Interfaces.IQuizEventService, QuizEventService>();
 
 builder.Services.AddSignalR();
 
@@ -305,5 +306,6 @@ app.MapRazorPages();
 
 app.MapHub<RAGChatBot.Presentation.Hubs.DocumentHub>("/documentHub");
 app.MapHub<RAGChatBot.Presentation.Hubs.CourseHub>("/courseHub");
+app.MapHub<RAGChatBot.Presentation.Hubs.QuizHub>("/quizHub");
 
 app.Run();

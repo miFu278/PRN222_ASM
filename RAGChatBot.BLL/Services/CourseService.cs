@@ -49,7 +49,7 @@ namespace RAGChatBot.BLL.Services
             courseDto.Id = course.Id;
             courseDto.CreatedAt = course.CreatedAt;
 
-            _courseEventService.NotifyCourseChanged();
+            await _courseEventService.NotifyCourseChangedAsync("CourseCreated", course.Id, course.Code);
 
             return courseDto;
         }
@@ -117,7 +117,7 @@ namespace RAGChatBot.BLL.Services
             course.SubjectLeaderId = subjectLeaderId;
             await _courseRepository.UpdateAsync(course);
 
-            _courseEventService.NotifyCourseChanged();
+            await _courseEventService.NotifyCourseChangedAsync("SubjectLeaderChanged", course.Id, course.Code);
         }
 
         public async Task UpdateCourseAsync(CourseDto courseDto)
@@ -155,7 +155,7 @@ namespace RAGChatBot.BLL.Services
 
             await _courseRepository.UpdateAsync(course);
 
-            _courseEventService.NotifyCourseChanged();
+            await _courseEventService.NotifyCourseChangedAsync("CourseUpdated", course.Id, course.Code);
         }
 
         public async Task DeleteCourseAsync(Guid id)
@@ -185,7 +185,7 @@ namespace RAGChatBot.BLL.Services
             // Xóa môn học
             await _courseRepository.DeleteAsync(course);
 
-            _courseEventService.NotifyCourseChanged();
+            await _courseEventService.NotifyCourseChangedAsync("CourseDeleted", course.Id, course.Code);
         }
 
         public async Task<IEnumerable<CourseDto>> GetCoursesBySubjectLeaderAsync(Guid userId)

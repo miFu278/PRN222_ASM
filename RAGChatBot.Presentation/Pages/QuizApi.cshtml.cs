@@ -41,7 +41,7 @@ namespace RAGChatBot.Presentation.Pages
             if (!TryGetUserId(out var userId)) return UnauthorizedJson();
             if (string.IsNullOrWhiteSpace(courseCode)) return BadRequestJson("Mã môn học không hợp lệ.");
             var canManage = await CanManageCourseAsync(courseCode, userId);
-            return new JsonResult(await _quizService.GetQuizzesByCourseAsync(courseCode, canManage ? null : userId, canManage));
+            return new JsonResult(await _quizService.GetQuizzesByCourseAsync(courseCode, canManage ? null : userId));
         }
 
         public async Task<IActionResult> OnGetDocumentsAsync(string courseCode)

@@ -4,6 +4,7 @@ using RAGChatBot.BLL.DTOs;
 using RAGChatBot.Domain.Constants;
 using RAGChatBot.Domain.Enums;
 using RAGChatBot.Domain.Entities;
+using RAGChatBot.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -106,7 +107,13 @@ namespace RAGChatBot.BLL.Services
             await _documentRepository.SaveChangesAsync();
 
             // Trigger SignalR event for real-time UI updates
-            _eventService.NotifyDocumentChanged(courseCode);
+            await _eventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+            {
+                Type = "DocumentCreated",
+                CourseCode = courseCode,
+                EntityId = document.Id,
+                Status = document.Status.ToString()
+            });
 
             var dto = MapToDto(document);
             dto.UploaderName = uploaderName;
@@ -172,7 +179,12 @@ namespace RAGChatBot.BLL.Services
             await _documentRepository.SaveChangesAsync();
             
             // Trigger SignalR event
-            _eventService.NotifyDocumentChanged(document.CourseCode);
+            await _eventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+            {
+                Type = "DocumentDeleted",
+                CourseCode = document.CourseCode,
+                EntityId = document.Id
+            });
         }
 
         public async Task ApproveDocumentAsync(Guid id, Guid userId)
@@ -201,7 +213,13 @@ namespace RAGChatBot.BLL.Services
             await _documentRepository.SaveChangesAsync();
 
             // Trigger SignalR event
-            _eventService.NotifyDocumentChanged(document.CourseCode);
+            await _eventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+            {
+                Type = "DocumentApproved",
+                CourseCode = document.CourseCode,
+                EntityId = document.Id,
+                Status = document.Status.ToString()
+            });
         }
 
         public async Task RetryDocumentAsync(Guid id, Guid userId)
@@ -239,7 +257,13 @@ namespace RAGChatBot.BLL.Services
             await _documentRepository.SaveChangesAsync();
 
             // Kích hoạt Worker bằng cách thay đổi trạng thái và báo SignalR
-            _eventService.NotifyDocumentChanged(document.CourseCode);
+            await _eventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+            {
+                Type = "DocumentRetryRequested",
+                CourseCode = document.CourseCode,
+                EntityId = document.Id,
+                Status = document.Status.ToString()
+            });
         }
 
         public async Task UpdateDocumentMetadataAsync(Guid id, string newFileName, string newChapter, Guid userId)
@@ -284,7 +308,13 @@ namespace RAGChatBot.BLL.Services
             await _documentRepository.SaveChangesAsync();
 
             // Trigger SignalR event
-            _eventService.NotifyDocumentChanged(document.CourseCode);
+            await _eventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+            {
+                Type = "DocumentMetadataChanged",
+                CourseCode = document.CourseCode,
+                EntityId = document.Id,
+                Status = document.Status.ToString()
+            });
         }
 
         public async Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId)
