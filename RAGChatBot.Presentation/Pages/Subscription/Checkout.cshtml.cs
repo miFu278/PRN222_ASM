@@ -14,7 +14,10 @@ namespace RAGChatBot.Presentation.Pages.Subscription
         private readonly IPaymentService _paymentService;
         private readonly ILogger<CheckoutModel> _logger;
 
-        public CheckoutModel(IPayOSService payOSService, IPaymentService paymentService, ILogger<CheckoutModel> logger)
+        public CheckoutModel(
+            IPayOSService payOSService,
+            IPaymentService paymentService,
+            ILogger<CheckoutModel> logger)
         {
             _payOSService = payOSService;
             _paymentService = paymentService;
@@ -61,10 +64,26 @@ namespace RAGChatBot.Presentation.Pages.Subscription
                 var paymentUrl = await _payOSService.CreatePaymentUrl(orderCode, amount);
                 return Redirect(paymentUrl);
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                _logger.LogError(ex, "PayOS CreatePaymentUrl failed for orderCode {OrderCode}", orderCode);
-                await _paymentService.CancelTransactionAsync(orderCode.ToString(), userId);
+                _logger.LogError(
+                    exception,
+                    "PayOS payment initialization failed for OrderCode={OrderCode}, UserId={UserId}",
+                    orderCode,
+                    userId);
+
+                try
+                {
+                    await _paymentService.CancelTransactionAsync(orderCode.ToString(), userId);
+                }
+                catch (Exception cancellationException)
+                {
+                    _logger.LogError(
+                        cancellationException,
+                        "Could not mark failed PayOS transaction for OrderCode={OrderCode}",
+                        orderCode);
+                }
+
                 ErrorMessage = "Không thể khởi tạo thanh toán PayOS. Vui lòng thử lại.";
                 return Page();
             }

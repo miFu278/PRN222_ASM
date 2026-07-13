@@ -19,6 +19,7 @@ namespace RAGChatBot.DAL.Services
         private readonly string _baseUrl;
         private readonly string _apiKey;
         private readonly string _model;
+        private const int EmbeddingDimensions = 1536;
 
         public OpenAiEmbeddingService(
             HttpClient httpClient, 
@@ -57,7 +58,7 @@ namespace RAGChatBot.DAL.Services
                 
                 var requestBody = new OpenAIEmbeddingRequest
                 {
-                    Input = text,
+                    Input = $"task: search result | query: {text.Trim()}",
                     Model = _model
                 };
 
@@ -68,35 +69,30 @@ namespace RAGChatBot.DAL.Services
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Lỗi gọi API 9router/OpenAI: {StatusCode} - {ErrorContent}", response.StatusCode, errorContent);
-                    
-                    _logger.LogWarning("Tự động kích hoạt cơ chế Fallback Mock Embedding do phản hồi lỗi từ API Gateway.");
-                    return GenerateMockEmbedding();
+                    throw new HttpRequestException(
+                        $"Embedding API returned {(int)response.StatusCode}: {errorContent}");
                 }
 
                 var result = await response.Content.ReadFromJsonAsync<OpenAIEmbeddingResponse>();
                 
                 if (result?.Data == null || result.Data.Length == 0 || result.Data[0].Embedding == null)
                 {
-                    _logger.LogWarning("Phản hồi không chứa dữ liệu Embedding hợp lệ. Tự động kích hoạt cơ chế Fallback Mock Embedding.");
-                    return GenerateMockEmbedding();
+                    throw new InvalidOperationException("Embedding API did not return an embedding vector.");
                 }
 
                 var embedding = result.Data[0].Embedding;
-                if (embedding.Length != 1536)
+                if (embedding.Length != EmbeddingDimensions)
                 {
-                    _logger.LogWarning("Kích thước Vector Embedding từ API ({ActualLength}) khác với kích thước yêu cầu (1536). Đang tự động điều chỉnh bằng cách đệm hoặc cắt...", embedding.Length);
-                    var adjustedEmbedding = new float[1536];
-                    Array.Copy(embedding, adjustedEmbedding, Math.Min(embedding.Length, 1536));
-                    return adjustedEmbedding;
+                    throw new InvalidOperationException(
+                        $"Embedding API returned {embedding.Length} dimensions instead of {EmbeddingDimensions}.");
                 }
 
                 return embedding;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi xảy ra khi sinh Vector Embedding cho văn bản. Đang kích hoạt cơ chế Fallback Mock Embedding...");
-                return GenerateMockEmbedding();
+                _logger.LogError(ex, "Không thể sinh vector embedding cho câu truy vấn.");
+                throw;
             }
         }
 
@@ -112,7 +108,11 @@ namespace RAGChatBot.DAL.Services
             
             for (int i = 0; i < texts.Count; i += batchSize)
             {
-                var batch = texts.Skip(i).Take(batchSize).ToList();
+                var batch = texts
+                    .Skip(i)
+                    .Take(batchSize)
+                    .Select(text => $"title: none | text: {text.Trim()}")
+                    .ToList();
                 try
                 {
                     var baseUrlClean = _baseUrl.TrimEnd('/');
@@ -134,26 +134,15 @@ namespace RAGChatBot.DAL.Services
                     if (!response.IsSuccessStatusCode)
                     {
                         var errorContent = await response.Content.ReadAsStringAsync();
-                        _logger.LogError("Lỗi gọi API Batch Embedding: {StatusCode} - {ErrorContent}", response.StatusCode, errorContent);
-                        
-                        // Kích hoạt Mock Embedding cho batch bị lỗi này
-                        foreach (var _ in batch)
-                        {
-                            results.Add(GenerateMockEmbedding());
-                        }
-                        continue;
+                        throw new HttpRequestException(
+                            $"Batch embedding API returned {(int)response.StatusCode}: {errorContent}");
                     }
 
                     var result = await response.Content.ReadFromJsonAsync<OpenAIEmbeddingResponse>();
                     
                     if (result?.Data == null || result.Data.Length == 0)
                     {
-                        _logger.LogWarning("Phản hồi Batch không chứa dữ liệu. Fallback Mock Embedding.");
-                        foreach (var _ in batch)
-                        {
-                            results.Add(GenerateMockEmbedding());
-                        }
-                        continue;
+                        throw new InvalidOperationException("Batch embedding API did not return vectors.");
                     }
 
                     // Sắp xếp theo Index trả về để đảm bảo trùng khớp thứ tự gốc của texts
@@ -161,32 +150,24 @@ namespace RAGChatBot.DAL.Services
                     foreach (var item in sortedData)
                     {
                         var embedding = item.Embedding;
-                        if (embedding.Length != 1536)
+                        if (embedding.Length != EmbeddingDimensions)
                         {
-                            _logger.LogWarning("Kích thước Vector Embedding từ API ({ActualLength}) khác với kích thước yêu cầu (1536) trong Batch. Đang tự động điều chỉnh...", embedding.Length);
-                            var adjusted = new float[1536];
-                            Array.Copy(embedding, adjusted, Math.Min(embedding.Length, 1536));
-                            results.Add(adjusted);
+                            throw new InvalidOperationException(
+                                $"Batch embedding API returned {embedding.Length} dimensions instead of {EmbeddingDimensions}.");
                         }
-                        else
-                        {
-                            results.Add(embedding);
-                        }
+                        results.Add(embedding);
                     }
 
-                    // Đảm bảo số lượng phần tử trả về đủ bằng cách bù đệm mock
-                    while (results.Count < i + batch.Count)
+                    if (sortedData.Count != batch.Count)
                     {
-                        results.Add(GenerateMockEmbedding());
+                        throw new InvalidOperationException(
+                            $"Batch embedding API returned {sortedData.Count} vectors for {batch.Count} inputs.");
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Lỗi xảy ra trong quá trình sinh batch embedding.");
-                    foreach (var _ in batch)
-                    {
-                        results.Add(GenerateMockEmbedding());
-                    }
+                    throw;
                 }
 
                 // Chờ 600ms giữa các batch để tránh 429 Rate Limit (100 RPM)
@@ -199,17 +180,6 @@ namespace RAGChatBot.DAL.Services
             return results;
         }
 
-        private float[] GenerateMockEmbedding()
-        {
-            var mockVector = new float[1536];
-            var rand = new Random();
-            for (int i = 0; i < 1536; i++)
-            {
-                mockVector[i] = (float)(rand.NextDouble() * 2 - 1) * 0.01f;
-            }
-            return mockVector;
-        }
-
         // --- Các lớp mô hình dữ liệu nội bộ (DTOs) tương thích OpenAI API ---
         private class OpenAIEmbeddingRequest
         {
@@ -218,6 +188,9 @@ namespace RAGChatBot.DAL.Services
 
             [JsonPropertyName("model")]
             public string Model { get; set; } = "text-embedding-3-small";
+
+            [JsonPropertyName("dimensions")]
+            public int Dimensions { get; set; } = EmbeddingDimensions;
         }
 
         private class OpenAIEmbeddingResponse

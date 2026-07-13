@@ -21,6 +21,9 @@ namespace RAGChatBot.BLL.Services
 
         public async Task<string> CreatePaymentUrl(long orderCode, long amount)
         {
+            // PayOS limits the transfer description to 9 characters for bank
+            // accounts that are not linked directly through PayOS.
+            var description = $"PREM{orderCode % 100_000:D5}";
             var request = new CreatePaymentLinkRequest
             {
                 OrderCode = orderCode,
@@ -33,6 +36,11 @@ namespace RAGChatBot.BLL.Services
             };
 
             var response = await _payOSClient.PaymentRequests.CreateAsync(request);
+            if (string.IsNullOrWhiteSpace(response.CheckoutUrl))
+            {
+                throw new InvalidOperationException("PayOS did not return a checkout URL.");
+            }
+
             return response.CheckoutUrl;
         }
 
