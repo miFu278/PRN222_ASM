@@ -228,17 +228,22 @@ namespace RAGChatBot.DAL.Services
                 // Tự động sinh quiz cho tài liệu mới — Benchmark: QuizGeneration
                 try
                 {
-                    var quizService = scope.ServiceProvider.GetRequiredService<IQuizService>();
-                    sw.Restart();
-                    await quizService.GenerateQuizForDocumentAsync(document.Id);
-                    sw.Stop();
-                    await benchmarkRepo.AddAsync(new PerformanceBenchmark
+                    var alreadyHasQuestionBank = await dbContext.QuestionBanks
+                        .AnyAsync(question => question.DocumentId == document.Id, stoppingToken);
+                    if (!alreadyHasQuestionBank)
                     {
-                        OperationType = "QuizGeneration",
-                        DurationMs = sw.Elapsed.TotalMilliseconds,
-                        DocumentName = document.FileName,
-                        Notes = $"DocumentId: {document.Id}"
-                    });
+                        var quizService = scope.ServiceProvider.GetRequiredService<IQuizService>();
+                        sw.Restart();
+                        await quizService.GenerateQuizForDocumentAsync(document.Id);
+                        sw.Stop();
+                        await benchmarkRepo.AddAsync(new PerformanceBenchmark
+                        {
+                            OperationType = "QuizGeneration",
+                            DurationMs = sw.Elapsed.TotalMilliseconds,
+                            DocumentName = document.FileName,
+                            Notes = $"DocumentId: {document.Id}"
+                        });
+                    }
                 }
                 catch (Exception ex)
                 {

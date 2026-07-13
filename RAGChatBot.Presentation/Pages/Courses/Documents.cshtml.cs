@@ -154,6 +154,26 @@ namespace RAGChatBot.Presentation.Pages.Courses
             return RedirectToPage(new { CourseCode });
         }
 
+        public async Task<IActionResult> OnPostReindexCourseAsync()
+        {
+            await LoadCourseDetails();
+            if (!CanApprove) return Forbid();
+
+            try
+            {
+                var count = await _documentService.ReindexCourseDocumentsAsync(CourseCode, CurrentUserId);
+                TempData["SuccessMessage"] = count == 0
+                    ? "Không có tài liệu nào cần re-index."
+                    : $"Đã đưa {count} tài liệu vào hàng đợi re-index.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Lỗi re-index: {ex.Message}";
+            }
+
+            return RedirectToPage(new { CourseCode });
+        }
+
         public async Task<IActionResult> OnGetStatusAsync()
         {
             var documents = await _documentService.GetDocumentsByCourseAsync(CourseCode);

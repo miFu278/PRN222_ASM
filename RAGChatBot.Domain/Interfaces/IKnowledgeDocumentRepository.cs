@@ -1,4 +1,5 @@
 ﻿using RAGChatBot.Domain.Entities;
+using RAGChatBot.Domain.Models;
 
 namespace RAGChatBot.Domain.Interfaces
 {
@@ -9,7 +10,11 @@ namespace RAGChatBot.Domain.Interfaces
         Task<IEnumerable<KnowledgeDocument>> GetByCourseCodeAsync(string courseCode);
         Task AddAsync(KnowledgeDocument document);
         Task DeleteAsync(KnowledgeDocument document);
-        Task<IEnumerable<DocumentChunk>> SearchSimilarChunksAsync(string? courseCode, float[] queryEmbedding, int topK = 5);
+        Task<IReadOnlyList<RelevantDocumentChunk>> SearchSimilarChunksAsync(
+            string courseCode,
+            float[] queryEmbedding,
+            int topK = 8,
+            double maxDistance = 0.55);
         Task SaveChangesAsync();
     }
 }

@@ -248,9 +248,9 @@ namespace RAGChatBot.BLL.Services
                 throw new UnauthorizedAccessException("Bạn không có quyền thử lại tài liệu này!");
             }
 
-            if (document.Status != DocumentStatus.Failed)
+            if (document.Status != DocumentStatus.Failed && document.Status != DocumentStatus.Success)
             {
-                throw new InvalidOperationException("Chỉ có thể thử lại các tài liệu bị lỗi (Failed)!");
+                throw new InvalidOperationException("Chỉ có thể xử lý lại tài liệu đã hoàn thành hoặc bị lỗi!");
             }
 
             document.Status = DocumentStatus.Pending;
@@ -264,6 +264,48 @@ namespace RAGChatBot.BLL.Services
                 EntityId = document.Id,
                 Status = document.Status.ToString()
             });
+        }
+
+        public async Task<int> ReindexCourseDocumentsAsync(string courseCode, Guid userId)
+        {
+            var course = await _courseRepository.GetByCodeAsync(courseCode)
+                ?? throw new KeyNotFoundException("Không tìm thấy môn học!");
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new UnauthorizedAccessException("Không tìm thấy người dùng!");
+            var isAdmin = user.Role.Name == RoleNames.Admin;
+            if (!isAdmin && course.SubjectLeaderId != userId)
+            {
+                throw new UnauthorizedAccessException("Chỉ quản trị viên hoặc Trưởng bộ môn mới được re-index tài liệu!");
+            }
+
+            var candidates = (await _documentRepository.GetByCourseCodeAsync(course.Code))
+                .Where(document => document.IsApproved &&
+                    (document.Status == DocumentStatus.Success || document.Status == DocumentStatus.Failed))
+                .ToList();
+
+            foreach (var candidate in candidates)
+            {
+                var trackedDocument = await _documentRepository.GetByIdAsync(candidate.Id);
+                if (trackedDocument is not null)
+                {
+                    trackedDocument.Status = DocumentStatus.Pending;
+                }
+            }
+
+            await _documentRepository.SaveChangesAsync();
+
+            foreach (var candidate in candidates)
+            {
+                await _eventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
+                {
+                    Type = "DocumentReindexRequested",
+                    CourseCode = candidate.CourseCode,
+                    EntityId = candidate.Id,
+                    Status = DocumentStatus.Pending.ToString()
+                });
+            }
+
+            return candidates.Count;
         }
 
         public async Task UpdateDocumentMetadataAsync(Guid id, string newFileName, string newChapter, Guid userId)
