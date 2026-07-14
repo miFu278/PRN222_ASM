@@ -264,39 +264,37 @@ window.zenInteract = {
         gsap.registerPlugin(ScrollTrigger);
 
         const targets = ['.zen-hero', '.zen-chat-layout', '.zen-container', '.zen-chat-container'];
+        // Gộp tất cả các selector để truy vấn một lượt nhằm đảm bảo khởi tạo đúng thứ tự từ trên xuống dưới trong DOM
+        const elements = document.querySelectorAll(targets.join(', '));
         
-        targets.forEach(selector => {
-            const elements = document.querySelectorAll(selector);
-            elements.forEach(el => {
-                // Kích hoạt transform 3D và tối ưu GPU
-                el.classList.add('zen-scroll-flip');
+        elements.forEach(el => {
+            // Kích hoạt transform 3D và tối ưu GPU
+            el.classList.add('zen-scroll-flip');
 
-                // Tạo timeline lật 3D cuốn sách cổ
-                const tl = gsap.timeline({
-                    scrollTrigger: {
-                        trigger: el,
-                        start: "top bottom",    // Khi phần tử bắt đầu đi vào đáy màn hình
-                        end: "top center",      // Khi đỉnh phần tử chạm giữa màn hình
-                        scrub: 1,               // Scrub mượt mà trễ 1 giây
-                        ease: "none"            // Scrub timeline cần để none để đồng bộ
-                    }
-                });
-
-                tl.fromTo(el, 
-                    {
-                        rotationX: -12,
-                        y: 50,
-                        opacity: 0,
-                        transformOrigin: "top center"
-                    },
-                    {
-                        rotationX: 0,
-                        y: 0,
-                        opacity: 1,
-                        ease: "none"
-                    }
-                );
+            // Tạo timeline lật 3D cuốn sách cổ
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: el,
+                    start: "clamp(top bottom)",    // Sử dụng clamp() để đảm bảo ổn định vị trí cuộn
+                    end: "clamp(top center)",      // Sử dụng clamp() để đảm bảo ổn định vị trí cuộn
+                    scrub: 1                       // Scrub mượt mà trễ 1 giây
+                }
             });
+
+            tl.fromTo(el, 
+                {
+                    rotationX: -12,
+                    y: 50,
+                    opacity: 0,
+                    transformOrigin: "top center"
+                },
+                {
+                    rotationX: 0,
+                    y: 0,
+                    opacity: 1,
+                    ease: "none"                   // Đặt ease: "none" ở đây để timeline đồng bộ 1:1 với tiến trình cuộn
+                }
+            );
         });
     },
 
