@@ -91,7 +91,7 @@ window.zenInteract = {
                     x: 0,
                     y: 0,
                     duration: 0.6,
-                    ease: "elastic.out(1, 0.3)"
+                    ease: "power3.out"
                 });
             });
         });
