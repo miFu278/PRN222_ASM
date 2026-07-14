@@ -300,6 +300,12 @@ window.zenInteract = {
 
     refreshScrollTriggers: function () {
         if (typeof ScrollTrigger !== 'undefined') {
+            // Tự động dọn dẹp (kill) các ScrollTrigger mồ côi có phần tử trigger không còn nằm trong DOM
+            ScrollTrigger.getAll().forEach(trigger => {
+                if (trigger.trigger && !document.body.contains(trigger.trigger)) {
+                    trigger.kill();
+                }
+            });
             ScrollTrigger.refresh();
         }
     }
