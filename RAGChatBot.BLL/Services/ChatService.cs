@@ -12,7 +12,6 @@ namespace RAGChatBot.BLL.Services
         private readonly IChatResponseService _chatResponseService;
         private readonly IChatTrackerLogRepository _chatLogRepository;
         private readonly ICreditService _creditService;
-        private readonly IChatSessionRepository _chatSessionRepository;
         private readonly ICourseRepository _courseRepository;
         private readonly ILogger<ChatService> _logger;
 
@@ -21,7 +20,6 @@ namespace RAGChatBot.BLL.Services
             IChatResponseService chatResponseService,
             IChatTrackerLogRepository chatLogRepository,
             ICreditService creditService,
-            IChatSessionRepository chatSessionRepository,
             ICourseRepository courseRepository,
             ILogger<ChatService> logger)
         {
@@ -29,7 +27,6 @@ namespace RAGChatBot.BLL.Services
             _chatResponseService = chatResponseService;
             _chatLogRepository = chatLogRepository;
             _creditService = creditService;
-            _chatSessionRepository = chatSessionRepository;
             _courseRepository = courseRepository;
             _logger = logger;
         }
@@ -96,7 +93,9 @@ namespace RAGChatBot.BLL.Services
                 };
             }
 
-            var (allowed, remaining) = await _creditService.CheckAndDeductCreditAsync(userId);
+            var (allowed, remaining) = await _creditService.CheckAndDeductCreditAsync(
+                userId,
+                effectiveCourseCode);
             if (!allowed)
             {
                 return new ChatReplyDto
@@ -119,6 +118,7 @@ namespace RAGChatBot.BLL.Services
 
             if (!response.IsSuccessful)
             {
+                await _creditService.RefundCreditAsync(userId);
                 return new ChatReplyDto
                 {
                     Reply = response.Reply,
@@ -165,15 +165,6 @@ namespace RAGChatBot.BLL.Services
             catch (Exception exception)
             {
                 _logger.LogError(exception, "Không thể ghi audit log cho UserId={UserId}", userId);
-            }
-
-            try
-            {
-                await _chatSessionRepository.IncrementAsync(userId, effectiveCourseCode);
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, "Không thể ghi nhận lượt chat cho UserId={UserId}", userId);
             }
 
             return new ChatReplyDto

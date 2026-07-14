@@ -57,12 +57,12 @@ namespace RAGChatBot.BLL.Services
                     chunks.Add(chunk);
                 }
 
-                start += (chunkSize - overlap);
-
-                if (start >= textLength || length < chunkSize)
+                if (start + length >= textLength)
                 {
                     break;
                 }
+
+                start += (chunkSize - overlap);
             }
 
             return chunks;
@@ -86,12 +86,12 @@ namespace RAGChatBot.BLL.Services
                     chunks.Add(chunk);
                 }
 
-                start += (chunkSize - overlap);
-
-                if (start >= totalWords || count < chunkSize)
+                if (start + count >= totalWords)
                 {
                     break;
                 }
+
+                start += (chunkSize - overlap);
             }
 
             return chunks;

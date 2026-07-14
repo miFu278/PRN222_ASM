@@ -5,7 +5,6 @@ namespace RAGChatBot.BLL.Services
 {
     public sealed class DashboardService : IDashboardService
     {
-        private const decimal PremiumMonthlyPrice = 199000m;
         private readonly IDashboardRepository _dashboardRepository;
         private readonly IBenchmarkRepository _benchmarkRepository;
 
@@ -55,35 +54,32 @@ namespace RAGChatBot.BLL.Services
 
         public async Task<List<MonthlyRevenueDto>> GetRevenueChartAsync(string period, int year)
         {
-            var expiryDates = await _dashboardRepository.GetPremiumSubscriptionExpiryDatesAsync();
+            var normalizedPeriod = period?.Trim();
+            var startYear = string.Equals(normalizedPeriod, "Year", StringComparison.OrdinalIgnoreCase)
+                ? year - 2
+                : year;
+            var activity = await _dashboardRepository.GetActivityAsync(startYear, year);
             var result = new List<MonthlyRevenueDto>();
 
-            if (period == "Month")
+            if (string.Equals(normalizedPeriod, "Month", StringComparison.OrdinalIgnoreCase))
             {
                 for (var month = 1; month <= 12; month++)
                 {
-                    result.Add(await CreateRevenuePointAsync(
-                        $"T{month}",
-                        year,
-                        month,
-                        month,
-                        expiryDates));
+                    result.Add(CreateRevenuePoint($"T{month}", activity
+                        .Where(item => item.Year == year && item.Month == month)));
                 }
 
                 return result;
             }
 
-            if (period == "Quarter")
+            if (string.Equals(normalizedPeriod, "Quarter", StringComparison.OrdinalIgnoreCase))
             {
                 for (var quarter = 1; quarter <= 4; quarter++)
                 {
                     var startMonth = (quarter - 1) * 3 + 1;
-                    result.Add(await CreateRevenuePointAsync(
-                        $"Q{quarter}",
-                        year,
-                        startMonth,
-                        startMonth + 2,
-                        expiryDates));
+                    var endMonth = startMonth + 2;
+                    result.Add(CreateRevenuePoint($"Q{quarter}", activity
+                        .Where(item => item.Year == year && item.Month >= startMonth && item.Month <= endMonth)));
                 }
 
                 return result;
@@ -91,12 +87,8 @@ namespace RAGChatBot.BLL.Services
 
             for (var currentYear = year - 2; currentYear <= year; currentYear++)
             {
-                result.Add(await CreateRevenuePointAsync(
-                    currentYear.ToString(),
-                    currentYear,
-                    null,
-                    null,
-                    expiryDates));
+                result.Add(CreateRevenuePoint(currentYear.ToString(), activity
+                    .Where(item => item.Year == currentYear)));
             }
 
             return result;
@@ -128,23 +120,18 @@ namespace RAGChatBot.BLL.Services
                 .ToList();
         }
 
-        private async Task<MonthlyRevenueDto> CreateRevenuePointAsync(
+        private static MonthlyRevenueDto CreateRevenuePoint(
             string label,
-            int year,
-            int? startMonth,
-            int? endMonth,
-            IReadOnlyList<DateTime> expiryDates)
+            IEnumerable<RAGChatBot.Domain.Models.DashboardActivityPoint> points)
         {
-            var documentCount = await _dashboardRepository.CountDocumentsAsync(year, startMonth, endMonth);
-            var chatCount = await _dashboardRepository.CountChatSessionsAsync(year, startMonth, endMonth);
-            var revenue = await _dashboardRepository.GetRevenueAsync(year, startMonth, endMonth);
+            var data = points.ToList();
 
             return new MonthlyRevenueDto
             {
                 Label = label,
-                Revenue = revenue,
-                DocumentCount = documentCount,
-                ChatCount = chatCount
+                Revenue = data.Sum(item => item.Revenue),
+                DocumentCount = data.Sum(item => item.DocumentCount),
+                ChatCount = data.Sum(item => item.ChatCount)
             };
         }
     }

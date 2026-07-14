@@ -134,7 +134,7 @@
                             <div class="doc-card-main">
                                 <!-- Icon + Tên file + Meta -->
                                 <div class="doc-card-info">
-                                    <a href="@doc.StoragePath" target="_blank" class="doc-card-name">
+                                    <a asp-page-handler="Download" asp-route-id="@doc.Id" class="doc-card-name">
                                         <i class="fa-regular @(doc.FileName.EndsWith(".pdf") ? "fa-file-pdf" : "fa-file-word") me-2"></i>@doc.FileName
                                     </a>
                                     <div class="doc-card-meta">

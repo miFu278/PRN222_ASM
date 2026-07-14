@@ -32,6 +32,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
         public bool CanUpload { get; set; }
         public bool CanApprove { get; set; }
         public bool CanDelete { get; set; }
+        public bool HasCourseAccess { get; set; }
         public string CurrentSubscriptionTier { get; set; } = "Free";
         public Guid CurrentUserId { get; set; }
 
@@ -53,6 +54,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
         public async Task<IActionResult> OnGetAsync()
         {
             await LoadCourseDetails();
+            if (!HasCourseAccess) return Forbid();
             await LoadDocuments();
             return Page();
         }
@@ -90,7 +92,6 @@ namespace RAGChatBot.Presentation.Pages.Courses
                     CourseCode,
                     Chapter,
                     CurrentUserId,
-                    CurrentSubscriptionTier,
                     ChunkingStrategy,
                     ChunkSize,
                     Overlap
@@ -176,6 +177,8 @@ namespace RAGChatBot.Presentation.Pages.Courses
 
         public async Task<IActionResult> OnGetStatusAsync()
         {
+            await LoadCourseDetails();
+            if (!HasCourseAccess) return Forbid();
             var documents = await _documentService.GetDocumentsByCourseAsync(CourseCode);
             if (User.IsInRole(RoleNames.Student))
             {
@@ -192,13 +195,38 @@ namespace RAGChatBot.Presentation.Pages.Courses
 
         public async Task<IActionResult> OnGetChunksAsync(Guid id)
         {
-            if (User.IsInRole(RoleNames.Student))
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
             {
                 return Forbid();
             }
 
-            var chunks = await _documentService.GetDocumentChunksAsync(id);
-            return new JsonResult(chunks);
+            try
+            {
+                var chunks = await _documentService.GetDocumentChunksAsync(id, userId);
+                return new JsonResult(chunks);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+        }
+
+        public async Task<IActionResult> OnGetDownloadAsync(Guid id)
+        {
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Forbid();
+            try
+            {
+                var download = await _documentService.DownloadDocumentAsync(id, userId);
+                return File(download.Content, "application/octet-stream", download.FileName);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
         }
 
         private async Task LoadCourseDetails()
@@ -209,6 +237,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
             CurrentSubscriptionTier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
 
             var isLecturer = User.IsInRole(RoleNames.Lecturer);
+            var isStudent = User.IsInRole(RoleNames.Student);
             var isAdmin = User.IsInRole(RoleNames.Admin);
             CanUpload = false;
 
@@ -222,6 +251,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
                 SubjectLeaderName = course.SubjectLeaderName;
 
                 var isLeader = course.SubjectLeaderId == CurrentUserId;
+                HasCourseAccess = isAdmin || isStudent || (isLecturer && isLeader);
                 CanUpload = isLeader || isAdmin;
                 CanApprove = isLeader || isAdmin;
                 CanDelete = isLeader || isAdmin;

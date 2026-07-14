@@ -6,6 +6,8 @@ namespace RAGChatBot.BLL.Services
 {
     public class CreditService : ICreditService
     {
+        private const int FreeDailyLimit = 10;
+        private static readonly TimeZoneInfo VietnamTimeZone = ResolveVietnamTimeZone();
         private readonly IUserRepository _userRepository;
         private readonly IChatSessionRepository _chatSessionRepository;
 
@@ -17,7 +19,9 @@ namespace RAGChatBot.BLL.Services
             _chatSessionRepository = chatSessionRepository;
         }
 
-        public async Task<(bool allowed, int remaining)> CheckAndDeductCreditAsync(Guid userId)
+        public async Task<(bool allowed, int remaining)> CheckAndDeductCreditAsync(
+            Guid userId,
+            string courseCode)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user != null &&
@@ -27,17 +31,29 @@ namespace RAGChatBot.BLL.Services
                 return (true, 9999);
             }
 
-            // Usage is persisted and only incremented after a successful RAG response.
-            var usedToday = await _chatSessionRepository.GetTodayMessageCountAsync(userId);
-            var remaining = Math.Max(0, 10 - usedToday);
-            return remaining > 0
-                ? (true, remaining - 1)
-                : (false, 0);
+            return await _chatSessionRepository.TryConsumeDailyCreditAsync(
+                userId,
+                courseCode,
+                GetVietnamDate(),
+                FreeDailyLimit);
         }
 
-        public async Task ResetDailyCreditsForFreeStudentsAsync()
+        public Task RefundCreditAsync(Guid userId)
+            => _chatSessionRepository.RefundDailyCreditAsync(userId, GetVietnamDate());
+
+        private static DateOnly GetVietnamDate()
+            => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VietnamTimeZone));
+
+        private static TimeZoneInfo ResolveVietnamTimeZone()
         {
-            await Task.CompletedTask;
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+            }
         }
     }
 }

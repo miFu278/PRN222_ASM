@@ -1,5 +1,6 @@
 @page "/"
 @model RAGChatBot.Presentation.Pages.IndexModel
+@Html.AntiForgeryToken()
 @{
     ViewData["Title"] = "Trang chủ";
 }
@@ -325,7 +326,10 @@
 
             const response = await fetch('/api/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
                 body: JSON.stringify(body)
             });
 

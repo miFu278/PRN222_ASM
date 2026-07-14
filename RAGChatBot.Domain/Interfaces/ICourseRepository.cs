@@ -11,6 +11,7 @@ namespace RAGChatBot.Domain.Interfaces
         Task<Course?> GetByCodeAsync(string code);
         Task UpdateAsync(Course course);
         Task DeleteAsync(Course course);
+        Task DeleteAggregateAsync(Course course);
         Task<IEnumerable<Course>> GetBySubjectLeaderIdAsync(Guid userId);
     }
 }

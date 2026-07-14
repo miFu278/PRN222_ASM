@@ -9,7 +9,7 @@ namespace RAGChatBot.Domain.Interfaces
         Task ReplaceQuestionsAsync(Guid documentId, IReadOnlyList<QuestionBank> questions);
         Task<IReadOnlyList<QuestionBank>> GetQuestionsByCourseAsync(string courseCode);
         Task<IReadOnlyDictionary<Guid, QuestionBank>> GetQuestionsByIdsAsync(IReadOnlyCollection<Guid> questionIds);
-        Task AddAttemptAsync(QuizAttempt attempt);
+        Task<QuizAttempt> AddAttemptAsync(QuizAttempt attempt);
         Task<QuizAttempt?> GetAttemptWithAnswersAsync(Guid attemptId);
         Task<QuizAttempt?> GetInProgressAttemptAsync(Guid userId, Guid quizId);
         Task<int> GetAttemptCountAsync(Guid userId, Guid quizId);

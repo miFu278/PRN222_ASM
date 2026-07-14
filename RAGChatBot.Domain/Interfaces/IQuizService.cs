@@ -19,7 +19,8 @@ namespace RAGChatBot.Domain.Interfaces
         Task DeleteQuestionAsync(Guid id, string courseCode);
         Task<IReadOnlyList<QuizSummaryModel>> GetQuizzesByCourseAsync(string courseCode, Guid? userId = null, bool includeUnpublished = false);
         Task<Quiz> CreateQuizAsync(string courseCode, string title, int questionCount, Guid? documentId,
-            int maxAttempts, string? password, QuizReviewPolicy reviewPolicy, bool shuffleQuestions, bool shuffleOptions);
+            int maxAttempts, int durationMinutes, string? password, QuizReviewPolicy reviewPolicy,
+            bool shuffleQuestions, bool shuffleOptions);
         Task DeleteQuizAsync(Guid id, string courseCode);
         Task<IReadOnlyList<QuizAttemptDetailsDto>> GetStudentAttemptsAsync(Guid userId, string? courseCode = null);
         Task<QuizReviewModel> GetAttemptReviewAsync(Guid requesterId, Guid attemptId, bool instructorView, string? managedCourseCode = null);

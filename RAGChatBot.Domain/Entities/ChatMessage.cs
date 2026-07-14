@@ -8,7 +8,7 @@ namespace RAGChatBot.Domain.Entities
         public Guid ThreadId { get; set; }
         public string Role { get; set; } = string.Empty; // "user" | "assistant"
         public string Content { get; set; } = string.Empty;
-        public DateTime SentAt { get; set; } = DateTime.UtcNow.AddHours(7);
+        public DateTime SentAt { get; set; } = DateTime.UtcNow;
 
         // Navigation property
         public virtual ChatThread Thread { get; set; } = null!;

@@ -22,16 +22,13 @@ namespace RAGChatBot.DAL.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<DocumentProcessingWorker> _logger;
-        private readonly HttpClient _httpClient;
 
         public DocumentProcessingWorker(
             IServiceProvider serviceProvider,
-            ILogger<DocumentProcessingWorker> logger,
-            HttpClient httpClient)
+            ILogger<DocumentProcessingWorker> logger)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
-            _httpClient = httpClient;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -50,7 +47,14 @@ namespace RAGChatBot.DAL.Services
                 }
 
                 // Chờ 10 giây trước khi quét lượt tiếp theo
-                await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
             }
         }
 
@@ -101,23 +105,13 @@ namespace RAGChatBot.DAL.Services
                 var chunkingService = scope.ServiceProvider.GetRequiredService<IChunkingService>();
                 var embeddingService = scope.ServiceProvider.GetRequiredService<IEmbeddingService>();
                 var benchmarkRepo = scope.ServiceProvider.GetRequiredService<IBenchmarkRepository>();
+                var fileStorage = scope.ServiceProvider.GetRequiredService<IFileStorageService>();
                 var sw = new Stopwatch();
 
                 // 2. Tải file từ Cloud Storage (Supabase) về Stream
                 _logger.LogInformation("Đang tải file từ URL: {Url}", document.StoragePath);
                 
-                byte[] fileBytes;
-                try
-                {
-                    fileBytes = await _httpClient.GetByteArrayAsync(document.StoragePath, stoppingToken);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Không thể tải tệp tin từ Storage Path: {Path}", document.StoragePath);
-                    throw; // Rethrow để khối catch bên dưới cập nhật trạng thái Failed
-                }
-
-                using var memoryStream = new MemoryStream(fileBytes);
+                await using var memoryStream = await fileStorage.OpenReadAsync(document.StoragePath);
                 var extension = Path.GetExtension(document.FileName);
 
                 // 3. Trích xuất văn bản thô — Benchmark: TextExtraction
@@ -130,7 +124,7 @@ namespace RAGChatBot.DAL.Services
                     OperationType = "TextExtraction",
                     DurationMs = sw.Elapsed.TotalMilliseconds,
                     DocumentName = document.FileName,
-                    Notes = $"Extension: {extension}, Size: {fileBytes.Length} bytes"
+                    Notes = $"Extension: {extension}, Size: {document.FileSize} bytes"
                 });
 
                 if (string.IsNullOrWhiteSpace(fullText))

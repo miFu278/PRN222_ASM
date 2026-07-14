@@ -10,54 +10,39 @@ namespace RAGChatBot.DAL.Repositories
         private readonly AppDbContext _db;
         public ChatSessionRepository(AppDbContext db) => _db = db;
 
-        public async Task<int> CountByMonthAsync(int year, int month)
-            => await _db.ChatSessions.CountAsync(c =>
-                c.CreatedAt.Year == year && c.CreatedAt.Month == month);
-
-        public async Task<int> CountByQuarterAsync(int year, int quarter)
+        public async Task<(bool Allowed, int Remaining)> TryConsumeDailyCreditAsync(
+            Guid userId,
+            string courseCode,
+            DateOnly usageDate,
+            int dailyLimit)
         {
-            var startMonth = (quarter - 1) * 3 + 1;
-            var endMonth = startMonth + 2;
-            return await _db.ChatSessions.CountAsync(c =>
-                c.CreatedAt.Year == year &&
-                c.CreatedAt.Month >= startMonth &&
-                c.CreatedAt.Month <= endMonth);
+            var counts = await _db.Database.SqlQuery<int>($$"""
+                INSERT INTO "ChatSessions"
+                    ("Id", "UserId", "CourseCode", "CreatedAt", "UsageDate", "MessageCount")
+                VALUES
+                    ({{Guid.NewGuid()}}, {{userId}}, {{courseCode}}, {{DateTime.UtcNow}}, {{usageDate}}, 1)
+                ON CONFLICT ("UserId", "UsageDate")
+                DO UPDATE SET
+                    "MessageCount" = "ChatSessions"."MessageCount" + 1,
+                    "CourseCode" = EXCLUDED."CourseCode"
+                WHERE "ChatSessions"."MessageCount" < {{dailyLimit}}
+                RETURNING "MessageCount" AS "Value"
+                """).ToListAsync();
+
+            if (counts.Count == 0)
+            {
+                return (false, 0);
+            }
+
+            return (true, Math.Max(0, dailyLimit - counts[0]));
         }
 
-        public async Task<int> CountByYearAsync(int year)
-            => await _db.ChatSessions.CountAsync(c => c.CreatedAt.Year == year);
-
-        public async Task<int> GetTodayMessageCountAsync(Guid userId)
-        {
-            var today = DateTime.UtcNow.Date;
-            var tomorrow = today.AddDays(1);
-            return await _db.ChatSessions
+        public Task RefundDailyCreditAsync(Guid userId, DateOnly usageDate)
+            => _db.ChatSessions
                 .Where(session => session.UserId == userId &&
-                                  session.CreatedAt >= today &&
-                                  session.CreatedAt < tomorrow)
-                .SumAsync(session => session.MessageCount);
-        }
-
-        public async Task IncrementAsync(Guid userId, string courseCode)
-        {
-            var session = await _db.ChatSessions
-                .FirstOrDefaultAsync(c => c.UserId == userId &&
-                    c.CreatedAt.Date == DateTime.UtcNow.Date);
-            if (session == null)
-            {
-                _db.ChatSessions.Add(new ChatSession
-                {
-                    UserId = userId,
-                    CourseCode = courseCode,
-                    CreatedAt = DateTime.UtcNow,
-                    MessageCount = 1
-                });
-            }
-            else
-            {
-                session.MessageCount++;
-            }
-            await _db.SaveChangesAsync();
-        }
+                    session.UsageDate == usageDate &&
+                    session.MessageCount > 0)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(session => session.MessageCount, session => session.MessageCount - 1));
     }
 }

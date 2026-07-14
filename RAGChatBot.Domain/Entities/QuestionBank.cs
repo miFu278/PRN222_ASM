@@ -14,7 +14,7 @@ namespace RAGChatBot.Domain.Entities
         public string OptionC { get; set; } = string.Empty;
         public string OptionD { get; set; } = string.Empty;
         public string CorrectAnswer { get; set; } = string.Empty; // "A", "B", "C", "D"
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(7);
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation property
         public virtual KnowledgeDocument Document { get; set; } = null!;

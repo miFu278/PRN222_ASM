@@ -9,7 +9,7 @@ namespace RAGChatBot.Domain.Entities
         public Guid UserId { get; set; }
         public string CourseCode { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(7);
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation property
         public virtual ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();

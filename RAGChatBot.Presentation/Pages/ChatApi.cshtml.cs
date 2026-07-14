@@ -8,7 +8,6 @@ using System.Security.Claims;
 namespace RAGChatBot.Presentation.Pages
 {
     [Authorize]
-    [IgnoreAntiforgeryToken]
     [EnableRateLimiting("StudentChatLimit")]
     public class ChatApiModel : PageModel
     {

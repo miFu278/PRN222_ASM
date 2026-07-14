@@ -15,10 +15,12 @@ namespace RAGChatBot.Domain.Entities
         public int TotalQuestions { get; set; }
         public double Percentage { get; set; }
         public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+        public DateTime ExpiresAt { get; set; }
         public DateTime? SubmittedAt { get; set; }
         public DateTime AttemptedAt { get; set; } = DateTime.UtcNow;
         public string? QuizTitle { get; set; }
         public QuizReviewPolicy ReviewPolicy { get; set; } = QuizReviewPolicy.ScoreOnly;
+        public uint Version { get; set; }
         public ICollection<QuizAttemptAnswer> Answers { get; set; } = new List<QuizAttemptAnswer>();
     }
 

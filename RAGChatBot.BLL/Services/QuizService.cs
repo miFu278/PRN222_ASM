@@ -124,7 +124,16 @@ namespace RAGChatBot.BLL.Services
             if (!quiz.IsPublished) throw new InvalidOperationException("Bài trắc nghiệm chưa được mở.");
 
             var existing = await _quizRepository.GetInProgressAttemptAsync(userId, quizId);
-            if (existing is not null) return ToStartResult(existing);
+            if (existing is not null && existing.ExpiresAt > DateTime.UtcNow) return ToStartResult(existing);
+            if (existing is not null)
+            {
+                existing.Status = QuizAttemptStatus.Submitted;
+                existing.Score = 0;
+                existing.Percentage = 0;
+                existing.SubmittedAt = existing.ExpiresAt;
+                existing.AttemptedAt = existing.ExpiresAt;
+                await _quizRepository.SaveChangesAsync();
+            }
 
             if (!string.IsNullOrWhiteSpace(quiz.PasswordHash) &&
                 (string.IsNullOrEmpty(password) || !_passwordHasher.Verify(password, quiz.PasswordHash)))
@@ -146,6 +155,7 @@ namespace RAGChatBot.BLL.Services
                 ? available.OrderBy(_ => Random.Shared.Next()).Take(quiz.QuestionCount).ToList()
                 : available.Take(quiz.QuestionCount).ToList();
 
+            var startedAt = DateTime.UtcNow;
             var attempt = new QuizAttempt
             {
                 Id = Guid.NewGuid(),
@@ -157,15 +167,15 @@ namespace RAGChatBot.BLL.Services
                 Status = QuizAttemptStatus.InProgress,
                 TotalQuestions = selected.Count,
                 ReviewPolicy = quiz.ReviewPolicy,
-                StartedAt = DateTime.UtcNow,
-                AttemptedAt = DateTime.UtcNow
+                StartedAt = startedAt,
+                ExpiresAt = startedAt.AddMinutes(quiz.DurationMinutes),
+                AttemptedAt = startedAt
             };
 
             for (var index = 0; index < selected.Count; index++)
                 attempt.Answers.Add(CreateSnapshot(attempt.Id, selected[index], index + 1, quiz.ShuffleOptions));
 
-            await _quizRepository.AddAttemptAsync(attempt);
-            return ToStartResult(attempt);
+            return ToStartResult(await _quizRepository.AddAttemptAsync(attempt));
         }
 
         public async Task<QuizAttemptResult> SubmitQuizAttemptAsync(
@@ -175,6 +185,16 @@ namespace RAGChatBot.BLL.Services
                 ?? throw new KeyNotFoundException("Lượt làm bài không tồn tại.");
             if (attempt.UserId != userId) throw new UnauthorizedAccessException("Bạn không sở hữu lượt làm bài này.");
             if (attempt.Status != QuizAttemptStatus.InProgress) throw new InvalidOperationException("Lượt làm bài đã được nộp.");
+            if (attempt.ExpiresAt <= DateTime.UtcNow)
+            {
+                attempt.Status = QuizAttemptStatus.Submitted;
+                attempt.Score = 0;
+                attempt.Percentage = 0;
+                attempt.SubmittedAt = attempt.ExpiresAt;
+                attempt.AttemptedAt = attempt.ExpiresAt;
+                await _quizRepository.SaveChangesAsync();
+                throw new InvalidOperationException("Thời gian làm bài đã hết.");
+            }
 
             var submitted = answers
                 .GroupBy(answer => answer.QuestionId)
@@ -332,6 +352,7 @@ namespace RAGChatBot.BLL.Services
                     QuestionCount = quiz.QuestionCount,
                     DocumentId = quiz.DocumentId,
                     MaxAttempts = quiz.MaxAttempts,
+                    DurationMinutes = quiz.DurationMinutes,
                     AttemptsUsed = userId.HasValue ? await _quizRepository.GetAttemptCountAsync(userId.Value, quiz.Id) : 0,
                     HasPassword = !string.IsNullOrWhiteSpace(quiz.PasswordHash),
                     ReviewPolicy = quiz.ReviewPolicy,
@@ -346,11 +367,12 @@ namespace RAGChatBot.BLL.Services
 
         public async Task<Quiz> CreateQuizAsync(
             string courseCode, string title, int questionCount, Guid? documentId,
-            int maxAttempts, string? password, QuizReviewPolicy reviewPolicy,
+            int maxAttempts, int durationMinutes, string? password, QuizReviewPolicy reviewPolicy,
             bool shuffleQuestions, bool shuffleOptions)
         {
             if (questionCount is < 1 or > 100) throw new ArgumentOutOfRangeException(nameof(questionCount));
             if (maxAttempts is < 1 or > 100) throw new ArgumentOutOfRangeException(nameof(maxAttempts));
+            if (durationMinutes is < 1 or > 300) throw new ArgumentOutOfRangeException(nameof(durationMinutes));
             var normalizedCourseCode = RequireText(courseCode, "Mã môn").ToUpperInvariant();
             var available = await _quizRepository.GetQuestionsByCourseAsync(normalizedCourseCode);
             if (documentId.HasValue)
@@ -371,6 +393,7 @@ namespace RAGChatBot.BLL.Services
                 QuestionCount = questionCount,
                 DocumentId = documentId,
                 MaxAttempts = maxAttempts,
+                DurationMinutes = durationMinutes,
                 PasswordHash = string.IsNullOrWhiteSpace(password) ? null : _passwordHasher.Hash(password),
                 ReviewPolicy = reviewPolicy,
                 ShuffleQuestions = shuffleQuestions,
@@ -433,6 +456,7 @@ namespace RAGChatBot.BLL.Services
         {
             AttemptId = attempt.Id,
             AttemptNumber = attempt.AttemptNumber,
+            ExpiresAt = attempt.ExpiresAt,
             Questions = attempt.Answers.OrderBy(answer => answer.DisplayOrder).Select(answer => new QuizQuestionModel
             {
                 Id = answer.QuestionId ?? answer.Id,

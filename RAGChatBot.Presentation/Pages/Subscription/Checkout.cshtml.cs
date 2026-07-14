@@ -12,24 +12,31 @@ namespace RAGChatBot.Presentation.Pages.Subscription
         private static long _lastOrderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         private readonly IPayOSService _payOSService;
         private readonly IPaymentService _paymentService;
+        private readonly IAuthService _authService;
         private readonly ILogger<CheckoutModel> _logger;
 
         public CheckoutModel(
             IPayOSService payOSService,
             IPaymentService paymentService,
+            IAuthService authService,
             ILogger<CheckoutModel> logger)
         {
             _payOSService = payOSService;
             _paymentService = paymentService;
+            _authService = authService;
             _logger = logger;
         }
 
         public string? ErrorMessage { get; set; }
 
-        public IActionResult OnGet()
+        public async Task<IActionResult> OnGetAsync()
         {
-            var userTier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
-            if (userTier == "Premium")
+            if (!TryGetUserId(out var userId))
+            {
+                return Challenge();
+            }
+
+            if (await HasActivePremiumAsync(userId))
             {
                 TempData["SuccessMessage"] = "Bạn đã ở gói Premium rồi, không cần đăng ký thêm!";
                 return RedirectToPage("/Index");
@@ -39,17 +46,15 @@ namespace RAGChatBot.Presentation.Pages.Subscription
 
         public async Task<IActionResult> OnPostAsync()
         {
-            var userTier = User.FindFirst("SubscriptionTier")?.Value ?? "Free";
-            if (userTier == "Premium")
-            {
-                return RedirectToPage("/Index");
-            }
-
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(userIdStr, out var userId))
+            if (!TryGetUserId(out var userId))
             {
                 ErrorMessage = "Nhận diện người dùng không hợp lệ.";
                 return Page();
+            }
+
+            if (await HasActivePremiumAsync(userId))
+            {
+                return RedirectToPage("/Index");
             }
 
             const long amount = 199000;
@@ -87,6 +92,17 @@ namespace RAGChatBot.Presentation.Pages.Subscription
                 ErrorMessage = "Không thể khởi tạo thanh toán PayOS. Vui lòng thử lại.";
                 return Page();
             }
+        }
+
+        private bool TryGetUserId(out Guid userId)
+            => Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
+
+        private async Task<bool> HasActivePremiumAsync(Guid userId)
+        {
+            var user = await _authService.GetUserByIdAsync(userId);
+            return user is not null &&
+                string.Equals(user.SubscriptionTier, "Premium", StringComparison.OrdinalIgnoreCase) &&
+                (!user.SubscriptionExpiresAt.HasValue || user.SubscriptionExpiresAt.Value > DateTime.UtcNow);
         }
     }
 }

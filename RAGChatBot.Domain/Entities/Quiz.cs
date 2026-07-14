@@ -10,6 +10,7 @@ namespace RAGChatBot.Domain.Entities
         public int QuestionCount { get; set; } = 20;
         public Guid? DocumentId { get; set; }
         public int MaxAttempts { get; set; } = 1;
+        public int DurationMinutes { get; set; } = 30;
         public string? PasswordHash { get; set; }
         public QuizReviewPolicy ReviewPolicy { get; set; } = QuizReviewPolicy.ScoreOnly;
         public bool ShuffleQuestions { get; set; } = true;

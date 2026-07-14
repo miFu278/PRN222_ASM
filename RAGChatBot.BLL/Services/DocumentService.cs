@@ -5,6 +5,7 @@ using RAGChatBot.Domain.Constants;
 using RAGChatBot.Domain.Enums;
 using RAGChatBot.Domain.Entities;
 using RAGChatBot.Domain.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,19 +21,22 @@ namespace RAGChatBot.BLL.Services
         private readonly ICourseRepository _courseRepository;
         private readonly IUserRepository _userRepository;
         private readonly IDocumentEventService _eventService;
+        private readonly ILogger<DocumentService> _logger;
 
         public DocumentService(
             IFileStorageService fileStorageService,
             IKnowledgeDocumentRepository documentRepository,
             ICourseRepository courseRepository,
             IUserRepository userRepository,
-            IDocumentEventService eventService)
+            IDocumentEventService eventService,
+            ILogger<DocumentService> logger)
         {
             _fileStorageService = fileStorageService;
             _documentRepository = documentRepository;
             _courseRepository = courseRepository;
             _userRepository = userRepository;
             _eventService = eventService;
+            _logger = logger;
         }
 
         public async Task<DocumentDto> UploadDocumentAsync(
@@ -42,17 +46,27 @@ namespace RAGChatBot.BLL.Services
             string courseCode,
             string chapter,
             Guid userId,
-            string userSubscriptionTier,
             string chunkingStrategy = "Character",
             int chunkSize = 500,
             int overlap = 50)
         {
-            // 1. Validate file extension
-            var extension = Path.GetExtension(fileName).ToLower();
+            fileName = Path.GetFileName(fileName);
+            courseCode = courseCode.Trim().ToUpperInvariant();
+            chapter = chapter.Trim();
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
             if (extension != ".pdf" && extension != ".docx")
             {
                 throw new ArgumentException("Chỉ chấp nhận tệp tin định dạng .pdf hoặc .docx!");
             }
+
+            if (fileSize <= 0) throw new ArgumentException("Tệp tải lên đang rỗng.", nameof(fileSize));
+            if (string.IsNullOrWhiteSpace(chapter)) throw new ArgumentException("Chương không được để trống.", nameof(chapter));
+            if (chunkSize is < 100 or > 5000)
+                throw new ArgumentOutOfRangeException(nameof(chunkSize), "Kích thước chunk phải từ 100 đến 5.000.");
+            if (overlap < 0 || overlap >= chunkSize)
+                throw new ArgumentOutOfRangeException(nameof(overlap), "Overlap phải từ 0 và nhỏ hơn kích thước chunk.");
+            if (chunkingStrategy is not ("Character" or "Word" or "Paragraph"))
+                throw new ArgumentException("Chiến lược chunk không hợp lệ.", nameof(chunkingStrategy));
 
             var user = await _userRepository.GetByIdAsync(userId)
                 ?? throw new UnauthorizedAccessException("Không tìm thấy người dùng tải tài liệu!");
@@ -103,8 +117,23 @@ namespace RAGChatBot.BLL.Services
                 Overlap = overlap
             };
 
-            await _documentRepository.AddAsync(document);
-            await _documentRepository.SaveChangesAsync();
+            try
+            {
+                await _documentRepository.AddAsync(document);
+                await _documentRepository.SaveChangesAsync();
+            }
+            catch
+            {
+                try
+                {
+                    await _fileStorageService.DeleteFileAsync(relativePath);
+                }
+                catch (Exception cleanupException)
+                {
+                    _logger.LogError(cleanupException, "Không thể dọn tệp upload bị orphan: {StoragePath}", relativePath);
+                }
+                throw;
+            }
 
             // Trigger SignalR event for real-time UI updates
             await _eventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
@@ -130,7 +159,7 @@ namespace RAGChatBot.BLL.Services
             {
                 Id = doc.Id,
                 FileName = doc.FileName,
-                StoragePath = doc.StoragePath,
+                StoragePath = string.Empty,
                 CourseCode = doc.CourseCode,
                 Chapter = doc.Chapter,
                 FileSize = doc.FileSize,
@@ -164,19 +193,18 @@ namespace RAGChatBot.BLL.Services
                 throw new UnauthorizedAccessException("Chỉ có Trưởng bộ môn của môn học này mới được quyền xóa tài liệu!");
             }
 
-            // 1. Xóa file vật lý trên dịch vụ lưu trữ (đám mây hoặc local)
+            // Delete database metadata first so users never see a record whose file is gone.
+            await _documentRepository.DeleteAsync(document);
+            await _documentRepository.SaveChangesAsync();
+
             try
             {
                 await _fileStorageService.DeleteFileAsync(document.StoragePath);
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                // Vẫn tiếp tục xóa bản ghi DB ngay cả khi file vật lý trên cloud đã bị xóa trước đó
+                _logger.LogWarning(exception, "Không thể dọn object storage {StoragePath}", document.StoragePath);
             }
-
-            // 2. Xóa bản ghi siêu dữ liệu trong DB
-            await _documentRepository.DeleteAsync(document);
-            await _documentRepository.SaveChangesAsync();
             
             // Trigger SignalR event
             await _eventService.NotifyDocumentChangedAsync(new RealtimeChangeEvent
@@ -359,13 +387,15 @@ namespace RAGChatBot.BLL.Services
             });
         }
 
-        public async Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId)
+        public async Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId, Guid userId)
         {
             var document = await _documentRepository.GetByIdWithChunksAsync(documentId);
             if (document == null)
             {
                 return Enumerable.Empty<ChunkDto>();
             }
+
+            await EnsureCanManageCourseAsync(document.CourseCode, userId);
 
             return document.Chunks
                 .OrderBy(c => c.ChunkIndex)
@@ -375,6 +405,22 @@ namespace RAGChatBot.BLL.Services
                     Content = c.Content,
                     HasEmbedding = c.Embedding != null
                 });
+        }
+
+        public async Task<(Stream Content, string FileName)> DownloadDocumentAsync(Guid documentId, Guid userId)
+        {
+            var document = await _documentRepository.GetByIdAsync(documentId)
+                ?? throw new KeyNotFoundException("Không tìm thấy tài liệu.");
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new UnauthorizedAccessException("Phiên người dùng không hợp lệ.");
+
+            var isManager = await CanManageCourseAsync(document.CourseCode, user);
+            if (!isManager && (!document.IsApproved || document.Status != DocumentStatus.Success))
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền tải tài liệu này.");
+            }
+
+            return (await _fileStorageService.OpenReadAsync(document.StoragePath), document.FileName);
         }
 
         public async Task<DocumentDto?> GetDocumentByIdAsync(Guid id)
@@ -398,7 +444,7 @@ namespace RAGChatBot.BLL.Services
             {
                 Id = doc.Id,
                 FileName = doc.FileName,
-                StoragePath = doc.StoragePath,
+                StoragePath = string.Empty,
                 CourseCode = doc.CourseCode,
                 Chapter = doc.Chapter,
                 FileSize = doc.FileSize,
@@ -410,6 +456,23 @@ namespace RAGChatBot.BLL.Services
                 ChunkSize = doc.ChunkSize,
                 Overlap = doc.Overlap
             };
+        }
+
+        private async Task EnsureCanManageCourseAsync(string courseCode, Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new UnauthorizedAccessException("Phiên người dùng không hợp lệ.");
+            if (!await CanManageCourseAsync(courseCode, user))
+            {
+                throw new UnauthorizedAccessException("Bạn không quản lý môn học của tài liệu này.");
+            }
+        }
+
+        private async Task<bool> CanManageCourseAsync(string courseCode, User user)
+        {
+            if (string.Equals(user.Role?.Name, RoleNames.Admin, StringComparison.OrdinalIgnoreCase)) return true;
+            var course = await _courseRepository.GetByCodeAsync(courseCode);
+            return course?.SubjectLeaderId == user.Id;
         }
     }
 }
