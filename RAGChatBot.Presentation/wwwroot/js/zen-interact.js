@@ -264,7 +264,7 @@ window.zenInteract = {
 
         gsap.registerPlugin(ScrollTrigger);
 
-        const targets = ['.zen-hero', '.zen-chat-layout', '.zen-container.py-5'];
+        const targets = ['.zen-hero', '.zen-chat-layout', '.zen-container', '.zen-chat-container'];
         
         targets.forEach(selector => {
             const elements = document.querySelectorAll(selector);
