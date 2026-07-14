@@ -166,11 +166,17 @@
                                                 }
                                                 else if (doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Failed)
                                                 {
-                                                    <span class="status-badge status-failed" style="background: #dc3545; color: white;">Failed</span>
+                                                    <span class="status-badge" style="color: var(--accent-shu);">
+                                                        <span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: var(--accent-shu); margin-right: 8px;"></span>
+                                                        Failed
+                                                    </span>
                                                 }
                                                 else if (doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Processing)
                                                 {
-                                                    <span class="status-badge status-processing" style="background: #17a2b8; color: white;">Processing...</span>
+                                                    <span class="status-badge" style="color: #0284c7;">
+                                                        <span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: #0284c7; margin-right: 8px;"></span>
+                                                        Processing...
+                                                    </span>
                                                 }
                                                 else
                                                 {
@@ -403,9 +409,9 @@
                                         var chunkBtn = document.querySelector(`.btn-view-chunks[data-id="${item.id}"]`);
                                         if (chunkBtn) chunkBtn.style.setProperty('display', 'inline-block', 'important');
                                     } else if (item.status === 'failed') {
-                                        processingStatusHtml = '<span class="status-badge status-failed" style="background: #dc3545; color: white;">Failed</span>';
+                                        processingStatusHtml = '<span class="status-badge" style="color: var(--accent-shu);"><span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: var(--accent-shu); margin-right: 8px;"></span>Failed</span>';
                                     } else if (item.status === 'processing') {
-                                        processingStatusHtml = '<span class="status-badge status-processing" style="background: #17a2b8; color: white;">Processing...</span>';
+                                        processingStatusHtml = '<span class="status-badge" style="color: #0284c7;"><span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: #0284c7; margin-right: 8px;"></span>Processing...</span>';
                                     } else {
                                         processingStatusHtml = '<span class="status-badge status-pending">Pending...</span>';
                                     }

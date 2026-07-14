@@ -70,9 +70,9 @@
 
         <!-- Question Bank Section -->
         <div id="questionBankSection">
-            <!-- AI Generation Control Card -->
-            <div class="card mb-4" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0; box-shadow: none;">
-                <div class="card-body p-4">
+            <!-- AI Generation Control Boxless -->
+            <div class="zen-list-item mb-4" style="padding: 24px; border: 1px solid var(--border-light); background: var(--bg-washi);">
+                <div>
                     <h5 class="font-serif mb-2" style="font-size: 1.1rem; color: var(--text-sumi);"><i class="fa-solid fa-wand-magic-sparkles text-accent me-2"></i>Sinh câu hỏi trắc nghiệm bằng AI</h5>
                     <p class="text-muted small mb-4">Hệ thống sẽ quét nội dung tài liệu đã chọn để tự động phân tích và tạo ngân hàng câu hỏi trắc nghiệm (lên tới 100 câu).</p>
                     
@@ -120,9 +120,9 @@
 
         <!-- Quiz Builder Section -->
         <div id="quizBuilderSection" style="display: none;">
-            <!-- Create Quiz Card -->
-            <div class="card mb-4" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0; box-shadow: none;">
-                <form id="createQuizForm" class="card-body p-4">
+            <!-- Create Quiz Boxless -->
+            <div class="zen-list-item mb-4" style="padding: 24px; border: 1px solid var(--border-light); background: var(--bg-washi);">
+                <form id="createQuizForm">
                     <h5 class="font-serif mb-4" style="font-size: 1.15rem; color: var(--text-sumi);"><i class="fa-solid fa-file-signature text-accent me-2"></i>Thiết lập bài trắc nghiệm mới</h5>
                     
                     <div class="row g-4 mb-4">
@@ -187,7 +187,7 @@
             </div>
 
             <div id="quizzesTableWrapper" class="table-responsive" style="display: none;">
-                <table class="table align-middle" style="background: var(--bg-washi); border: 1px solid var(--border-light);">
+                <table class="table-zen w-100">
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border-light); font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted);">
                             <th class="ps-4">Tiêu Đề</th>
@@ -220,7 +220,7 @@
             </div>
 
             <div id="attemptsTableWrapper" class="table-responsive" style="display: none;">
-                <table class="table align-middle" style="background: var(--bg-washi); border: 1px solid var(--border-light);">
+                <table class="table-zen w-100">
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border-light); font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted);">
                             <th class="ps-4">Học Viên</th>
@@ -663,7 +663,7 @@ else
                     return `
                         <div class="d-flex align-items-center gap-2 p-2 ${isCorrect ? 'correct-option-badge' : ''}" style="font-size: 0.95rem;">
                             <strong class="me-2">${letter}.</strong> ${escapeHtml(text)}
-                            ${isCorrect ? '<span class="ms-auto badge bg-success text-white small" style="font-size: 0.7rem; padding: 4px 8px;">Đáp án đúng</span>' : ''}
+                            ${isCorrect ? '<span class="ms-auto status-badge" style="color: #2d6a4f; font-size: 0.8rem;"><span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: #2d6a4f; margin-right: 6px;"></span>Đáp án đúng</span>' : ''}
                         </div>
                     `;
                 };
@@ -674,12 +674,12 @@ else
                             <span class="text-accent me-2" style="font-family: var(--font-serif);">Câu ${globalIndexOffset + idx + 1}.</span>
                             <span class="q-text">${escapeHtml(q.questionText)}</span>
                         </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-secondary py-1 px-2 border-light text-muted" onclick="openEditQuestionModal('${q.id}')" title="Chỉnh sửa câu hỏi" style="font-size: 0.8rem; border-radius: 0;">
-                                <i class="fa-solid fa-pen-to-square"></i> Sửa
+                        <div class="d-flex gap-3">
+                            <button class="zen-action-link" onclick="openEditQuestionModal('${q.id}')" title="Chỉnh sửa câu hỏi" style="font-size: 0.85rem; padding: 0;">
+                                <i class="fa-solid fa-pen-to-square me-1"></i> Sửa
                             </button>
-                            <button class="btn btn-sm btn-outline-danger py-1 px-2 border-light text-accent" onclick="deleteQuestion('${q.id}')" title="Xóa câu hỏi" style="font-size: 0.8rem; border-radius: 0;">
-                                <i class="fa-solid fa-trash-can"></i> Xóa
+                            <button class="zen-action-link danger" onclick="deleteQuestion('${q.id}')" title="Xóa câu hỏi" style="font-size: 0.85rem; padding: 0;">
+                                <i class="fa-solid fa-trash-can me-1"></i> Xóa
                             </button>
                         </div>
                     </div>
@@ -1001,13 +1001,13 @@ else
                 tr.innerHTML = `
                     <td class="ps-4" style="font-weight: 500;">${escapeHtml(a.studentName)}</td>
                     <td><code style="color: var(--text-sumi); font-size: 0.9rem;">${escapeHtml(a.studentUsername)}</code></td>
-                    <td><span class="badge bg-secondary text-white fw-light">${escapeHtml(a.quizTitle)}</span></td>
+                    <td><span style="font-family: var(--font-sans); color: var(--text-sumi); font-weight: 500;">${escapeHtml(a.quizTitle)}</span></td>
                     <td>${dateFormatted}</td>
                     <td>${a.score} / ${a.totalQuestions}</td>
                     <td><strong style="color: var(--accent-shu);">${a.percentage}%</strong></td>
                     <td class="pe-4 text-end">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="viewAttemptDetails('${a.id}', true)">
-                            <i class="fa-solid fa-eye"></i> Xem từng câu
+                        <button class="zen-action-link" onclick="viewAttemptDetails('${a.id}', true)">
+                            <i class="fa-solid fa-eye me-1"></i> Xem từng câu
                         </button>
                     </td>
                 `;
@@ -1032,15 +1032,15 @@ else
             
             container.innerHTML = `
                 <div class="d-flex justify-content-center align-items-center gap-3 mt-4">
-                    <button class="btn btn-sm btn-outline-secondary px-3 py-1 border-light text-muted" 
+                    <button class="zen-action-link" 
                             ${current === 1 ? 'disabled' : ''} 
-                            onclick="triggerPageChange('${containerId}', -1)" style="border-radius: 0;">
+                            onclick="triggerPageChange('${containerId}', -1)" style="color: ${current === 1 ? 'var(--text-muted)' : 'var(--text-sumi)'}; opacity: ${current === 1 ? 0.4 : 1}; cursor: ${current === 1 ? 'not-allowed' : 'pointer'};">
                         &larr; Trang trước
                     </button>
                     <span class="small text-muted">Trang <strong>${current}</strong> / ${total}</span>
-                    <button class="btn btn-sm btn-outline-secondary px-3 py-1 border-light text-muted" 
+                    <button class="zen-action-link" 
                             ${current === total ? 'disabled' : ''} 
-                            onclick="triggerPageChange('${containerId}', 1)" style="border-radius: 0;">
+                            onclick="triggerPageChange('${containerId}', 1)" style="color: ${current === total ? 'var(--text-muted)' : 'var(--text-sumi)'}; opacity: ${current === total ? 0.4 : 1}; cursor: ${current === total ? 'not-allowed' : 'pointer'};">
                         Trang sau &rarr;
                     </button>
                 </div>
@@ -1133,20 +1133,18 @@ else
                     const col = document.createElement('div');
                     col.className = 'col-md-6 col-lg-4';
                     col.innerHTML = `
-                        <div class="card h-100" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0; transition: border-color 0.2s;" 
+                        <div class="zen-list-item h-100" style="background: var(--bg-washi); border: 1px solid var(--border-light); padding: 24px; transition: border-color 0.2s; display: flex; flex-direction: column;" 
                              onmouseover="this.style.borderColor='var(--accent-shu)'" onmouseout="this.style.borderColor='var(--border-light)'">
-                            <div class="card-body p-4 d-flex flex-column h-100">
-                                <h5 class="font-serif mb-2" style="font-size: 1.15rem; color: var(--text-sumi);">${escapeHtml(q.title)}</h5>
-                                <div class="text-muted small mb-4 flex-grow-1">
-                                    <div class="mb-1"><i class="fa-solid fa-circle-question me-2"></i>Số lượng: <strong>${q.questionCount} câu hỏi</strong></div>
-                                    <div class="mb-1"><i class="fa-regular fa-clock me-2"></i>Thời gian: <strong>${q.durationMinutes} phút</strong></div>
-                                    <div><i class="fa-solid fa-book-open me-2"></i>Nội dung: <strong>${q.documentId ? 'Giới hạn theo tài liệu' : 'Toàn bộ bài giảng'}</strong></div>
-                                </div>
-                                <div class="small text-muted mb-3">Đã làm ${q.attemptsUsed}/${q.maxAttempts} lần ${q.hasPassword ? ' · cần mật khẩu' : ''}</div>
-                                <button type="button" class="btn-zen primary w-100 py-2" ${q.attemptsUsed >= q.maxAttempts ? 'disabled' : ''} onclick="startStudentQuiz('${q.id}', ${q.hasPassword ? 'true' : 'false'})">
-                                    <i class="fa-solid fa-file-signature me-2"></i>Làm Bài Thi
-                                </button>
+                            <h5 class="font-serif mb-2" style="font-size: 1.15rem; color: var(--text-sumi);">${escapeHtml(q.title)}</h5>
+                            <div class="text-muted small mb-4 flex-grow-1">
+                                <div class="mb-1"><i class="fa-solid fa-circle-question me-2"></i>Số lượng: <strong>${q.questionCount} câu hỏi</strong></div>
+                                <div class="mb-1"><i class="fa-regular fa-clock me-2"></i>Thời gian: <strong>${q.durationMinutes} phút</strong></div>
+                                <div><i class="fa-solid fa-book-open me-2"></i>Nội dung: <strong>${q.documentId ? 'Giới hạn theo tài liệu' : 'Toàn bộ bài giảng'}</strong></div>
                             </div>
+                            <div class="small text-muted mb-3">Đã làm ${q.attemptsUsed}/${q.maxAttempts} lần ${q.hasPassword ? ' · cần mật khẩu' : ''}</div>
+                            <button type="button" class="btn-zen primary w-100 py-2" ${q.attemptsUsed >= q.maxAttempts ? 'disabled' : ''} onclick="startStudentQuiz('${q.id}', ${q.hasPassword ? 'true' : 'false'})">
+                                <i class="fa-solid fa-file-signature me-2"></i>Làm Bài Thi
+                            </button>
                         </div>
                     `;
                     studentQuizCards.appendChild(col);
@@ -1171,7 +1169,7 @@ else
             container.innerHTML = data.length === 0 ? '<span class="text-muted">Chưa có lượt làm bài.</span>' : data.map(a => `
                 <div class="d-flex justify-content-between align-items-center border-top py-3">
                     <span>${escapeHtml(a.quizTitle)} — lần ${a.attemptNumber}: <strong>${a.score}/${a.totalQuestions}</strong> (${a.percentage}%)</span>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="viewAttemptDetails('${a.id}', false)">Xem lại</button>
+                    <button class="zen-action-link" onclick="viewAttemptDetails('${a.id}', false)">Xem lại</button>
                 </div>`).join('');
         }
         loadMyAttempts();
@@ -1276,8 +1274,8 @@ else
                     </div>
                 </div>
                 
-                <div class="card mb-4" style="background: var(--bg-washi); border: 1px solid var(--border-light); border-radius: 0; box-shadow: none;">
-                    <div class="card-body p-4">
+                <div class="zen-list-item mb-4" style="background: var(--bg-washi); border: 1px solid var(--border-light); padding: 24px;">
+                    <div>
                         <h5 class="font-serif mb-4" style="line-height: 1.5; font-size: 1.15rem; color: var(--text-sumi);">
                             <span class="text-accent me-2">Câu ${currentQuestionIndex + 1}.</span>
                             ${escapeHtml(q.questionText)}
@@ -1292,9 +1290,9 @@ else
                 </div>
                 
                 <div class="d-flex justify-content-between align-items-center">
-                    <button type="button" class="btn btn-outline-secondary border-light text-muted px-4 py-2" 
+                    <button type="button" class="zen-action-link" 
                             ${currentQuestionIndex === 0 ? 'disabled' : ''} 
-                            onclick="navigateQuestion(-1)" style="border-radius: 0;">
+                            onclick="navigateQuestion(-1)" style="color: ${currentQuestionIndex === 0 ? 'var(--text-muted)' : 'var(--text-sumi)'}; opacity: ${currentQuestionIndex === 0 ? 0.4 : 1}; cursor: ${currentQuestionIndex === 0 ? 'not-allowed' : 'pointer'};">
                         &larr; Câu trước
                     </button>
                     

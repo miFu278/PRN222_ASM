@@ -56,19 +56,22 @@
                             <td>
                                 @if (tx.Status == "Success")
                                 {
-                                    <span class="badge" style="background: #10b981; font-weight: 500; padding: 6px 12px; border-radius: 4px;">
+                                    <span class="status-badge" style="color: #2d6a4f;">
+                                        <span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: #2d6a4f; margin-right: 8px;"></span>
                                         Thành công
                                     </span>
                                 }
                                 else if (tx.Status == "Pending")
                                 {
-                                    <span class="badge" style="background: #f59e0b; font-weight: 500; padding: 6px 12px; border-radius: 4px;">
+                                    <span class="status-badge" style="color: var(--text-muted);">
+                                        <span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: var(--text-muted); margin-right: 8px;"></span>
                                         Đang chờ
                                     </span>
                                 }
                                 else
                                 {
-                                    <span class="badge" style="background: var(--accent-shu); font-weight: 500; padding: 6px 12px; border-radius: 4px;">
+                                    <span class="status-badge" style="color: var(--accent-shu);">
+                                        <span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: var(--accent-shu); margin-right: 8px;"></span>
                                         Thất bại
                                     </span>
                                 }
