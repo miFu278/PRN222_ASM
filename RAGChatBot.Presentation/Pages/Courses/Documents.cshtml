@@ -286,6 +286,7 @@
                                 .then(data => {
                                     if (data.length === 0) {
                                         container.innerHTML = '<p class="text-muted small">Không tìm thấy phân mảnh.</p>';
+                                        if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                                         return;
                                     }
                                     
@@ -302,13 +303,17 @@
                                     });
                                     html += '</div>';
                                     container.innerHTML = html;
+                                    if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                                 })
                                 .catch(err => {
                                     container.innerHTML = '<div class="text-danger small">Lỗi khi tải dữ liệu</div>';
+                                    if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                                 });
+                            if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                         } else {
                             row.style.display = 'none';
                             this.innerHTML = '<i class="fa-solid fa-eye"></i>';
+                            if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                         }
                     });
                 });
@@ -383,6 +388,7 @@
                                     if (newContainer && currentContainer) {
                                         currentContainer.innerHTML = newContainer.innerHTML;
                                         attachChunkEvents(); // Gắn lại event do DOM mới
+                                        if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                                     }
                                 });
                             return;

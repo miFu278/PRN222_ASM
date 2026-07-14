@@ -350,6 +350,7 @@
                         if (newContainer && currentContainer) {
                             currentContainer.innerHTML = newContainer.innerHTML;
                             applyCourseAnimations();
+                            if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                         }
                     })
                     .catch(err => console.error("Lỗi đồng bộ danh sách môn học:", err));

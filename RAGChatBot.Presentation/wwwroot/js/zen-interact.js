@@ -299,5 +299,11 @@ window.zenInteract = {
                 );
             });
         });
+    },
+
+    refreshScrollTriggers: function () {
+        if (typeof ScrollTrigger !== 'undefined') {
+            ScrollTrigger.refresh();
+        }
     }
 };

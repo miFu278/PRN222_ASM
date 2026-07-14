@@ -548,6 +548,7 @@ else
             } else if (tabName === 'studentAttempts') {
                 loadStudentAttempts();
             }
+            if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
         };
 
         // Load approved documents for AI selector and Quiz scope dropdown
@@ -694,6 +695,7 @@ else
             });
 
             renderPaginationControls(questionPaginationState, 'questionBankPagination', renderQuestions);
+            if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
         }
 
         window.filterQuestions = function () {
@@ -859,8 +861,8 @@ else
                     <td><span class="text-muted small">${q.documentId ? 'Giới hạn tài liệu' : 'Toàn bộ môn học'}</span></td>
                     <td>${dateFormatted}</td>
                     <td class="pe-4 text-end">
-                        <button class="btn btn-sm btn-outline-danger border-light text-accent py-1 px-3" onclick="deleteQuiz('${q.id}')" style="font-size: 0.8rem; border-radius: 0;">
-                            <i class="fa-solid fa-trash-can"></i> Xóa
+                        <button class="zen-action-link danger" onclick="deleteQuiz('${q.id}')" style="font-size: 0.85rem; padding: 0;">
+                            <i class="fa-solid fa-trash-can me-1"></i> Xóa
                         </button>
                     </td>
                 `;
@@ -868,6 +870,7 @@ else
             });
 
             renderPaginationControls(quizPaginationState, 'quizPagination', renderLecturerQuizzes);
+            if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
         }
 
         // Create Quiz form handler
@@ -1015,6 +1018,7 @@ else
             });
 
             renderPaginationControls(attemptPaginationState, 'attemptsPagination', renderAttempts);
+            if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
         }
 
         // Generic pagination renderer utility
