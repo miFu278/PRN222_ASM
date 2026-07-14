@@ -73,12 +73,12 @@
                     <input type="hidden" asp-for="CourseCode" />
                     
                     <div class="mb-4 mt-2">
-                        <input asp-for="Chapter" class="form-inline-zen w-100" placeholder="Tên chương/phần tài liệu" required />
+                        <input asp-for="Chapter" class="input-zen w-100" placeholder="Tên chương/phần tài liệu" required />
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label text-muted small text-uppercase tracking-wider">Tệp đính kèm (.pdf, .docx):</label>
-                        <input type="file" asp-for="UploadedFile" class="form-inline-zen w-100" accept=".pdf,.docx" required style="padding: 0 !important; cursor: pointer;" />
+                        <input type="file" asp-for="UploadedFile" class="input-zen w-100" accept=".pdf,.docx" required style="padding: 0 !important; cursor: pointer;" />
                         <div class="mt-2 small text-muted" style="font-weight: 300;">
                             Giới hạn: @(Model.CurrentSubscriptionTier == "Premium" ? "50 MB (Premium)" : "5 MB (Free)")
                         </div>
@@ -86,7 +86,7 @@
 
                     <div class="mb-3">
                         <label class="form-label text-muted small text-uppercase tracking-wider">Chiến lược Chunking:</label>
-                        <select asp-for="ChunkingStrategy" class="form-inline-zen w-100" style="cursor: pointer;">
+                        <select asp-for="ChunkingStrategy" class="input-zen w-100" style="cursor: pointer;">
                             <option value="Character">Character (theo ký tự)</option>
                             <option value="Word">Word (theo từ)</option>
                             <option value="Paragraph">Paragraph (theo đoạn văn)</option>
@@ -96,11 +96,11 @@
                     <div class="row mb-4">
                         <div class="col-6">
                             <label class="form-label text-muted small text-uppercase tracking-wider">Chunk Size:</label>
-                            <input type="number" asp-for="ChunkSize" class="form-inline-zen w-100" min="100" max="5000" />
+                            <input type="number" asp-for="ChunkSize" class="input-zen w-100" min="100" max="5000" />
                         </div>
                         <div class="col-6">
                             <label class="form-label text-muted small text-uppercase tracking-wider">Overlap:</label>
-                            <input type="number" asp-for="Overlap" class="form-inline-zen w-100" min="0" max="500" />
+                            <input type="number" asp-for="Overlap" class="input-zen w-100" min="0" max="500" />
                         </div>
                     </div>
 
