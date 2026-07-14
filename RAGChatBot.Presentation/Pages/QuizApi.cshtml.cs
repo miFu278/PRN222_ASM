@@ -88,6 +88,7 @@ namespace RAGChatBot.Presentation.Pages
                     success = true,
                     attemptId = result.AttemptId,
                     attemptNumber = result.AttemptNumber,
+                    expiresAt = result.ExpiresAt,
                     questions = result.Questions
                 });
             });
@@ -123,7 +124,7 @@ namespace RAGChatBot.Presentation.Pages
             {
                 var quiz = await _quizService.CreateQuizAsync(
                     request.CourseCode, request.Title, request.QuestionCount, request.DocumentId,
-                    request.MaxAttempts, request.Password, request.ReviewPolicy,
+                    request.MaxAttempts, request.DurationMinutes, request.Password, request.ReviewPolicy,
                     request.ShuffleQuestions, request.ShuffleOptions);
                 return new JsonResult(new { success = true, id = quiz.Id });
             });
@@ -215,6 +216,7 @@ namespace RAGChatBot.Presentation.Pages
             public int QuestionCount { get; set; }
             public Guid? DocumentId { get; set; }
             public int MaxAttempts { get; set; } = 1;
+            public int DurationMinutes { get; set; } = 30;
             public string? Password { get; set; }
             public QuizReviewPolicy ReviewPolicy { get; set; } = QuizReviewPolicy.ScoreOnly;
             public bool ShuffleQuestions { get; set; } = true;

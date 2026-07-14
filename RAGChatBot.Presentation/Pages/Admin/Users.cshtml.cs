@@ -93,23 +93,14 @@ namespace RAGChatBot.Presentation.Pages.Admin
         {
             try
             {
-                var authServiceConcrete = _authService as AuthService;
-                if (authServiceConcrete != null)
+                var success = await _authService.ToggleSubscriptionTierAsync(id);
+                if (success)
                 {
-                    var success = await authServiceConcrete.ToggleSubscriptionTierAsync(id);
-                    if (success)
-                    {
-                        TempData["SuccessMessage"] = "Đã thay đổi gói cước thành công!";
-                    }
-                    else
-                    {
-                        TempData["ErrorMessage"] = "Không tìm thấy người dùng!";
-                    }
+                    TempData["SuccessMessage"] = "Đã thay đổi gói cước thành công!";
                 }
                 else
                 {
-                    var success = await _authService.UpgradeToPremiumAsync(id);
-                    if (success) TempData["SuccessMessage"] = "Đã nâng cấp Premium thành công!";
+                    TempData["ErrorMessage"] = "Không tìm thấy người dùng!";
                 }
             }
             catch (Exception ex)

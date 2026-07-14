@@ -146,7 +146,11 @@
                             <label class="text-muted mb-2 small text-uppercase">Số lần làm tối đa</label>
                             <input type="number" id="quizMaxAttemptsInput" class="input-zen" min="1" max="100" value="1" required />
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
+                            <label class="text-muted mb-2 small text-uppercase">Thời gian (phút)</label>
+                            <input type="number" id="quizDurationInput" class="input-zen" min="1" max="300" value="30" required />
+                        </div>
+                        <div class="col-md-2">
                             <label class="text-muted mb-2 small text-uppercase">Mật khẩu (không bắt buộc)</label>
                             <input type="password" id="quizPasswordInput" class="input-zen" autocomplete="new-password" />
                         </div>
@@ -158,7 +162,7 @@
                                 <option value="2">Xem cả đáp án đúng</option>
                             </select>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end gap-4 pb-2">
+                        <div class="col-md-3 d-flex align-items-end gap-3 pb-2">
                             <label><input type="checkbox" id="quizShuffleQuestionsInput" checked /> Trộn câu hỏi</label>
                             <label><input type="checkbox" id="quizShuffleOptionsInput" checked /> Trộn đáp án</label>
                         </div>
@@ -881,6 +885,7 @@ else
                 questionCount: count,
                 documentId: docId && docId.length > 0 ? docId : null,
                 maxAttempts: parseInt(document.getElementById('quizMaxAttemptsInput').value, 10),
+                durationMinutes: parseInt(document.getElementById('quizDurationInput').value, 10),
                 password: document.getElementById('quizPasswordInput').value || null,
                 reviewPolicy: parseInt(document.getElementById('quizReviewPolicyInput').value, 10),
                 shuffleQuestions: document.getElementById('quizShuffleQuestionsInput').checked,
@@ -1104,6 +1109,9 @@ else
         let studentQuestions = [];
         let currentQuestionIndex = 0;
         let studentAnswers = {}; // Map of qId -> selected option
+        let attemptExpiresAt = null;
+        let quizTimerId = null;
+        let isSubmittingQuiz = false;
 
         function loadStudentQuizCatalog() {
             studentQuizzesEmpty.style.display = 'none';
@@ -1131,6 +1139,7 @@ else
                                 <h5 class="font-serif mb-2" style="font-size: 1.15rem; color: var(--text-sumi);">${escapeHtml(q.title)}</h5>
                                 <div class="text-muted small mb-4 flex-grow-1">
                                     <div class="mb-1"><i class="fa-solid fa-circle-question me-2"></i>Số lượng: <strong>${q.questionCount} câu hỏi</strong></div>
+                                    <div class="mb-1"><i class="fa-regular fa-clock me-2"></i>Thời gian: <strong>${q.durationMinutes} phút</strong></div>
                                     <div><i class="fa-solid fa-book-open me-2"></i>Nội dung: <strong>${q.documentId ? 'Giới hạn theo tài liệu' : 'Toàn bộ bài giảng'}</strong></div>
                                 </div>
                                 <div class="small text-muted mb-3">Đã làm ${q.attemptsUsed}/${q.maxAttempts} lần ${q.hasPassword ? ' · cần mật khẩu' : ''}</div>
@@ -1197,9 +1206,11 @@ else
                     }
 
                     currentAttemptId = data.attemptId;
+                    attemptExpiresAt = new Date(data.expiresAt);
                     studentQuestions = data.questions;
                     quizForm.style.display = 'block';
                     renderStudentQuestion();
+                    startQuizTimer();
                 })
                 .catch(err => {
                     quizLoading.style.display = 'none';
@@ -1208,6 +1219,29 @@ else
                     console.error(err);
                 });
         };
+
+        function startQuizTimer() {
+            if (quizTimerId) clearInterval(quizTimerId);
+            updateQuizTimer();
+            quizTimerId = setInterval(updateQuizTimer, 1000);
+        }
+
+        function updateQuizTimer() {
+            if (!attemptExpiresAt) return;
+            const remainingSeconds = Math.max(0, Math.ceil((attemptExpiresAt.getTime() - Date.now()) / 1000));
+            const timer = document.getElementById('quizTimer');
+            if (timer) {
+                const minutes = Math.floor(remainingSeconds / 60).toString().padStart(2, '0');
+                const seconds = (remainingSeconds % 60).toString().padStart(2, '0');
+                timer.textContent = `${minutes}:${seconds}`;
+                timer.classList.toggle('text-danger', remainingSeconds <= 60);
+            }
+            if (remainingSeconds === 0) {
+                clearInterval(quizTimerId);
+                quizTimerId = null;
+                submitWizardQuiz(true);
+            }
+        }
 
         // Render Wizard Question
         function renderStudentQuestion() {
@@ -1235,7 +1269,7 @@ else
                 <div class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="small text-accent fw-bold text-uppercase tracking-wider">Đề thi: ${escapeHtml(currentQuizTitle)}</span>
-                        <span class="small text-muted">Câu <strong>${currentQuestionIndex + 1}</strong> / ${total}</span>
+                        <span class="small text-muted"><i class="fa-regular fa-clock me-1"></i><strong id="quizTimer">--:--</strong> · Câu <strong>${currentQuestionIndex + 1}</strong> / ${total}</span>
                     </div>
                     <div class="progress" style="height: 6px; border-radius: 0; background-color: var(--border-light); box-shadow: none;">
                         <div class="progress-bar" role="progressbar" style="width: ${progressPercent}%; background-color: var(--accent-shu);" aria-valuenow="${progressPercent}" aria-valuemin="0" aria-valuemax="100"></div>
@@ -1270,6 +1304,7 @@ else
                     }
                 </div>
             `;
+            updateQuizTimer();
         }
 
         window.saveStudentAnswer = function (questionId, selectedLetter) {
@@ -1281,21 +1316,21 @@ else
             renderStudentQuestion();
         };
 
-        window.submitWizardQuiz = async function () {
+        window.submitWizardQuiz = async function (timeExpired = false) {
+            if (isSubmittingQuiz) return;
             // Check if all questions are answered
             const total = studentQuestions.length;
             const answeredCount = Object.keys(studentAnswers).length;
             
-            if (answeredCount < total) {
+            if (!timeExpired && answeredCount < total) {
                 if (!await showConfirm(`Bạn mới trả lời ${answeredCount} / ${total} câu hỏi. Xác nhận nộp bài thi?`)) {
                     return;
                 }
-            } else {
+            } else if (!timeExpired) {
                 if (!await showConfirm('Xác nhận nộp bài thi?')) return;
             }
 
-            const btn = document.getElementById('submitQuizBtn');
-            // Mock submit triggers
+            isSubmittingQuiz = true;
             const answersArray = studentQuestions.map(q => ({
                 questionId: q.id,
                 selectedAnswer: studentAnswers[q.id] || ''
@@ -1314,6 +1349,8 @@ else
                 const result = await response.json();
 
                 if (result.success) {
+                    if (quizTimerId) clearInterval(quizTimerId);
+                    quizTimerId = null;
                     document.getElementById('resultScore').textContent = result.score;
                     document.getElementById('resultTotal').textContent = result.totalQuestions;
                     document.getElementById('resultPercent').textContent = result.percentage;
@@ -1338,6 +1375,8 @@ else
             } catch (err) {
                 showNotice('Không thể kết nối tới máy chủ. Vui lòng thử lại.');
                 console.error(err);
+            } finally {
+                isSubmittingQuiz = false;
             }
         };
     }

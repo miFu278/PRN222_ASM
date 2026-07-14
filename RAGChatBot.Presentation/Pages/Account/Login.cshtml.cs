@@ -12,6 +12,7 @@ namespace RAGChatBot.Presentation.Pages.Account
 {
     public class LoginModel : PageModel
     {
+        private const string ExternalCookieScheme = "ExternalCookie";
         private readonly IAuthService _authService;
         private readonly IWhitelistService _whitelistService;
 
@@ -73,22 +74,18 @@ namespace RAGChatBot.Presentation.Pages.Account
                 return Page();
             }
 
-            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            if (!result.Succeeded)
+            var result = await HttpContext.AuthenticateAsync(ExternalCookieScheme);
+            if (!result.Succeeded || result.Principal is null)
             {
-                var info = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
-                if (!info.Succeeded)
-                {
-                    ErrorMessage = "Lỗi đăng nhập bằng Google.";
-                    return Page();
-                }
-                result = info;
+                ErrorMessage = "Lỗi đăng nhập bằng Google.";
+                return Page();
             }
 
             var email = result.Principal.FindFirstValue(ClaimTypes.Email);
             if (string.IsNullOrEmpty(email))
             {
                 ErrorMessage = "Không lấy được Email từ Google.";
+                await HttpContext.SignOutAsync(ExternalCookieScheme);
                 return Page();
             }
 
@@ -103,6 +100,7 @@ namespace RAGChatBot.Presentation.Pages.Account
                 if (!isAllowed)
                 {
                     ErrorMessage = "Tài khoản của bạn chưa được cấp quyền truy cập hệ thống. Vui lòng liên hệ Admin!";
+                    await HttpContext.SignOutAsync(ExternalCookieScheme);
                     return Page();
                 }
 
@@ -112,6 +110,7 @@ namespace RAGChatBot.Presentation.Pages.Account
             }
 
             await SignInUser(userDto);
+            await HttpContext.SignOutAsync(ExternalCookieScheme);
             return LocalRedirect(ReturnUrl ?? (userDto.Role == RoleNames.Admin ? "/Admin/Dashboard" : "/"));
         }
 
@@ -122,7 +121,7 @@ namespace RAGChatBot.Presentation.Pages.Account
                 new Claim(ClaimTypes.NameIdentifier, userDto.Id.ToString()),
                 new Claim(ClaimTypes.Name, !string.IsNullOrEmpty(userDto.FullName) ? userDto.FullName : userDto.Username),
                 new Claim(ClaimTypes.Role, userDto.Role),
-                new Claim("SubscriptionTier", userDto.SubscriptionTier)
+                new Claim("SubscriptionTier", IsPremiumActive(userDto) ? "Premium" : "Free")
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -134,5 +133,9 @@ namespace RAGChatBot.Presentation.Pages.Account
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
         }
+
+        private static bool IsPremiumActive(UserDto user)
+            => string.Equals(user.SubscriptionTier, "Premium", StringComparison.OrdinalIgnoreCase) &&
+                (!user.SubscriptionExpiresAt.HasValue || user.SubscriptionExpiresAt.Value > DateTime.UtcNow);
     }
 }

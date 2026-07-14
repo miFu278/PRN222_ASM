@@ -32,15 +32,44 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString, x => x.UseVector()));
 
 // 2. Cấu hình Cookie Authentication & Google OAuth
+const string externalCookieScheme = "ExternalCookie";
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/Account/Login";
         options.AccessDeniedPath = "/Account/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(2);
+        options.Events.OnRedirectToLogin = context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
+
+            context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            }
+
+            context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
+    })
+    .AddCookie(externalCookieScheme, options =>
+    {
+        options.Cookie.Name = "RAGChatBot.External";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
     })
     .AddGoogle(options =>
     {
+        options.SignInScheme = externalCookieScheme;
         var googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
         options.ClientId = googleAuthNSection["ClientId"]
             ?? throw new InvalidOperationException("Missing Authentication:Google:ClientId configuration.");
@@ -65,8 +94,9 @@ builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 // Đăng ký Supabase Client
 var supabaseUrl = builder.Configuration["Supabase:Url"]
     ?? throw new InvalidOperationException("Missing Supabase:Url in configuration.");
-var supabaseKey = builder.Configuration["Supabase:AnonKey"]
-    ?? throw new InvalidOperationException("Missing Supabase:AnonKey in configuration.");
+var supabaseKey = builder.Configuration["Supabase:ServiceKey"]
+    ?? builder.Configuration["Supabase:AnonKey"]
+    ?? throw new InvalidOperationException("Missing Supabase:ServiceKey or Supabase:AnonKey in configuration.");
 builder.Services.AddSingleton(provider => new Supabase.Client(supabaseUrl, supabaseKey, new Supabase.SupabaseOptions
 {
     AutoConnectRealtime = false
@@ -111,12 +141,11 @@ builder.Services.AddSingleton(payosClient);
 builder.Services.AddSingleton<IPayOSService>(sp => new PayOSService(
     sp.GetRequiredService<PayOS.PayOSClient>(),
     payosSection["ReturnUrl"] ?? "http://localhost:5178/Subscription/PaymentCallback",
-    payosSection["CancelUrl"] ?? "http://localhost:5178/Subscription/Checkout"
+    payosSection["CancelUrl"] ?? "http://localhost:5178/Subscription/PaymentCancelled"
 ));
 
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddHostedService<DocumentProcessingWorker>();
-builder.Services.AddHostedService<DailyCreditResetService>();
 
 // Dashboard & Benchmark services
 builder.Services.AddScoped<IBenchmarkRepository, BenchmarkRepository>();
@@ -124,12 +153,6 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // 4. Đăng ký Razor Pages
 builder.Services.AddRazorPages();
-
-// Cấu hình BackgroundService không crash host khi TaskCanceledException xảy ra lúc shutdown
-builder.Services.Configure<HostOptions>(options =>
-{
-    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
-});
 
 // Đăng ký MVC Controllers (dành cho Authentication login/logout)
 builder.Services.AddControllers();
@@ -198,7 +221,9 @@ using (var scope = app.Services.CreateScope())
         }
         context.SaveChanges();
 
-        if (!context.Users.Any())
+        var seedDemoUsers = app.Environment.IsDevelopment() ||
+            bool.TryParse(Environment.GetEnvironmentVariable("SEED_DEMO_USERS"), out var shouldSeed) && shouldSeed;
+        if (!context.Users.Any() && seedDemoUsers)
         {
             var hasher = services.GetRequiredService<IPasswordHasher>();
             var seedPassword = Environment.GetEnvironmentVariable("SEED_ADMIN_PASSWORD")
@@ -220,7 +245,8 @@ using (var scope = app.Services.CreateScope())
                     Username = "lecturer_premium",
                     PasswordHash = hasher.Hash(seedPassword),
                     RoleId = SystemRoleIds.Lecturer,
-                    SubscriptionTier = "Premium"
+                    SubscriptionTier = "Premium",
+                    SubscriptionExpiresAt = DateTime.UtcNow.AddYears(1)
                 },
                 new User
                 {
@@ -228,7 +254,8 @@ using (var scope = app.Services.CreateScope())
                     Username = "admin",
                     PasswordHash = hasher.Hash(seedPassword),
                     RoleId = SystemRoleIds.Admin,
-                    SubscriptionTier = "Premium"
+                    SubscriptionTier = "Premium",
+                    SubscriptionExpiresAt = DateTime.UtcNow.AddYears(1)
                 }
             };
 
@@ -239,43 +266,10 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[Database Error] Không thể kết nối hoặc khởi tạo dữ liệu PostgreSQL: {ex.Message}");
-    }
-
-    // Kiểm tra kết nối AI API
-    try
-    {
-        var config = services.GetRequiredService<IConfiguration>();
-        var httpClientFactory = services.GetRequiredService<IHttpClientFactory>();
-        using var client = httpClientFactory.CreateClient();
-        
-        var baseUrl = config["AiSettings:BaseUrl"];
-        var apiKey = config["AiSettings:ApiKey"];
-        
-        if (!string.IsNullOrEmpty(baseUrl) && !string.IsNullOrEmpty(apiKey))
-        {
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-            // Đối với Google Gemini dùng OpenAI interface, thử lấy danh sách model
-            var response = await client.GetAsync($"{baseUrl.TrimEnd('/')}/models");
-            
-            if (response.IsSuccessStatusCode)
-            {
-                Console.WriteLine("[API Check] KẾT NỐI THÀNH CÔNG TỚI AI API.");
-            }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"[API Error] LỖI KẾT NỐI AI API ({response.StatusCode}): {errorContent}");
-            }
-        }
-        else
-        {
-            Console.WriteLine("[API Check] Thiếu cấu hình AiSettings:BaseUrl hoặc AiSettings:ApiKey trong appsettings.json.");
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[API Error] Không thể kiểm tra kết nối AI API: {ex.Message}");
+        services.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("Startup")
+            .LogCritical(ex, "Không thể migrate hoặc seed PostgreSQL; dừng ứng dụng để tránh chạy với schema sai.");
+        throw;
     }
 }
 
@@ -309,3 +303,6 @@ app.MapHub<RAGChatBot.Presentation.Hubs.CourseHub>("/courseHub");
 app.MapHub<RAGChatBot.Presentation.Hubs.QuizHub>("/quizHub");
 
 app.Run();
+
+// Expose the top-level entry point to WebApplicationFactory in the E2E test project.
+public partial class Program;

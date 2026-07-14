@@ -33,9 +33,9 @@ namespace RAGChatBot.Presentation.Pages.Admin
         public async Task<IActionResult> OnGetAsync()
         {
             Stats = await _dashboard.GetStatsAsync(Period, Year, null, null);
-            RevenueChart = await _dashboard.GetRevenueChartAsync(Period, Year);
-            BenchmarkAverages = await _dashboard.GetBenchmarkAveragesAsync();
-            RecentBenchmarks = await _dashboard.GetRecentBenchmarksAsync(50);
+            RevenueChart = Stats.MonthlyRevenue;
+            BenchmarkAverages = Stats.BenchmarkAverages;
+            RecentBenchmarks = Stats.RecentBenchmarks;
 
             return Page();
         }
