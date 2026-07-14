@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using RAGChatBot.DAL.Context;
 using RAGChatBot.Domain.Entities;
 using RAGChatBot.Domain.Interfaces;
@@ -61,10 +62,22 @@ namespace RAGChatBot.DAL.Repositories
                 .Where(question => questionIds.Contains(question.Id))
                 .ToDictionaryAsync(question => question.Id);
 
-        public async Task AddAttemptAsync(QuizAttempt attempt)
+        public async Task<QuizAttempt> AddAttemptAsync(QuizAttempt attempt)
         {
             _db.QuizAttempts.Add(attempt);
-            await _db.SaveChangesAsync();
+            try
+            {
+                await _db.SaveChangesAsync();
+                return attempt;
+            }
+            catch (DbUpdateException exception) when (
+                exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                _db.ChangeTracker.Clear();
+                var existing = await GetInProgressAttemptAsync(attempt.UserId, attempt.QuizId!.Value);
+                if (existing is not null) return existing;
+                throw;
+            }
         }
 
         public Task<QuizAttempt?> GetAttemptWithAnswersAsync(Guid attemptId)
@@ -171,6 +184,16 @@ namespace RAGChatBot.DAL.Repositories
                 .FirstOrDefaultAsync(q => q.Id == id);
         }
 
-        public Task SaveChangesAsync() => _db.SaveChangesAsync();
+        public async Task SaveChangesAsync()
+        {
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException exception)
+            {
+                throw new InvalidOperationException("Dữ liệu lượt làm bài đã được cập nhật bởi một yêu cầu khác.", exception);
+            }
+        }
     }
 }

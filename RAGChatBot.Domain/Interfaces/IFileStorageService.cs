@@ -8,6 +8,11 @@
         Task<string> SaveFileAsync(Stream fileStream, string fileName);
 
         /// <summary>
+        /// Opens a stored file for reading. Implementations must support private storage.
+        /// </summary>
+        Task<Stream> OpenReadAsync(string storagePath);
+
+        /// <summary>
         /// Deletes a file from the storage given its storage path/URL.
         /// </summary>
         Task DeleteFileAsync(string storagePath);

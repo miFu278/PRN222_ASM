@@ -7,7 +7,7 @@ namespace RAGChatBot.Domain.Entities
         // TextExtraction | VectorEmbedding | LLMResponse | CosineQuery
         public double DurationMs { get; set; }
         public string? DocumentName { get; set; }
-        public DateTime MeasuredAt { get; set; } = DateTime.UtcNow.AddHours(7);
+        public DateTime MeasuredAt { get; set; } = DateTime.UtcNow;
         public string? Notes { get; set; }
     }
 }

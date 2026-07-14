@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace RAGChatBot.BLL.Services
 {
@@ -17,19 +18,22 @@ namespace RAGChatBot.BLL.Services
         private readonly IKnowledgeDocumentRepository _documentRepository;
         private readonly IFileStorageService _fileStorageService;
         private readonly ICourseEventService _courseEventService;
+        private readonly ILogger<CourseService> _logger;
 
         public CourseService(
             ICourseRepository courseRepository, 
             IUserRepository userRepository,
             IKnowledgeDocumentRepository documentRepository,
             IFileStorageService fileStorageService,
-            ICourseEventService courseEventService)
+            ICourseEventService courseEventService,
+            ILogger<CourseService> logger)
         {
             _courseRepository = courseRepository;
             _userRepository = userRepository;
             _documentRepository = documentRepository;
             _fileStorageService = fileStorageService;
             _courseEventService = courseEventService;
+            _logger = logger;
         }
 
         public async Task<CourseDto> CreateCourseAsync(CourseDto courseDto, Guid userId)
@@ -166,24 +170,25 @@ namespace RAGChatBot.BLL.Services
                 throw new KeyNotFoundException("Không tìm thấy môn học cần xóa!");
             }
 
-            // Xóa tất cả tài liệu thuộc môn học này
+            // Capture storage keys before atomically deleting the database aggregate.
             var courseDocs = await _documentRepository.GetByCourseCodeAsync(course.Code);
+            await _courseRepository.DeleteAggregateAsync(course);
+
             foreach (var doc in courseDocs)
             {
                 try
                 {
                     await _fileStorageService.DeleteFileAsync(doc.StoragePath);
                 }
-                catch (Exception)
+                catch (Exception exception)
                 {
-                    // Tiếp tục dọn dẹp DB ngay cả khi tệp vật lý lỗi hoặc đã mất
+                    _logger.LogWarning(
+                        exception,
+                        "Không thể dọn object storage sau khi xóa môn {CourseCode}: {StoragePath}",
+                        course.Code,
+                        doc.StoragePath);
                 }
-                await _documentRepository.DeleteAsync(doc);
             }
-            await _documentRepository.SaveChangesAsync();
-
-            // Xóa môn học
-            await _courseRepository.DeleteAsync(course);
 
             await _courseEventService.NotifyCourseChangedAsync("CourseDeleted", course.Id, course.Code);
         }

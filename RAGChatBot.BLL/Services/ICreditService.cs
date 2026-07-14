@@ -5,7 +5,7 @@ namespace RAGChatBot.BLL.Services
 {
     public interface ICreditService
     {
-        Task<(bool allowed, int remaining)> CheckAndDeductCreditAsync(Guid userId);
-        Task ResetDailyCreditsForFreeStudentsAsync();
+        Task<(bool allowed, int remaining)> CheckAndDeductCreditAsync(Guid userId, string courseCode);
+        Task RefundCreditAsync(Guid userId);
     }
 }

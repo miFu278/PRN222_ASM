@@ -86,20 +86,6 @@ namespace RAGChatBot.BLL.Services
             };
         }
 
-        public async Task<bool> UpgradeToPremiumAsync(Guid userId)
-        {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null)
-            {
-                return false;
-            }
-
-            user.SubscriptionTier = "Premium";
-            user.SubscriptionExpiresAt = DateTime.UtcNow.AddMonths(1);
-            await _userRepository.SaveChangesAsync();
-            return true;
-        }
-
         public async Task<bool> ToggleSubscriptionTierAsync(Guid userId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
@@ -108,7 +94,12 @@ namespace RAGChatBot.BLL.Services
                 return false;
             }
 
-            user.SubscriptionTier = user.SubscriptionTier == "Premium" ? "Free" : "Premium";
+            var enablePremium = !string.Equals(
+                user.SubscriptionTier,
+                "Premium",
+                StringComparison.OrdinalIgnoreCase);
+            user.SubscriptionTier = enablePremium ? "Premium" : "Free";
+            user.SubscriptionExpiresAt = enablePremium ? DateTime.UtcNow.AddMonths(1) : null;
             await _userRepository.SaveChangesAsync();
             return true;
         }

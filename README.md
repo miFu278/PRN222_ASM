@@ -60,7 +60,8 @@ copy RAGChatBot.Presentation\appsettings.Example.json RAGChatBot.Presentation\ap
   },
   "Supabase": {
     "Url": "https://YOUR_PROJECT_REF.supabase.co",
-    "AnonKey": "YOUR_SUPABASE_ANON_KEY"
+    "AnonKey": "YOUR_SUPABASE_ANON_KEY",
+    "ServiceKey": "YOUR_SUPABASE_SERVICE_ROLE_KEY"
   },
   "Authentication": {
     "Google": {
@@ -74,11 +75,21 @@ copy RAGChatBot.Presentation\appsettings.Example.json RAGChatBot.Presentation\ap
     "EmbeddingModel": "text-embedding-004",
     "ChatModel": "gemini-2.0-flash"
   },
+  "RagSettings": {
+    "MaxCosineDistance": 0.55
+  },
   "EmailSettings": {
     "ApiKey": "YOUR_BREVO_API_KEY",
     "SenderEmail": "no-reply@yourdomain.com",
     "SenderName": "RAG ChatBot Admin",
     "LoginUrl": "http://localhost:5178/Account/Login"
+  },
+  "PayOS": {
+    "ClientId": "YOUR_PAYOS_CLIENT_ID",
+    "ApiKey": "YOUR_PAYOS_API_KEY",
+    "ChecksumKey": "YOUR_PAYOS_CHECKSUM_KEY",
+    "ReturnUrl": "http://localhost:5178/Subscription/PaymentCallback",
+    "CancelUrl": "http://localhost:5178/Subscription/PaymentCancelled"
   }
 }
 ```
@@ -88,12 +99,12 @@ copy RAGChatBot.Presentation\appsettings.Example.json RAGChatBot.Presentation\ap
 #### 1. Supabase (Database + Storage)
 1. Đăng ký tại [supabase.com](https://supabase.com) → tạo project mới
 2. Vào **Project Settings → Database → Connection string** → chọn tab **URI** hoặc **Parameters** để lấy `Host`, `Username`, `Password`
-3. Vào **Project Settings → API** để lấy `URL` và `anon public` key
+3. Vào **Project Settings → API** để lấy `URL`, `anon public` key và `service_role` key. `ServiceKey` chỉ được dùng phía server, tuyệt đối không đưa vào client hoặc commit vào Git.
 4. Vào **SQL Editor** → chạy lệnh sau để bật pgvector:
    ```sql
    CREATE EXTENSION IF NOT EXISTS vector;
    ```
-5. Vào **Storage** → tạo bucket tên **`raw-documents`** (public hoặc private tùy cấu hình)
+5. Vào **Storage** → tạo bucket private tên **`raw-documents`**. File được tải xuống qua endpoint đã kiểm tra quyền của ứng dụng.
 
 #### 2. AI API Key (Google Gemini)
 1. Truy cập [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
@@ -103,7 +114,7 @@ copy RAGChatBot.Presentation\appsettings.Example.json RAGChatBot.Presentation\ap
 
 > Hoặc dùng **9router**: `BaseUrl = https://aigw.9router.com/v1`, model `text-embedding-3-small`
 
-#### 3. Google OAuth (tùy chọn)
+#### 3. Google OAuth
 1. Vào [console.cloud.google.com](https://console.cloud.google.com) → tạo project
 2. **APIs & Services → Credentials → Create OAuth 2.0 Client ID**
 3. Application type: **Web application**
@@ -115,13 +126,13 @@ copy RAGChatBot.Presentation\appsettings.Example.json RAGChatBot.Presentation\ap
 2. Điền API key vào `EmailSettings:ApiKey`
 3. `SenderEmail` phải là email đã xác minh trong Brevo
 
-#### 5. Ollama Local AI (Dành cho môi trường nội bộ)
-Dự án đã tích hợp sẵn môi trường chạy AI cục bộ bằng Docker:
-- Mở Terminal tại thư mục gốc của dự án.
-- Chạy lệnh `docker-compose up -d` để tải về và chạy Engine **Ollama** kèm theo 2 models mặc định: `llama3.2:1b` (Chat) và `nomic-embed-text` (Embedding).
-- Cập nhật `AiSettings:BaseUrl` thành `http://localhost:11434/v1` và cập nhật tên Model tương ứng.
+#### 5. PayOS
+1. Điền `ClientId`, `ApiKey` và `ChecksumKey` từ PayOS Dashboard.
+2. `ReturnUrl` và `CancelUrl` phải là URL của ứng dụng.
+3. Đăng ký webhook HTTPS công khai trỏ tới `https://YOUR_DOMAIN/api/payos/webhook`. Webhook là nguồn xác nhận thanh toán chính; return URL chỉ phục vụ trải nghiệm chuyển hướng của trình duyệt.
 
-> **Lưu ý với GPU Nvidia**: Container Ollama đã được cấu hình tự động nhận diện GPU Nvidia (`deploy: resources: reservations: devices: driver: nvidia`). Hãy đảm bảo bạn đã cài Docker Desktop hỗ trợ WSL2 hoặc Nvidia Container Toolkit.
+#### 6. Docker
+`docker compose up --build` hiện chạy web app; PostgreSQL, Supabase Storage và AI API là dịch vụ bên ngoài. File `.dockerignore` ngăn cấu hình cục bộ và secrets bị đưa vào build context.
 
 ---
 
@@ -153,17 +164,17 @@ dotnet run
 
 App sẽ chạy tại: **http://localhost:5178**
 
-> Database migration và seed dữ liệu mẫu chạy **tự động** khi khởi động lần đầu.
+> Database migration chạy **tự động** và ứng dụng sẽ dừng nếu schema không thể cập nhật. Dữ liệu mẫu chỉ được seed trong Development hoặc khi đặt `SEED_DEMO_USERS=true`.
 
 ---
 
-## Tài Khoản Mẫu (Seed tự động nếu DB trống)
+## Tài Khoản Mẫu (chỉ Development hoặc `SEED_DEMO_USERS=true`)
 
 | Username | Mật khẩu | Vai trò | Gói |
 |---|---|---|---|
-| `lecturer_free` | `password123` | Lecturer | Free |
-| `lecturer_premium` | `password123` | Lecturer | Premium |
-| `admin` | `password123` | Admin | Premium |
+| `lecturer_free` | Giá trị `SEED_ADMIN_PASSWORD`, hoặc mật khẩu ngẫu nhiên được in một lần khi seed | Lecturer | Free |
+| `lecturer_premium` | Như trên | Lecturer | Premium |
+| `admin` | Như trên | Admin | Premium |
 
 ---
 

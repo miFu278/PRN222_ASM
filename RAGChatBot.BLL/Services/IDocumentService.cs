@@ -14,8 +14,7 @@ namespace RAGChatBot.BLL.Services
             long fileSize, 
             string courseCode, 
             string chapter, 
-            Guid userId, 
-            string userSubscriptionTier,
+            Guid userId,
             string chunkingStrategy = "Character",
             int chunkSize = 500,
             int overlap = 50);
@@ -30,7 +29,9 @@ namespace RAGChatBot.BLL.Services
 
         Task<int> ReindexCourseDocumentsAsync(string courseCode, Guid userId);
 
-        Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId);
+        Task<IEnumerable<ChunkDto>> GetDocumentChunksAsync(Guid documentId, Guid userId);
+
+        Task<(Stream Content, string FileName)> DownloadDocumentAsync(Guid documentId, Guid userId);
 
         Task UpdateDocumentMetadataAsync(Guid id, string newFileName, string newChapter, Guid userId);
 

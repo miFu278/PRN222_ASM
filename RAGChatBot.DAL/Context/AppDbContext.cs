@@ -110,6 +110,7 @@ modelBuilder.Entity<ChatSession>(entity =>
     entity.HasKey(e => e.Id);
     entity.HasIndex(e => e.UserId);
     entity.HasIndex(e => e.CreatedAt);
+    entity.HasIndex(e => new { e.UserId, e.UsageDate }).IsUnique();
 });
 
 modelBuilder.Entity<Quiz>(entity =>
@@ -124,6 +125,10 @@ modelBuilder.Entity<QuizAttempt>(entity =>
     entity.HasKey(e => e.Id);
     entity.HasIndex(e => new { e.UserId, e.QuizId, e.AttemptNumber }).IsUnique();
     entity.HasIndex(e => new { e.QuizId, e.UserId, e.Status });
+    entity.HasIndex(e => new { e.UserId, e.QuizId })
+          .IsUnique()
+          .HasFilter("\"Status\" = 0 AND \"QuizId\" IS NOT NULL");
+    entity.Property(e => e.Version).IsRowVersion();
 });
 
 modelBuilder.Entity<QuizAttemptAnswer>(entity =>

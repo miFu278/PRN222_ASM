@@ -8,7 +8,7 @@ namespace RAGChatBot.DAL.Services
     public class SupabaseFileStorageService : IFileStorageService
     {
         private readonly Supabase.Client _supabaseClient;
-        private const string BucketName = "raw-documents"; // Đảm bảo bạn đã tạo bucket này trên Supabase ở trạng thái Public
+        private const string BucketName = "raw-documents";
 
         public SupabaseFileStorageService(Supabase.Client supabaseClient)
         {
@@ -23,7 +23,8 @@ namespace RAGChatBot.DAL.Services
             var fileBytes = ms.ToArray();
     
             // 2. Sinh tên tệp tin duy nhất tránh trùng lặp đè tệp
-            var uniqueFileName = $"{Guid.NewGuid()}_{fileName}";
+            var safeFileName = Path.GetFileName(fileName);
+            var uniqueFileName = $"{Guid.NewGuid():N}_{safeFileName}";
 
             // 3. Khởi tạo Supabase Client (an toàn nếu chưa gọi trước đó)
             await _supabaseClient.InitializeAsync();
@@ -38,11 +39,22 @@ namespace RAGChatBot.DAL.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"Lỗi lưu trữ Supabase: Không tìm thấy Bucket '{BucketName}' hoặc bạn chưa cấp quyền. Vui lòng vào trang quản trị Supabase, tạo Storage Bucket tên là '{BucketName}' và đặt quyền là Public. Chi tiết lỗi: {ex.Message}");
+                throw new InvalidOperationException(
+                    $"Không thể lưu tệp vào bucket Supabase '{BucketName}'. Hãy kiểm tra bucket và storage policy.",
+                    ex);
             }
 
-            // 6. Trả về đường dẫn URL công khai của tệp tin vừa tải lên để lưu vào DB
-            return storage.GetPublicUrl(uniqueFileName);
+            // Store the object key, not a public URL, so private buckets are supported.
+            return uniqueFileName;
+        }
+
+        public async Task<Stream> OpenReadAsync(string storagePath)
+        {
+            await _supabaseClient.InitializeAsync();
+            var storage = _supabaseClient.Storage.From(BucketName);
+            var objectPath = GetObjectPath(storagePath);
+            var bytes = await storage.Download(objectPath, (EventHandler<float>?)null);
+            return new MemoryStream(bytes, writable: false);
         }
 
         public async Task DeleteFileAsync(string storagePath)
@@ -52,9 +64,19 @@ namespace RAGChatBot.DAL.Services
             
             // Trích xuất tên tệp tin từ URL của Supabase
             // Ví dụ: https://.../raw-documents/unique_name.pdf
-            var fileName = storagePath.Substring(storagePath.LastIndexOf('/') + 1);
+            var fileName = GetObjectPath(storagePath);
             
             await storage.Remove(new System.Collections.Generic.List<string> { fileName });
+        }
+
+        private static string GetObjectPath(string storagePath)
+        {
+            if (Uri.TryCreate(storagePath, UriKind.Absolute, out var uri))
+            {
+                return Uri.UnescapeDataString(uri.Segments[^1]);
+            }
+
+            return storagePath.Trim().TrimStart('/');
         }
     }
 }

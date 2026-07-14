@@ -18,52 +18,64 @@ namespace RAGChatBot.DAL.Repositories
             => new()
             {
                 TotalUsers = await _db.Users.CountAsync(),
-                PremiumUsers = await _db.Users.CountAsync(user => user.SubscriptionTier == "Premium"),
+                PremiumUsers = await _db.Users.CountAsync(user =>
+                    user.SubscriptionTier == "Premium" &&
+                    (!user.SubscriptionExpiresAt.HasValue || user.SubscriptionExpiresAt > DateTime.UtcNow)),
                 TotalDocuments = await _db.KnowledgeDocuments.CountAsync(),
-                TotalChatSessions = await _db.ChatSessions.CountAsync()
+                TotalChatSessions = await _db.ChatThreads.CountAsync()
             };
 
-        public async Task<IReadOnlyList<DateTime>> GetPremiumSubscriptionExpiryDatesAsync()
-            => await _db.Users
+        public async Task<IReadOnlyList<DashboardActivityPoint>> GetActivityAsync(
+            int startYear,
+            int endYear)
+        {
+            var documents = await _db.KnowledgeDocuments
                 .AsNoTracking()
-                .Where(user =>
-                    user.SubscriptionTier == "Premium" &&
-                    user.SubscriptionExpiresAt.HasValue)
-                .Select(user => user.SubscriptionExpiresAt!.Value)
+                .Where(document => document.UploadedAt.Year >= startYear && document.UploadedAt.Year <= endYear)
+                .GroupBy(document => new { document.UploadedAt.Year, document.UploadedAt.Month })
+                .Select(group => new { group.Key.Year, group.Key.Month, Count = group.Count() })
                 .ToListAsync();
 
-        public Task<int> CountDocumentsAsync(
-            int year,
-            int? startMonth = null,
-            int? endMonth = null)
-            => _db.KnowledgeDocuments.CountAsync(document =>
-                document.UploadedAt.Year == year &&
-                (!startMonth.HasValue || document.UploadedAt.Month >= startMonth.Value) &&
-                (!endMonth.HasValue || document.UploadedAt.Month <= endMonth.Value));
+            var chats = await _db.ChatThreads
+                .AsNoTracking()
+                .Where(thread => thread.CreatedAt.Year >= startYear && thread.CreatedAt.Year <= endYear)
+                .GroupBy(thread => new { thread.CreatedAt.Year, thread.CreatedAt.Month })
+                .Select(group => new { group.Key.Year, group.Key.Month, Count = group.Count() })
+                .ToListAsync();
 
-        public Task<int> CountChatSessionsAsync(
-            int year,
-            int? startMonth = null,
-            int? endMonth = null)
-            => _db.ChatSessions.CountAsync(session =>
-                session.CreatedAt.Year == year &&
-                (!startMonth.HasValue || session.CreatedAt.Month >= startMonth.Value) &&
-                (!endMonth.HasValue || session.CreatedAt.Month <= endMonth.Value));
+            var revenue = await _db.PaymentTransactions
+                .AsNoTracking()
+                .Where(transaction => transaction.Status == "Success" &&
+                    transaction.PaidAt.HasValue &&
+                    transaction.PaidAt.Value.Year >= startYear &&
+                    transaction.PaidAt.Value.Year <= endYear)
+                .GroupBy(transaction => new
+                {
+                    transaction.PaidAt!.Value.Year,
+                    transaction.PaidAt.Value.Month
+                })
+                .Select(group => new
+                {
+                    group.Key.Year,
+                    group.Key.Month,
+                    Total = group.Sum(transaction => transaction.Amount)
+                })
+                .ToListAsync();
 
-        public async Task<decimal> GetRevenueAsync(
-            int year,
-            int? startMonth = null,
-            int? endMonth = null)
-        {
-            var query = _db.PaymentTransactions
-                .Where(t => t.Status == "Success" &&
-                            t.PaidAt.HasValue &&
-                            t.PaidAt.Value.Year == year &&
-                            (!startMonth.HasValue || t.PaidAt.Value.Month >= startMonth.Value) &&
-                            (!endMonth.HasValue || t.PaidAt.Value.Month <= endMonth.Value));
+            var keys = documents.Select(item => (item.Year, item.Month))
+                .Concat(chats.Select(item => (item.Year, item.Month)))
+                .Concat(revenue.Select(item => (item.Year, item.Month)))
+                .Distinct()
+                .OrderBy(item => item.Year)
+                .ThenBy(item => item.Month);
 
-            var total = await query.SumAsync(t => (long?)t.Amount) ?? 0L;
-            return (decimal)total;
+            return keys.Select(key => new DashboardActivityPoint(
+                key.Year,
+                key.Month,
+                documents.FirstOrDefault(item => item.Year == key.Year && item.Month == key.Month)?.Count ?? 0,
+                chats.FirstOrDefault(item => item.Year == key.Year && item.Month == key.Month)?.Count ?? 0,
+                revenue.FirstOrDefault(item => item.Year == key.Year && item.Month == key.Month)?.Total ?? 0L))
+                .ToList();
         }
     }
 }

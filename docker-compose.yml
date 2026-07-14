@@ -8,7 +8,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       # Cấu hình chuỗi kết nối Database PostgreSQL (Ví dụ: Supabase hoặc Local DB)
       - ConnectionStrings__DefaultConnection=Host=YOUR_DB_HOST;Port=5432;Database=postgres;Username=postgres;Password=YOUR_PASSWORD
       # Cấu hình AI API
@@ -17,5 +17,20 @@ services:
       # Cấu hình Supabase Cloud Storage
       - Supabase__Url=YOUR_SUPABASE_URL
       - Supabase__AnonKey=YOUR_SUPABASE_ANON_KEY
-      # (Tùy chọn) Mật khẩu khởi tạo cho tài khoản admin mẫu
-      - SEED_ADMIN_PASSWORD=admin123
+      - Supabase__ServiceKey=YOUR_SUPABASE_SERVICE_ROLE_KEY
+      # Google OAuth (bắt buộc với cấu hình hiện tại)
+      - Authentication__Google__ClientId=YOUR_GOOGLE_CLIENT_ID
+      - Authentication__Google__ClientSecret=YOUR_GOOGLE_CLIENT_SECRET
+      # PayOS
+      - PayOS__ClientId=YOUR_PAYOS_CLIENT_ID
+      - PayOS__ApiKey=YOUR_PAYOS_API_KEY
+      - PayOS__ChecksumKey=YOUR_PAYOS_CHECKSUM_KEY
+      - PayOS__ReturnUrl=http://localhost:8080/Subscription/PaymentCallback
+      - PayOS__CancelUrl=http://localhost:8080/Subscription/PaymentCancelled
+      # Email
+      - EmailSettings__ApiKey=YOUR_BREVO_API_KEY
+      - EmailSettings__SenderEmail=no-reply@yourdomain.com
+      - EmailSettings__SenderName=RAG ChatBot Admin
+      - EmailSettings__LoginUrl=http://localhost:8080/Account/Login
+      # Chỉ bật ở môi trường demo; không seed tài khoản mặc định trên production
+      - SEED_DEMO_USERS=false

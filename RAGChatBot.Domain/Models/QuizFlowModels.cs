@@ -10,6 +10,7 @@ namespace RAGChatBot.Domain.Models
         public int QuestionCount { get; init; }
         public Guid? DocumentId { get; init; }
         public int MaxAttempts { get; init; }
+        public int DurationMinutes { get; init; }
         public int AttemptsUsed { get; init; }
         public bool HasPassword { get; init; }
         public QuizReviewPolicy ReviewPolicy { get; init; }
@@ -23,6 +24,7 @@ namespace RAGChatBot.Domain.Models
     {
         public Guid AttemptId { get; init; }
         public int AttemptNumber { get; init; }
+        public DateTime ExpiresAt { get; init; }
         public IReadOnlyList<QuizQuestionModel> Questions { get; init; } = Array.Empty<QuizQuestionModel>();
     }
 

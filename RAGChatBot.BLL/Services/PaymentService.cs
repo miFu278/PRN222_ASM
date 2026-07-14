@@ -44,36 +44,24 @@ namespace RAGChatBot.BLL.Services
                 return false;
             }
 
-            var transaction = await _transactionRepository.GetByOrderIdAsync(callbackResult.OrderId);
-            if (transaction == null || transaction.UserId != userId)
+            if (!callbackResult.IsSuccess)
             {
+                await _transactionRepository.MarkFailedAsync(callbackResult.OrderId, userId);
                 return false;
             }
 
-            // A repeated successful callback must not extend the subscription twice.
-            if (transaction.Status == "Success")
-            {
-                return true;
-            }
-
-            transaction.TransactionNo = callbackResult.TransactionNo;
-            var isSuccessfulPayment = callbackResult.IsSuccess && callbackResult.Amount == transaction.Amount;
-            transaction.Status = isSuccessfulPayment ? "Success" : "Failed";
-            transaction.PaidAt = isSuccessfulPayment ? DateTime.UtcNow : null;
-
-            if (isSuccessfulPayment)
-            {
-                var user = transaction.User;
-                user.SubscriptionTier = "Premium";
-                var subscriptionStart = user.SubscriptionExpiresAt > DateTime.UtcNow
-                    ? user.SubscriptionExpiresAt.Value
-                    : DateTime.UtcNow;
-                user.SubscriptionExpiresAt = subscriptionStart.AddMonths(1);
-            }
-
-            await _transactionRepository.SaveChangesAsync();
-            return isSuccessfulPayment;
+            return await _transactionRepository.CompletePaymentAsync(
+                callbackResult.OrderId,
+                callbackResult.Amount,
+                callbackResult.TransactionNo,
+                userId);
         }
+
+        public Task<bool> ProcessVerifiedPaymentAsync(
+            string orderId,
+            long amount,
+            string? transactionNo)
+            => _transactionRepository.CompletePaymentAsync(orderId, amount, transactionNo);
 
         public async Task<IEnumerable<PaymentTransactionDto>> GetAllTransactionsAsync()
         {
@@ -93,12 +81,7 @@ namespace RAGChatBot.BLL.Services
 
         public async Task CancelTransactionAsync(string orderId, Guid userId)
         {
-            var transaction = await _transactionRepository.GetByOrderIdAsync(orderId);
-            if (transaction != null && transaction.UserId == userId && transaction.Status == "Pending")
-            {
-                transaction.Status = "Failed";
-                await _transactionRepository.SaveChangesAsync();
-            }
+            await _transactionRepository.MarkFailedAsync(orderId, userId);
         }
     }
 }

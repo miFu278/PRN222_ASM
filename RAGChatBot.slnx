@@ -3,4 +3,6 @@
   <Project Path="RAGChatBot.DAL/RAGChatBot.DAL.csproj" />
   <Project Path="RAGChatBot.BLL/RAGChatBot.BLL.csproj" />
   <Project Path="RAGChatBot.Presentation/RAGChatBot.Presentation.csproj" />
+  <Project Path="RAGChatBot.Tests/RAGChatBot.Tests.csproj" />
+  <Project Path="RAGChatBot.IntegrationTests/RAGChatBot.IntegrationTests.csproj" />
 </Solution>

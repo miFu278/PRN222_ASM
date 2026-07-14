@@ -10,7 +10,7 @@ namespace RAGChatBot.Domain.Entities
         public string CourseCode { get; set; } = string.Empty;
         public string Chapter { get; set; } = string.Empty;
         public long FileSize { get; set; }
-        public DateTime UploadedAt { get; set; } = DateTime.UtcNow.AddHours(7);
+        public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
         public Guid UploadedBy { get; set; } // Reference to User.Id
         public string UploaderName { get; set; } = string.Empty; // Store name so it persists even if user is deleted
         public DocumentStatus Status { get; set; } = DocumentStatus.Pending;
