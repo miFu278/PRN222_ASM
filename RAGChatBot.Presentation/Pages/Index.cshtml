@@ -250,10 +250,15 @@
 
             // GSAP animation
             if (typeof gsap !== 'undefined') {
-                gsap.fromTo('.zen-thread-item',
-                    { opacity: 0, x: -20 },
-                    { opacity: 1, x: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out' }
-                );
+                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                if (prefersReducedMotion) {
+                    gsap.set('.zen-thread-item', { opacity: 1, x: 0 });
+                } else {
+                    gsap.fromTo('.zen-thread-item',
+                        { opacity: 0, x: -20 },
+                        { opacity: 1, x: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out' }
+                    );
+                }
             }
         } catch (err) {
             threadsList.innerHTML = '<div class="text-center py-3 text-muted small">Lỗi tải lịch sử.</div>';
