@@ -56,20 +56,21 @@
                         <td style="font-weight: 500;">@(string.IsNullOrEmpty(user.FullName) ? "-" : user.FullName)</td>
                         <td class="text-muted">@user.Username</td>
                         <td>
-                            <span class="badge" style="background: @(user.Role == "Admin" ? "var(--accent-shu)" : (user.Role == "Lecturer" ? "#4f46e5" : "#64748b")); font-weight: 500; padding: 6px 12px; border-radius: 4px;">
+                            <span style="font-family: var(--font-sans); font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: @(user.Role == "Admin" ? "var(--accent-shu)" : (user.Role == "Lecturer" ? "var(--text-sumi)" : "var(--text-muted)")); font-weight: 500;">
                                 @user.Role
                             </span>
                         </td>
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <span style="color: @(user.SubscriptionTier == "Premium" ? "var(--accent-shu)" : "var(--text-muted)"); font-weight: @(user.SubscriptionTier == "Premium" ? "600" : "400");">
+                                <span class="status-badge" style="color: @(user.SubscriptionTier == "Premium" ? "var(--accent-shu)" : "var(--text-muted)");">
+                                    <span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: @(user.SubscriptionTier == "Premium" ? "var(--accent-shu)" : "var(--text-muted)"); margin-right: 8px;"></span>
                                     @user.SubscriptionTier
                                 </span>
                                 @if (user.Role == "Student" || user.Role == "Lecturer")
                                 {
                                     <form method="post" asp-page-handler="ToggleTier" class="m-0 p-0 d-inline-block">
                                         <input type="hidden" name="id" value="@user.Id" />
-                                        <button type="submit" class="btn btn-link p-0 m-0 text-muted" title="Chuyển đổi gói" style="text-decoration: none;">
+                                        <button type="submit" class="zen-action-link" style="padding: 0; background: none; border: none; color: var(--text-muted);" title="Chuyển đổi gói">
                                             <i class="fa-solid fa-rotate"></i>
                                         </button>
                                     </form>
@@ -172,10 +173,4 @@
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            gsap.to(".gsap-fade-up", { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" });
-        });
-    </script>
-}
+

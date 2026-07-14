@@ -716,7 +716,6 @@ a:hover {
     border-right: 0px solid var(--border-light);
     background-color: var(--bg-washi);
     flex-shrink: 0;
-    transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-right-width 0.4s ease;
 }
 
 .zen-chat-drawer.active {

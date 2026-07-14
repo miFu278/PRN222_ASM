@@ -517,22 +517,27 @@
 
         // ===== GSAP Entrance Animations =====
         if (window.gsap) {
-            gsap.from('.dash-card', {
-                y: 20, opacity: 0, duration: 0.6,
-                stagger: 0.1,
-                ease: 'power2.out'
-            });
-            gsap.from('.chart-container', {
-                y: 30, opacity: 0, duration: 0.7,
-                delay: 0.3,
-                ease: 'power2.out'
-            });
-            gsap.from('.git-table tr', {
-                x: -15, opacity: 0, duration: 0.4,
-                stagger: 0.05,
-                delay: 0.5,
-                ease: 'power2.out'
-            });
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (prefersReducedMotion) {
+                gsap.set('.dash-card, .chart-container, .git-table tr', { y: 0, x: 0, opacity: 1 });
+            } else {
+                gsap.from('.dash-card', {
+                    y: 20, opacity: 0, duration: 0.6,
+                    stagger: 0.1,
+                    ease: 'power2.out'
+                });
+                gsap.from('.chart-container', {
+                    y: 30, opacity: 0, duration: 0.7,
+                    delay: 0.3,
+                    ease: 'power2.out'
+                });
+                gsap.from('.git-table tr', {
+                    x: -15, opacity: 0, duration: 0.4,
+                    stagger: 0.05,
+                    delay: 0.5,
+                    ease: 'power2.out'
+                });
+            }
         }
     </script>
 }

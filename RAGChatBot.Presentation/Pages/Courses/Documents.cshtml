@@ -73,12 +73,12 @@
                     <input type="hidden" asp-for="CourseCode" />
                     
                     <div class="mb-4 mt-2">
-                        <input asp-for="Chapter" class="form-inline-zen w-100" placeholder="Tên chương/phần tài liệu" required />
+                        <input asp-for="Chapter" class="input-zen w-100" placeholder="Tên chương/phần tài liệu" required />
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label text-muted small text-uppercase tracking-wider">Tệp đính kèm (.pdf, .docx):</label>
-                        <input type="file" asp-for="UploadedFile" class="form-inline-zen w-100" accept=".pdf,.docx" required style="padding: 0 !important; cursor: pointer;" />
+                        <input type="file" asp-for="UploadedFile" class="input-zen w-100" accept=".pdf,.docx" required style="padding: 0 !important; cursor: pointer;" />
                         <div class="mt-2 small text-muted" style="font-weight: 300;">
                             Giới hạn: @(Model.CurrentSubscriptionTier == "Premium" ? "50 MB (Premium)" : "5 MB (Free)")
                         </div>
@@ -86,7 +86,7 @@
 
                     <div class="mb-3">
                         <label class="form-label text-muted small text-uppercase tracking-wider">Chiến lược Chunking:</label>
-                        <select asp-for="ChunkingStrategy" class="form-inline-zen w-100" style="cursor: pointer;">
+                        <select asp-for="ChunkingStrategy" class="input-zen w-100" style="cursor: pointer;">
                             <option value="Character">Character (theo ký tự)</option>
                             <option value="Word">Word (theo từ)</option>
                             <option value="Paragraph">Paragraph (theo đoạn văn)</option>
@@ -96,11 +96,11 @@
                     <div class="row mb-4">
                         <div class="col-6">
                             <label class="form-label text-muted small text-uppercase tracking-wider">Chunk Size:</label>
-                            <input type="number" asp-for="ChunkSize" class="form-inline-zen w-100" min="100" max="5000" />
+                            <input type="number" asp-for="ChunkSize" class="input-zen w-100" min="100" max="5000" />
                         </div>
                         <div class="col-6">
                             <label class="form-label text-muted small text-uppercase tracking-wider">Overlap:</label>
-                            <input type="number" asp-for="Overlap" class="form-inline-zen w-100" min="0" max="500" />
+                            <input type="number" asp-for="Overlap" class="input-zen w-100" min="0" max="500" />
                         </div>
                     </div>
 
@@ -166,11 +166,17 @@
                                                 }
                                                 else if (doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Failed)
                                                 {
-                                                    <span class="status-badge status-failed" style="background: #dc3545; color: white;">Failed</span>
+                                                    <span class="status-badge" style="color: var(--accent-shu);">
+                                                        <span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: var(--accent-shu); margin-right: 8px;"></span>
+                                                        Failed
+                                                    </span>
                                                 }
                                                 else if (doc.Status == RAGChatBot.Domain.Enums.DocumentStatus.Processing)
                                                 {
-                                                    <span class="status-badge status-processing" style="background: #17a2b8; color: white;">Processing...</span>
+                                                    <span class="status-badge" style="color: #0284c7;">
+                                                        <span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: #0284c7; margin-right: 8px;"></span>
+                                                        Processing...
+                                                    </span>
                                                 }
                                                 else
                                                 {
@@ -280,6 +286,7 @@
                                 .then(data => {
                                     if (data.length === 0) {
                                         container.innerHTML = '<p class="text-muted small">Không tìm thấy phân mảnh.</p>';
+                                        if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                                         return;
                                     }
                                     
@@ -296,13 +303,17 @@
                                     });
                                     html += '</div>';
                                     container.innerHTML = html;
+                                    if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                                 })
                                 .catch(err => {
                                     container.innerHTML = '<div class="text-danger small">Lỗi khi tải dữ liệu</div>';
+                                    if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                                 });
+                            if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                         } else {
                             row.style.display = 'none';
                             this.innerHTML = '<i class="fa-solid fa-eye"></i>';
+                            if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                         }
                     });
                 });
@@ -377,6 +388,7 @@
                                     if (newContainer && currentContainer) {
                                         currentContainer.innerHTML = newContainer.innerHTML;
                                         attachChunkEvents(); // Gắn lại event do DOM mới
+                                        if (window.zenInteract) window.zenInteract.refreshScrollTriggers();
                                     }
                                 });
                             return;
@@ -403,9 +415,9 @@
                                         var chunkBtn = document.querySelector(`.btn-view-chunks[data-id="${item.id}"]`);
                                         if (chunkBtn) chunkBtn.style.setProperty('display', 'inline-block', 'important');
                                     } else if (item.status === 'failed') {
-                                        processingStatusHtml = '<span class="status-badge status-failed" style="background: #dc3545; color: white;">Failed</span>';
+                                        processingStatusHtml = '<span class="status-badge" style="color: var(--accent-shu);"><span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: var(--accent-shu); margin-right: 8px;"></span>Failed</span>';
                                     } else if (item.status === 'processing') {
-                                        processingStatusHtml = '<span class="status-badge status-processing" style="background: #17a2b8; color: white;">Processing...</span>';
+                                        processingStatusHtml = '<span class="status-badge" style="color: #0284c7;"><span class="d-inline-block rounded-circle" style="width: 6px; height: 6px; background-color: #0284c7; margin-right: 8px;"></span>Processing...</span>';
                                     } else {
                                         processingStatusHtml = '<span class="status-badge status-pending">Pending...</span>';
                                     }

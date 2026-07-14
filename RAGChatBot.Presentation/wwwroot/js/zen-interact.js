@@ -91,7 +91,7 @@ window.zenInteract = {
                     x: 0,
                     y: 0,
                     duration: 0.6,
-                    ease: "elastic.out(1, 0.3)"
+                    ease: "power3.out"
                 });
             });
         });
@@ -224,6 +224,10 @@ window.zenInteract = {
                 gsap.set(el.parentElement, { perspective: 1000 });
                 gsap.set(el, { transformStyle: "preserve-3d", force3D: true });
 
+                // Khởi tạo các hàm quickTo để tái sử dụng, tránh tạo tween mới trên mỗi sự kiện mousemove
+                const rotXTo = gsap.quickTo(el, "rotationX", { duration: 0.3, ease: "power2.out" });
+                const rotYTo = gsap.quickTo(el, "rotationY", { duration: 0.3, ease: "power2.out" });
+
                 el.addEventListener('mousemove', (e) => {
                     const bounds = el.getBoundingClientRect();
                     const x = e.clientX - bounds.left;
@@ -236,13 +240,8 @@ window.zenInteract = {
                     const rotX = -relY * config.max;
                     const rotY = relX * config.max;
 
-                    gsap.to(el, {
-                        rotationX: rotX,
-                        rotationY: rotY,
-                        duration: 0.3,
-                        ease: "power2.out",
-                        overwrite: "auto"
-                    });
+                    rotXTo(rotX);
+                    rotYTo(rotY);
                 });
 
                 el.addEventListener('mouseleave', () => {
@@ -264,40 +263,50 @@ window.zenInteract = {
 
         gsap.registerPlugin(ScrollTrigger);
 
-        const targets = ['.zen-hero', '.zen-chat-layout', '.zen-container.py-5'];
+        const targets = ['.zen-hero', '.zen-chat-layout', '.zen-container', '.zen-chat-container'];
+        // Gộp tất cả các selector để truy vấn một lượt nhằm đảm bảo khởi tạo đúng thứ tự từ trên xuống dưới trong DOM
+        const elements = document.querySelectorAll(targets.join(', '));
         
-        targets.forEach(selector => {
-            const elements = document.querySelectorAll(selector);
-            elements.forEach(el => {
-                // Kích hoạt transform 3D và tối ưu GPU
-                el.classList.add('zen-scroll-flip');
+        elements.forEach(el => {
+            // Kích hoạt transform 3D và tối ưu GPU
+            el.classList.add('zen-scroll-flip');
 
-                // Tạo timeline lật 3D cuốn sách cổ
-                const tl = gsap.timeline({
-                    scrollTrigger: {
-                        trigger: el,
-                        start: "top bottom",    // Khi phần tử bắt đầu đi vào đáy màn hình
-                        end: "top center",      // Khi đỉnh phần tử chạm giữa màn hình
-                        scrub: 1,               // Scrub mượt mà trễ 1 giây
-                        ease: "none"            // Scrub timeline cần để none để đồng bộ
-                    }
-                });
-
-                tl.fromTo(el, 
-                    {
-                        rotationX: -12,
-                        y: 50,
-                        opacity: 0,
-                        transformOrigin: "top center"
-                    },
-                    {
-                        rotationX: 0,
-                        y: 0,
-                        opacity: 1,
-                        ease: "none"
-                    }
-                );
+            // Tạo timeline lật 3D cuốn sách cổ
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: el,
+                    start: "clamp(top bottom)",    // Sử dụng clamp() để đảm bảo ổn định vị trí cuộn
+                    end: "clamp(top center)",      // Sử dụng clamp() để đảm bảo ổn định vị trí cuộn
+                    scrub: 1                       // Scrub mượt mà trễ 1 giây
+                }
             });
+
+            tl.fromTo(el, 
+                {
+                    rotationX: -12,
+                    y: 50,
+                    opacity: 0,
+                    transformOrigin: "top center"
+                },
+                {
+                    rotationX: 0,
+                    y: 0,
+                    opacity: 1,
+                    ease: "none"                   // Đặt ease: "none" ở đây để timeline đồng bộ 1:1 với tiến trình cuộn
+                }
+            );
         });
+    },
+
+    refreshScrollTriggers: function () {
+        if (typeof ScrollTrigger !== 'undefined') {
+            // Tự động dọn dẹp (kill) các ScrollTrigger mồ côi có phần tử trigger không còn nằm trong DOM
+            ScrollTrigger.getAll().forEach(trigger => {
+                if (trigger.trigger && !document.body.contains(trigger.trigger)) {
+                    trigger.kill();
+                }
+            });
+            ScrollTrigger.refresh();
+        }
     }
 };
