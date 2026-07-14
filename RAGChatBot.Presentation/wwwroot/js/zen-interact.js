@@ -24,7 +24,9 @@ window.zenInteract = {
             infinite: false,
         });
 
-        window.lenis.on('scroll', ScrollTrigger.update);
+        if (typeof ScrollTrigger !== 'undefined') {
+            window.lenis.on('scroll', ScrollTrigger.update);
+        }
 
         gsap.ticker.add((time) => {
             window.lenis.raf(time * 1000);
@@ -34,7 +36,13 @@ window.zenInteract = {
     },
 
     initPageReveal: function () {
-        if (typeof gsap === 'undefined') return;
+        if (typeof gsap === 'undefined') {
+            document.querySelectorAll('.gsap-fade-up, .zen-list-item').forEach(element => {
+                element.style.opacity = '1';
+                element.style.transform = 'none';
+            });
+            return;
+        }
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -104,12 +112,17 @@ window.zenInteract = {
         toast.className = `zen-toast zen-toast-${type}`;
         
         const icon = type === 'success' ? 'fa-check' : 'fa-exclamation';
-        toast.innerHTML = `<i class="fa-solid ${icon} me-2"></i> <span>${message}</span>`;
+        const iconElement = document.createElement('i');
+        iconElement.className = `fa-solid ${icon} me-2`;
+        const messageElement = document.createElement('span');
+        messageElement.textContent = String(message ?? '');
+        toast.append(iconElement, messageElement);
         
         container.appendChild(toast);
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (prefersReducedMotion) {
+        const canAnimate = typeof gsap !== 'undefined' && !prefersReducedMotion;
+        if (!canAnimate) {
             toast.style.opacity = 1;
             toast.style.transform = 'none';
         } else {
@@ -120,7 +133,7 @@ window.zenInteract = {
         }
 
         setTimeout(() => {
-            if (prefersReducedMotion) {
+            if (!canAnimate) {
                 toast.remove();
             } else {
                 gsap.to(toast, {
@@ -149,39 +162,90 @@ window.zenInteract = {
         const drawer = document.querySelector('.zen-chat-drawer');
         if (!toggleBtn || !drawer) return;
 
-        const toggle = () => {
-            const isActive = drawer.classList.contains('active');
-            if (isActive) {
-                // Đóng drawer bằng GSAP
-                gsap.to(drawer, {
-                    width: 0,
-                    duration: 0.5,
-                    ease: "power3.inOut",
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const canAnimate = typeof gsap !== 'undefined' && !prefersReducedMotion;
+        const drawerWidth = () => Math.min(320, Math.max(0, window.innerWidth - 24));
+
+        const updateAccessibility = isOpen => {
+            toggleBtn.setAttribute('aria-expanded', String(isOpen));
+            drawer.setAttribute('aria-hidden', String(!isOpen));
+        };
+
+        const finishWithoutAnimation = isOpen => {
+            drawer.classList.toggle('active', isOpen);
+            drawer.style.removeProperty('width');
+            drawer.style.removeProperty('border-right');
+            updateAccessibility(isOpen);
+        };
+
+        const open = () => {
+            if (drawer.classList.contains('active')) return;
+            drawer.classList.add('active');
+            updateAccessibility(true);
+
+            if (!canAnimate) {
+                finishWithoutAnimation(true);
+                return;
+            }
+
+            gsap.killTweensOf(drawer);
+            gsap.fromTo(drawer,
+                { width: 0, borderRightWidth: 0 },
+                {
+                    width: drawerWidth(),
+                    borderRightWidth: 1,
+                    duration: 0.6,
+                    ease: 'power3.out',
                     onComplete: () => {
-                        drawer.classList.remove('active');
-                        drawer.style.borderRight = '0px solid var(--border-light)';
+                        drawer.style.removeProperty('width');
+                        drawer.style.removeProperty('border-right-width');
                     }
-                });
-            } else {
-                // Mở drawer bằng GSAP
-                drawer.classList.add('active');
-                drawer.style.borderRight = '1px solid var(--border-light)';
-                gsap.fromTo(drawer, 
-                    { width: 0 },
-                    { width: 320, duration: 0.6, ease: "power3.out" }
-                );
-                // Hoạt ảnh trồi lên tuần tự cho các đoạn chat cũ
-                gsap.fromTo('.zen-thread-item', 
+                }
+            );
+
+            const threadItems = drawer.querySelectorAll('.zen-thread-item');
+            if (threadItems.length > 0) {
+                gsap.fromTo(threadItems,
                     { opacity: 0, x: -20 },
-                    { opacity: 1, x: 0, duration: 0.4, stagger: 0.05, ease: "power2.out", delay: 0.1 }
+                    { opacity: 1, x: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out', delay: 0.1 }
                 );
             }
         };
 
-        toggleBtn.addEventListener('click', toggle);
+        const close = () => {
+            if (!drawer.classList.contains('active')) return;
+
+            if (!canAnimate) {
+                finishWithoutAnimation(false);
+                return;
+            }
+
+            gsap.killTweensOf(drawer);
+            gsap.to(drawer, {
+                width: 0,
+                borderRightWidth: 0,
+                duration: 0.5,
+                ease: 'power3.inOut',
+                onComplete: () => finishWithoutAnimation(false)
+            });
+        };
+
+        updateAccessibility(false);
+        toggleBtn.addEventListener('click', () => {
+            drawer.classList.contains('active') ? close() : open();
+        });
         if (closeBtn) {
-            closeBtn.addEventListener('click', toggle);
+            closeBtn.addEventListener('click', close);
         }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') close();
+        });
+
+        document.addEventListener('click', event => {
+            if (window.innerWidth > 768 || !drawer.classList.contains('active')) return;
+            if (!drawer.contains(event.target) && !toggleBtn.contains(event.target)) close();
+        });
     },
 
     initWashiSkeleton: function () {
@@ -189,8 +253,8 @@ window.zenInteract = {
         if (dots.length === 0) return;
 
         // Vô hiệu hóa hoạt ảnh nếu prefers-reduced-motion bật
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            gsap.set(dots, { opacity: 0.6 });
+        if (typeof gsap === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            dots.forEach(dot => { dot.style.opacity = '0.6'; });
             return;
         }
 
@@ -208,6 +272,7 @@ window.zenInteract = {
     },
 
     init3DTilt: function () {
+        if (typeof gsap === 'undefined') return;
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
         const configs = [
@@ -263,9 +328,11 @@ window.zenInteract = {
 
         gsap.registerPlugin(ScrollTrigger);
 
-        const targets = ['.zen-hero', '.zen-chat-layout', '.zen-container', '.zen-chat-container'];
-        // Gộp tất cả các selector để truy vấn một lượt nhằm đảm bảo khởi tạo đúng thứ tự từ trên xuống dưới trong DOM
-        const elements = document.querySelectorAll(targets.join(', '));
+        // Chỉ animate các section độc lập. Không chọn container cha của các section
+        // để tránh nhiều ScrollTrigger cùng điều khiển transform/opacity của cây chat.
+        const targets = ['.zen-hero', '.zen-chat-layout', '.zen-container.py-5'];
+        const elements = Array.from(document.querySelectorAll(targets.join(', ')))
+            .filter(element => !element.classList.contains('gsap-fade-up'));
         
         elements.forEach(el => {
             // Kích hoạt transform 3D và tối ưu GPU
@@ -275,8 +342,10 @@ window.zenInteract = {
             const tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: el,
-                    start: "clamp(top bottom)",    // Sử dụng clamp() để đảm bảo ổn định vị trí cuộn
-                    end: "clamp(top center)",      // Sử dụng clamp() để đảm bảo ổn định vị trí cuộn
+                    // Không clamp các section ở đầu trang về cùng mốc 0; start/end
+                    // trùng nhau có thể giữ from-state (opacity: 0) trên trang chat.
+                    start: "top bottom",
+                    end: "top center",
                     scrub: 1                       // Scrub mượt mà trễ 1 giây
                 }
             });
