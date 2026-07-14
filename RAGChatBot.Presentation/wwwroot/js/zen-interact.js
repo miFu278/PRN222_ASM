@@ -224,6 +224,10 @@ window.zenInteract = {
                 gsap.set(el.parentElement, { perspective: 1000 });
                 gsap.set(el, { transformStyle: "preserve-3d", force3D: true });
 
+                // Khởi tạo các hàm quickTo để tái sử dụng, tránh tạo tween mới trên mỗi sự kiện mousemove
+                const rotXTo = gsap.quickTo(el, "rotationX", { duration: 0.3, ease: "power2.out" });
+                const rotYTo = gsap.quickTo(el, "rotationY", { duration: 0.3, ease: "power2.out" });
+
                 el.addEventListener('mousemove', (e) => {
                     const bounds = el.getBoundingClientRect();
                     const x = e.clientX - bounds.left;
@@ -236,13 +240,8 @@ window.zenInteract = {
                     const rotX = -relY * config.max;
                     const rotY = relX * config.max;
 
-                    gsap.to(el, {
-                        rotationX: rotX,
-                        rotationY: rotY,
-                        duration: 0.3,
-                        ease: "power2.out",
-                        overwrite: "auto"
-                    });
+                    rotXTo(rotX);
+                    rotYTo(rotY);
                 });
 
                 el.addEventListener('mouseleave', () => {
