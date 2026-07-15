@@ -51,6 +51,10 @@
             }
             <a class="zen-menu-item-sm" asp-area="" asp-page="/Courses/Index">Môn Học</a>
             <a class="zen-menu-item-sm" asp-area="" asp-page="/Subscription/Index">Gói Dịch Vụ</a>
+            @if (User.Identity?.IsAuthenticated == true && User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value != "Admin")
+            {
+                <a class="zen-menu-item-sm" asp-area="" asp-page="/Account/Transactions">Lịch Sử Giao Dịch</a>
+            }
         </nav>
     </header>
 @{
@@ -97,6 +101,12 @@
                     <a class="zen-sidebar-item @(currentPath == "/" || currentPath.Contains("/index") ? "active" : "")" asp-area="" asp-page="/Index">
                         <i class="fa-solid fa-comments"></i> <span class="nav-text">Trò Chuyện</span>
                     </a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a class="zen-sidebar-item @(currentPath.Contains("/account/transactions") ? "active" : "")" asp-area="" asp-page="/Account/Transactions">
+                            <i class="fa-solid fa-receipt"></i> <span class="nav-text">Lịch Sử Giao Dịch</span>
+                        </a>
+                    }
                 }
                 <a class="zen-sidebar-item @(currentPath.Contains("/courses") ? "active" : "")" asp-area="" asp-page="/Courses/Index">
                     <i class="fa-solid fa-book-open"></i> <span class="nav-text">Môn Học</span>

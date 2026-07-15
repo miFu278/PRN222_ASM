@@ -100,7 +100,7 @@ namespace RAGChatBot.BLL.Services
             {
                 return new ChatReplyDto
                 {
-                    Reply = "Bạn đã hết lượt hỏi miễn phí hôm nay (10 lượt/ngày). Nâng cấp Premium để chat không giới hạn!",
+                    Reply = "Bạn đã dùng hết lượt hỏi hôm nay. Gói Free có 10 lượt/ngày và Premium có 50 lượt/ngày.",
                     Remaining = 0,
                     ThreadId = existingThread?.Id,
                     OutOfCredits = true
@@ -122,7 +122,7 @@ namespace RAGChatBot.BLL.Services
                 return new ChatReplyDto
                 {
                     Reply = response.Reply,
-                    Remaining = remaining >= 9999 ? remaining : Math.Min(10, remaining + 1),
+                    Remaining = remaining + 1,
                     ThreadId = existingThread?.Id,
                     IsError = true
                 };

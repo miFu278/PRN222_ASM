@@ -11,6 +11,7 @@ namespace RAGChatBot.BLL.Services
         Task<bool> ProcessPaymentCallbackAsync(PayOSCallbackResult callbackResult, Guid userId);
         Task<bool> ProcessVerifiedPaymentAsync(string orderId, long amount, string? transactionNo);
         Task<IEnumerable<PaymentTransactionDto>> GetAllTransactionsAsync();
+        Task<IEnumerable<PaymentTransactionDto>> GetTransactionsByUserAsync(Guid userId);
         Task CancelTransactionAsync(string orderId, Guid userId);
     }
 }

@@ -66,7 +66,22 @@ namespace RAGChatBot.BLL.Services
         public async Task<IEnumerable<PaymentTransactionDto>> GetAllTransactionsAsync()
         {
             var transactions = await _transactionRepository.GetAllAsync();
-            return transactions.Select(transaction => new PaymentTransactionDto
+            return transactions.Select(ToDto).ToList();
+        }
+
+        public async Task<IEnumerable<PaymentTransactionDto>> GetTransactionsByUserAsync(Guid userId)
+        {
+            var transactions = await _transactionRepository.GetByUserIdAsync(userId);
+            return transactions.Select(ToDto).ToList();
+        }
+
+        public async Task CancelTransactionAsync(string orderId, Guid userId)
+        {
+            await _transactionRepository.MarkFailedAsync(orderId, userId);
+        }
+
+        private static PaymentTransactionDto ToDto(PaymentTransaction transaction)
+            => new()
             {
                 OrderId = transaction.OrderId,
                 FullName = transaction.User.FullName,
@@ -76,12 +91,6 @@ namespace RAGChatBot.BLL.Services
                 Status = transaction.Status,
                 CreatedAt = transaction.CreatedAt,
                 PaidAt = transaction.PaidAt
-            }).ToList();
-        }
-
-        public async Task CancelTransactionAsync(string orderId, Guid userId)
-        {
-            await _transactionRepository.MarkFailedAsync(orderId, userId);
-        }
+            };
     }
 }
