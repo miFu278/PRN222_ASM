@@ -31,7 +31,7 @@
                     Chúc mừng! Bạn đã nâng cấp thành công lên gói Premium.
                 </div>
                 <div style="font-weight: 300; color: var(--text-muted);">
-                    Gói Premium có hiệu lực trong 30 ngày. Bạn có thể chat không giới hạn và upload file lên đến 50MB.
+                    Gói Premium có hiệu lực trong 30 ngày. Bạn có thể hỏi AI 50 lượt mỗi ngày và upload file lên đến 50MB.
                 </div>
             </div>
 
@@ -65,6 +65,12 @@
             <a href="/" class="btn-zen magnetic-btn" style="padding: 14px 28px;">
                 <i class="fa-solid fa-home me-2"></i> Trang chủ
             </a>
+            @if (Model.IsSuccess)
+            {
+                <a href="/Account/Transactions" class="btn-zen primary magnetic-btn" style="padding: 14px 28px;">
+                    <i class="fa-solid fa-receipt me-2"></i> Xem lịch sử giao dịch
+                </a>
+            }
             @if (!Model.IsSuccess)
             {
                 <a href="/Subscription/Checkout" class="btn-zen primary magnetic-btn" style="padding: 14px 28px;">

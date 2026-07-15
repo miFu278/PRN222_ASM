@@ -32,6 +32,16 @@ namespace RAGChatBot.DAL.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IReadOnlyList<PaymentTransaction>> GetByUserIdAsync(Guid userId)
+        {
+            return await _db.PaymentTransactions
+                .AsNoTracking()
+                .Include(transaction => transaction.User)
+                .Where(transaction => transaction.UserId == userId)
+                .OrderByDescending(transaction => transaction.CreatedAt)
+                .ToListAsync();
+        }
+
         public async Task<bool> CompletePaymentAsync(
             string orderId,
             long amount,
