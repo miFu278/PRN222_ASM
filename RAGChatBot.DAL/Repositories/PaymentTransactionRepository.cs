@@ -23,11 +23,26 @@ namespace RAGChatBot.DAL.Repositories
                 .FirstOrDefaultAsync(transaction => transaction.OrderId == orderId);
         }
 
-        public async Task<IReadOnlyList<PaymentTransaction>> GetAllAsync()
+        public async Task<IReadOnlyList<PaymentTransaction>> GetAllAsync(
+            string? status = null,
+            string? type = null)
         {
-            return await _db.PaymentTransactions
+            var query = _db.PaymentTransactions
                 .AsNoTracking()
                 .Include(transaction => transaction.User)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = query.Where(transaction => transaction.Status == status);
+            }
+
+            if (!string.IsNullOrWhiteSpace(type))
+            {
+                query = query.Where(transaction => transaction.Type == type);
+            }
+
+            return await query
                 .OrderByDescending(transaction => transaction.CreatedAt)
                 .ToListAsync();
         }

@@ -1,5 +1,6 @@
 @page "/Admin/Payments"
 @model RAGChatBot.Presentation.Pages.Admin.PaymentsModel
+@using RAGChatBot.Domain.Constants
 @{
     ViewData["Title"] = "Quản lý Giao Dịch";
 }
@@ -18,26 +19,59 @@
         </div>
     </div>
 
+    <form method="get" class="row g-3 align-items-end mb-4" style="border-top: 1px solid var(--border-light); padding-top: 24px;">
+        <div class="col-md-5 col-lg-4">
+            <label for="transactionType" class="form-label text-muted small text-uppercase" style="letter-spacing: 0.1em;">
+                Loại giao dịch
+            </label>
+            <select id="transactionType" name="Type" class="form-select input-zen">
+                <option value="All" selected="@(Model.Type == "All" ? "selected" : null)">Tất cả loại giao dịch</option>
+                <option value="@PaymentTransactionTypes.PremiumSubscription" selected="@(Model.Type == PaymentTransactionTypes.PremiumSubscription ? "selected" : null)">Nâng cấp Premium</option>
+            </select>
+        </div>
+        <div class="col-md-5 col-lg-4">
+            <label for="transactionStatus" class="form-label text-muted small text-uppercase" style="letter-spacing: 0.1em;">
+                Trạng thái
+            </label>
+            <select id="transactionStatus" name="Status" class="form-select input-zen">
+                <option value="All" selected="@(Model.Status == "All" ? "selected" : null)">Tất cả trạng thái</option>
+                <option value="Success" selected="@(Model.Status == "Success" ? "selected" : null)">Thành công</option>
+                <option value="Pending" selected="@(Model.Status == "Pending" ? "selected" : null)">Đang chờ</option>
+                <option value="Failed" selected="@(Model.Status == "Failed" ? "selected" : null)">Thất bại</option>
+            </select>
+        </div>
+        <div class="col-md-auto d-flex gap-2">
+            <button type="submit" class="btn-zen primary">
+                <i class="fa-solid fa-filter me-2"></i> Lọc giao dịch
+            </button>
+            @if (Model.Status != "All" || Model.Type != "All")
+            {
+                <a asp-page="/Admin/Payments" class="btn-zen text-decoration-none">Xóa lọc</a>
+            }
+        </div>
+    </form>
+
     <!-- Transactions Table -->
     <div class="table-responsive">
         <table class="table-zen w-100">
             <thead>
                 <tr>
-                    <th style="width: 15%;">Mã đơn hàng</th>
-                    <th style="width: 20%;">Người dùng</th>
-                    <th style="width: 15%;">Số tiền</th>
+                    <th style="width: 13%;">Mã đơn hàng</th>
+                    <th style="width: 18%;">Người dùng</th>
+                    <th style="width: 12%;">Số tiền</th>
+                    <th style="width: 14%;">Loại giao dịch</th>
                     <th style="width: 12%;">Mã GD PayOS</th>
                     <th style="width: 10%;">Trạng thái</th>
-                    <th style="width: 14%;">Ngày tạo</th>
-                    <th style="width: 14%;">Ngày thanh toán</th>
+                    <th style="width: 10%;">Ngày tạo</th>
+                    <th style="width: 11%;">Ngày thanh toán</th>
                 </tr>
             </thead>
             <tbody>
                 @if (!Model.Transactions.Any())
                 {
                     <tr>
-                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px 0; font-weight: 300;">
-                            Chưa có giao dịch nào trong hệ thống.
+                        <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px 0; font-weight: 300;">
+                            @(Model.Status == "All" && Model.Type == "All" ? "Chưa có giao dịch nào trong hệ thống." : "Không có giao dịch phù hợp với bộ lọc.")
                         </td>
                     </tr>
                 }
@@ -52,6 +86,11 @@
                                 <div class="text-muted" style="font-size: 0.8rem;">@tx.Username</div>
                             </td>
                             <td style="font-weight: 500;">@tx.Amount.ToString("N0")đ</td>
+                            <td>
+                                @(tx.Type == PaymentTransactionTypes.PremiumSubscription
+                                    ? "Nâng cấp Premium"
+                                    : tx.Type)
+                            </td>
                             <td class="text-muted" style="font-size: 0.85rem;">@(tx.TransactionNo ?? "-")</td>
                             <td>
                                 @if (tx.Status == "Success")

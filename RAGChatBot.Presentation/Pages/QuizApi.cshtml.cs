@@ -11,7 +11,7 @@ using System.Security.Claims;
 
 namespace RAGChatBot.Presentation.Pages
 {
-    [Authorize]
+    [Authorize(Roles = RoleNames.Lecturer + "," + RoleNames.Student)]
     public class QuizApiModel : PageModel
     {
         private readonly IQuizService _quizService;
@@ -179,11 +179,9 @@ namespace RAGChatBot.Presentation.Pages
         }
 
         private Task<bool> CanManageCourseAsync(string courseCode, Guid userId)
-            => User.IsInRole(RoleNames.Admin)
-                ? Task.FromResult(true)
-                : User.IsInRole(RoleNames.Lecturer)
-                    ? _courseService.IsSubjectLeaderAsync(courseCode, userId)
-                    : Task.FromResult(false);
+            => User.IsInRole(RoleNames.Lecturer)
+                ? _courseService.IsSubjectLeaderAsync(courseCode, userId)
+                : Task.FromResult(false);
 
         private bool TryGetUserId(out Guid userId)
             => Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);

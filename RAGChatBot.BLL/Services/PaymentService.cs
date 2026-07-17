@@ -1,4 +1,5 @@
 using RAGChatBot.BLL.DTOs;
+using RAGChatBot.Domain.Constants;
 using RAGChatBot.Domain.Entities;
 using RAGChatBot.Domain.Interfaces;
 
@@ -28,6 +29,7 @@ namespace RAGChatBot.BLL.Services
                 OrderId = orderId,
                 UserId = user.Id,
                 Amount = amount,
+                Type = PaymentTransactionTypes.PremiumSubscription,
                 Status = "Pending"
             });
             await _transactionRepository.SaveChangesAsync();
@@ -63,9 +65,11 @@ namespace RAGChatBot.BLL.Services
             string? transactionNo)
             => _transactionRepository.CompletePaymentAsync(orderId, amount, transactionNo);
 
-        public async Task<IEnumerable<PaymentTransactionDto>> GetAllTransactionsAsync()
+        public async Task<IEnumerable<PaymentTransactionDto>> GetAllTransactionsAsync(
+            string? status = null,
+            string? type = null)
         {
-            var transactions = await _transactionRepository.GetAllAsync();
+            var transactions = await _transactionRepository.GetAllAsync(status, type);
             return transactions.Select(ToDto).ToList();
         }
 
@@ -88,6 +92,7 @@ namespace RAGChatBot.BLL.Services
                 Username = transaction.User.Username,
                 Amount = transaction.Amount,
                 TransactionNo = transaction.TransactionNo,
+                Type = transaction.Type,
                 Status = transaction.Status,
                 CreatedAt = transaction.CreatedAt,
                 PaidAt = transaction.PaidAt

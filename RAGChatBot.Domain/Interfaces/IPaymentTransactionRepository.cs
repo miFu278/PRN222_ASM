@@ -6,7 +6,9 @@ namespace RAGChatBot.Domain.Interfaces
     {
         Task AddAsync(PaymentTransaction transaction);
         Task<PaymentTransaction?> GetByOrderIdAsync(string orderId);
-        Task<IReadOnlyList<PaymentTransaction>> GetAllAsync();
+        Task<IReadOnlyList<PaymentTransaction>> GetAllAsync(
+            string? status = null,
+            string? type = null);
         Task<IReadOnlyList<PaymentTransaction>> GetByUserIdAsync(Guid userId);
         Task<bool> CompletePaymentAsync(
             string orderId,

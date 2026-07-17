@@ -1,0 +1,32 @@
+@page "/Account/AccessDenied"
+@model RAGChatBot.Presentation.Pages.Account.AccessDeniedModel
+@{
+    ViewData["Title"] = "Không Có Quyền Truy Cập";
+}
+
+<div class="zen-container py-5 gsap-fade-up">
+    <div class="zen-hero" style="min-height: auto; margin-bottom: 48px;">
+        <div class="zen-hero-title">
+            <span class="text-accent">悟 QUYỀN TRUY CẬP</span>
+            <h1>Không thể mở <i>trang này</i></h1>
+        </div>
+        <div class="zen-hero-desc">
+            Tài khoản của bạn không có quyền sử dụng chức năng vừa yêu cầu.
+        </div>
+    </div>
+
+    <div class="text-center" style="border-top: 1px solid var(--border-light); padding-top: 40px;">
+        <i class="fa-solid fa-shield-halved mb-4" style="font-size: 3rem; color: var(--accent-shu);"></i>
+        <p class="text-muted mb-4" style="font-weight: 300;">
+            Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ quản trị viên để kiểm tra quyền của tài khoản.
+        </p>
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <button type="button" class="btn-zen" onclick="history.back()">
+                <i class="fa-solid fa-arrow-left me-2"></i> Quay lại
+            </button>
+            <a asp-page="/Index" class="btn-zen primary text-decoration-none">
+                <i class="fa-solid fa-house me-2"></i> Về trang chủ
+            </a>
+        </div>
+    </div>
+</div>

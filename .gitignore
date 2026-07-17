@@ -78,5 +78,8 @@ PRODUCT.md
 
 # Ignore WebMVC locally but keep the files
 RAGChatBot.WebMVC/
-RAGChatBot.Tests
-RAGChatBot.IntegrationTests
+
+# TestSprite local runtime files and generated browser tests may contain
+# disposable credentials or machine-specific paths.
+testsprite_tests/tmp/
+testsprite_tests/*.py

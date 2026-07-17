@@ -73,11 +73,12 @@ namespace RAGChatBot.BLL.Services
             var courses = await _courseRepository.GetAllAsync();
             var course = courses.FirstOrDefault(c => c.Code.Equals(courseCode, StringComparison.OrdinalIgnoreCase))
                 ?? throw new KeyNotFoundException("Không tìm thấy môn học!");
-            var isAdmin = user.Role?.Name == RoleNames.Admin;
-            var isSubjectLeader = course.SubjectLeaderId == userId;
-            if (!isAdmin && !isSubjectLeader)
+            var isSubjectLeader =
+                string.Equals(user.Role?.Name, RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase) &&
+                course.SubjectLeaderId == userId;
+            if (!isSubjectLeader)
             {
-                throw new UnauthorizedAccessException("Chỉ quản trị viên hoặc Trưởng bộ môn mới được tải tài liệu lên môn học này!");
+                throw new UnauthorizedAccessException("Chỉ giảng viên phụ trách môn học mới được tải tài liệu lên!");
             }
 
             // Never trust a subscription tier supplied by the browser.
@@ -187,10 +188,12 @@ namespace RAGChatBot.BLL.Services
             var courses = await _courseRepository.GetAllAsync();
             var course = courses.FirstOrDefault(c => c.Code.Equals(document.CourseCode, StringComparison.OrdinalIgnoreCase));
             var user = await _userRepository.GetByIdAsync(userId);
-            var isAdmin = user?.Role?.Name == RoleNames.Admin;
-            if (course == null || (!isAdmin && course.SubjectLeaderId != userId))
+            var isSubjectLeader =
+                string.Equals(user?.Role?.Name, RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase) &&
+                course?.SubjectLeaderId == userId;
+            if (!isSubjectLeader)
             {
-                throw new UnauthorizedAccessException("Chỉ có Trưởng bộ môn của môn học này mới được quyền xóa tài liệu!");
+                throw new UnauthorizedAccessException("Chỉ giảng viên phụ trách môn học mới được xóa tài liệu!");
             }
 
             // Delete database metadata first so users never see a record whose file is gone.
@@ -231,10 +234,12 @@ namespace RAGChatBot.BLL.Services
             }
 
             var user = await _userRepository.GetByIdAsync(userId);
-            var isAdmin = user?.Role?.Name == RoleNames.Admin;
-            if (!isAdmin && course.SubjectLeaderId != userId)
+            var isSubjectLeader =
+                string.Equals(user?.Role?.Name, RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase) &&
+                course.SubjectLeaderId == userId;
+            if (!isSubjectLeader)
             {
-                throw new UnauthorizedAccessException("Chỉ có Trưởng bộ môn của môn học này mới có quyền phê duyệt!");
+                throw new UnauthorizedAccessException("Chỉ giảng viên phụ trách môn học mới được phê duyệt tài liệu!");
             }
 
             document.IsApproved = true;
@@ -265,15 +270,14 @@ namespace RAGChatBot.BLL.Services
                 throw new KeyNotFoundException("Không tìm thấy môn học liên quan đến tài liệu!");
             }
 
-            // Chỉ Trưởng bộ môn hoặc người upload mới được thử lại
             var user = await _userRepository.GetByIdAsync(userId);
-            bool isAdmin = user?.Role.Name == RoleNames.Admin;
-            bool isSubjectLeader = course.SubjectLeaderId == userId;
-            bool isUploader = document.UploadedBy == userId;
+            var isSubjectLeader =
+                string.Equals(user?.Role?.Name, RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase) &&
+                course.SubjectLeaderId == userId;
 
-            if (!isAdmin && !isSubjectLeader && !isUploader)
+            if (!isSubjectLeader)
             {
-                throw new UnauthorizedAccessException("Bạn không có quyền thử lại tài liệu này!");
+                throw new UnauthorizedAccessException("Chỉ giảng viên phụ trách môn học mới được xử lý lại tài liệu!");
             }
 
             if (document.Status != DocumentStatus.Failed && document.Status != DocumentStatus.Success)
@@ -300,10 +304,12 @@ namespace RAGChatBot.BLL.Services
                 ?? throw new KeyNotFoundException("Không tìm thấy môn học!");
             var user = await _userRepository.GetByIdAsync(userId)
                 ?? throw new UnauthorizedAccessException("Không tìm thấy người dùng!");
-            var isAdmin = user.Role.Name == RoleNames.Admin;
-            if (!isAdmin && course.SubjectLeaderId != userId)
+            var isSubjectLeader =
+                string.Equals(user.Role?.Name, RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase) &&
+                course.SubjectLeaderId == userId;
+            if (!isSubjectLeader)
             {
-                throw new UnauthorizedAccessException("Chỉ quản trị viên hoặc Trưởng bộ môn mới được re-index tài liệu!");
+                throw new UnauthorizedAccessException("Chỉ giảng viên phụ trách môn học mới được re-index tài liệu!");
             }
 
             var candidates = (await _documentRepository.GetByCourseCodeAsync(course.Code))
@@ -347,15 +353,14 @@ namespace RAGChatBot.BLL.Services
             var courses = await _courseRepository.GetAllAsync();
             var course = courses.FirstOrDefault(c => c.Code.Equals(document.CourseCode, StringComparison.OrdinalIgnoreCase));
             
-            // Allow update if user is the uploader, subject leader, or an admin
             var user = await _userRepository.GetByIdAsync(userId);
-            bool isAdmin = user?.Role.Name == RoleNames.Admin;
-            bool isSubjectLeader = course != null && course.SubjectLeaderId == userId;
-            bool isUploader = document.UploadedBy == userId;
+            var isSubjectLeader =
+                string.Equals(user?.Role?.Name, RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase) &&
+                course?.SubjectLeaderId == userId;
 
-            if (!isAdmin && !isSubjectLeader && !isUploader)
+            if (!isSubjectLeader)
             {
-                throw new UnauthorizedAccessException("Bạn không có quyền sửa thông tin tài liệu này!");
+                throw new UnauthorizedAccessException("Chỉ giảng viên phụ trách môn học mới được sửa tài liệu!");
             }
 
             if (!string.IsNullOrWhiteSpace(newFileName))
@@ -414,8 +419,13 @@ namespace RAGChatBot.BLL.Services
             var user = await _userRepository.GetByIdAsync(userId)
                 ?? throw new UnauthorizedAccessException("Phiên người dùng không hợp lệ.");
 
-            var isManager = await CanManageCourseAsync(document.CourseCode, user);
-            if (!isManager && (!document.IsApproved || document.Status != DocumentStatus.Success))
+            var isSubjectLeader = await CanManageCourseAsync(document.CourseCode, user);
+            var isStudent = string.Equals(
+                user.Role?.Name,
+                RoleNames.Student,
+                StringComparison.OrdinalIgnoreCase);
+            if (!isSubjectLeader &&
+                (!isStudent || !document.IsApproved || document.Status != DocumentStatus.Success))
             {
                 throw new UnauthorizedAccessException("Bạn không có quyền tải tài liệu này.");
             }
@@ -470,7 +480,11 @@ namespace RAGChatBot.BLL.Services
 
         private async Task<bool> CanManageCourseAsync(string courseCode, User user)
         {
-            if (string.Equals(user.Role?.Name, RoleNames.Admin, StringComparison.OrdinalIgnoreCase)) return true;
+            if (!string.Equals(user.Role?.Name, RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
             var course = await _courseRepository.GetByCodeAsync(courseCode);
             return course?.SubjectLeaderId == user.Id;
         }
