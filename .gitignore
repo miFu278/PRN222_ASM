@@ -75,6 +75,7 @@ $RECYCLE.BIN/
 docs/
 DESIGN.md
 PRODUCT.md
+.codex
 
 # Ignore WebMVC locally but keep the files
 RAGChatBot.WebMVC/
@@ -82,4 +83,6 @@ RAGChatBot.WebMVC/
 # TestSprite local runtime files and generated browser tests may contain
 # disposable credentials or machine-specific paths.
 testsprite_tests/tmp/
-testsprite_tests/*.py
+testsprite_tests/*.py   
+RAGChatBot.IntegrationTests/
+RAGChatBot.Tests/
