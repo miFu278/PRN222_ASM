@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RAGChatBot.Domain.Constants;
 using RAGChatBot.Domain.Entities;
 
 namespace RAGChatBot.DAL.Context
@@ -64,8 +65,13 @@ namespace RAGChatBot.DAL.Context
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.OrderId).IsUnique();
                 entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.Type);
                 entity.Property(e => e.OrderId).HasMaxLength(100).IsRequired();
                 entity.Property(e => e.TransactionNo).HasMaxLength(100);
+                entity.Property(e => e.Type)
+                      .HasMaxLength(50)
+                      .HasDefaultValue(PaymentTransactionTypes.PremiumSubscription)
+                      .IsRequired();
                 entity.Property(e => e.Status).HasMaxLength(20).IsRequired();
                 entity.HasOne(e => e.User)
                       .WithMany()

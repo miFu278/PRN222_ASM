@@ -92,7 +92,14 @@ namespace RAGChatBot.Presentation.Pages.Courses
             {
                 if (Id.HasValue && Id.Value != Guid.Empty)
                 {
-                    var dto = new CourseDto { Id = Id.Value, Code = Code, Name = Name, Description = Description, SubjectLeaderId = SubjectLeaderId };
+                    var dto = new CourseDto
+                    {
+                        Id = Id.Value,
+                        Code = Code,
+                        Name = Name,
+                        Description = Description,
+                        SubjectLeaderId = SubjectLeaderId
+                    };
                     await _courseService.UpdateCourseAsync(dto);
                     TempData["SuccessMessage"] = $"Đã cập nhật môn {Code}.";
                 }

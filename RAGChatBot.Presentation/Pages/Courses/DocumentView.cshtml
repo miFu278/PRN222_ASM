@@ -1,0 +1,53 @@
+@page "/Courses/{CourseCode}/Documents/{Id:guid}/View"
+@model RAGChatBot.Presentation.Pages.Courses.DocumentViewModel
+@{
+    ViewData["Title"] = $"Xem tài liệu - {Model.FileName}";
+}
+
+<div class="zen-container py-4 gsap-fade-up">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-4 flex-wrap">
+        <div>
+            <a asp-page="/Courses/Documents" asp-route-courseCode="@Model.CourseCode" class="zen-action-link text-muted small">
+                <i class="fa-solid fa-arrow-left me-2"></i>Trở về tài liệu
+            </a>
+            <h1 class="font-serif mt-3 mb-1" style="font-size: 2rem; word-break: break-word;">@Model.FileName</h1>
+            <div class="text-muted small">Bản xem trực tiếp</div>
+        </div>
+
+        <a asp-page="/Courses/DocumentView"
+           asp-page-handler="Download"
+           asp-route-courseCode="@Model.CourseCode"
+           asp-route-id="@Model.Id"
+           class="btn-zen">
+            <i class="fa-solid fa-download me-2"></i>Tải xuống
+        </a>
+    </div>
+
+    @if (Model.IsPdf)
+    {
+        <div style="border: 1px solid var(--border-light); background: #525659; min-height: 70vh;">
+            <iframe src="@Url.Page("/Courses/DocumentView", "Content", new { courseCode = Model.CourseCode, id = Model.Id })"
+                    title="Xem @Model.FileName"
+                    style="display: block; width: 100%; height: 78vh; min-height: 680px; border: 0;"
+                    loading="eager"></iframe>
+        </div>
+    }
+    else if (Model.IsDocx)
+    {
+        <div class="mb-3 text-muted small">
+            DOCX được hiển thị dưới dạng nội dung văn bản; định dạng phức tạp có thể không được giữ nguyên.
+        </div>
+        <article style="border: 1px solid var(--border-light); background: var(--bg-washi); padding: clamp(24px, 5vw, 64px); min-height: 65vh; white-space: pre-wrap; line-height: 1.8; overflow-wrap: anywhere;">@Model.PreviewText</article>
+    }
+    else
+    {
+        <div class="text-center py-5" style="border: 1px solid var(--border-light);">
+            <p class="text-muted mb-4">Trình duyệt chưa hỗ trợ xem trực tiếp định dạng tài liệu này.</p>
+            <a asp-page="/Courses/DocumentView"
+               asp-page-handler="Download"
+               asp-route-courseCode="@Model.CourseCode"
+               asp-route-id="@Model.Id"
+               class="btn-zen">Tải tài liệu</a>
+        </div>
+    }
+</div>

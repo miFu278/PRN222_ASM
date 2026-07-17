@@ -2,7 +2,7 @@
 @model RAGChatBot.Presentation.Pages.Courses.IndexModel
 @{
     ViewData["Title"] = "Môn Học";
-    var isLecturerOrAdmin = User.IsInRole("Lecturer") || User.IsInRole("Admin");
+    var isLecturer = User.IsInRole("Lecturer");
 }
 
 <style>
@@ -190,22 +190,25 @@
                         </div>
 
                         <div class="zen-course-actions">
-                            <a href="/Courses/@course.Code/Documents" class="zen-action-link">
-                                Truy cập tài liệu &rarr;
-                            </a>
-                            <a href="/Courses/@course.Code/Quiz" class="zen-action-link">
-                                @(isLecturerOrAdmin ? "Ngân hàng câu hỏi & Kết quả" : "Ôn luyện trắc nghiệm") &rarr;
-                            </a>
+                            @if (!User.IsInRole("Admin"))
+                            {
+                                <a href="/Courses/@course.Code/Documents" class="zen-action-link">
+                                    Truy cập tài liệu &rarr;
+                                </a>
+                                <a href="/Courses/@course.Code/Quiz" class="zen-action-link">
+                                    @(isLecturer ? "Ngân hàng câu hỏi & Kết quả" : "Ôn luyện trắc nghiệm") &rarr;
+                                </a>
+                            }
                             
                             @if (User.IsInRole("Admin"))
                             {
                                 <button type="button" class="zen-action-link btn-edit-course" data-bs-toggle="modal" data-bs-target="#editCourseModal" data-id="@course.Id" data-code="@course.Code" data-name="@course.Name" data-description="@course.Description" data-leader-id="@course.SubjectLeaderId">
-                                    Chỉnh sửa
+                                    Chỉnh sửa môn học
                                 </button>
-                                    <form method="post" asp-page-handler="Delete" data-confirm="Xác nhận xóa môn @course.Code?">
+                                <form method="post" asp-page-handler="Delete" data-confirm="Xác nhận xóa môn @course.Code?">
                                     <input type="hidden" name="id" value="@course.Id" />
                                     <button type="submit" class="zen-action-link danger">
-                                        Xóa bỏ
+                                        Xóa môn
                                     </button>
                                 </form>
                             }
@@ -223,7 +226,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content zen-modal">
                 <div class="modal-header zen-modal-header">
-                    <h5 class="modal-title font-serif">Thông Tin Môn Học</h5>
+                    <h5 class="modal-title font-serif" id="courseModalTitle">Tạo Môn Mới</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 
@@ -243,7 +246,7 @@
                         </div>
 
                         <div class="mb-4">
-                            <label class="text-muted mb-2" style="font-size: 0.85rem; text-transform: uppercase;">Trưởng bộ môn</label>
+                            <label class="text-muted mb-2" style="font-size: 0.85rem; text-transform: uppercase;">Giảng viên phụ trách</label>
                             <select id="editModalLeaderSelect" name="SubjectLeaderId" class="form-select" required style="border-radius: 0; border: 1px solid var(--border-light);">
                                 <option value="">-- Lựa chọn --</option>
                                 @foreach (var lecturer in Model.Lecturers)
@@ -261,7 +264,7 @@
                     
                     <div class="modal-footer zen-modal-footer">
                         <button type="button" class="zen-action-link" data-bs-dismiss="modal" style="margin-right: 20px;">Hủy bỏ</button>
-                        <button type="submit" class="btn-zen">Lưu thay đổi</button>
+                        <button type="submit" class="btn-zen" id="courseModalSubmit">Tạo môn</button>
                     </div>
                 </form>
             </div>
@@ -301,15 +304,22 @@
                 var editCourseNameInput = document.getElementById('editModalCourseName');
                 var editCourseLeaderSelect = document.getElementById('editModalLeaderSelect');
                 var editCourseDescInput = document.getElementById('editModalCourseDesc');
+                var courseModalTitle = document.getElementById('courseModalTitle');
+                var courseModalSubmit = document.getElementById('courseModalSubmit');
 
                 // Sử dụng Event Delegation để hoạt động mượt mà cả khi cập nhật DOM động qua SignalR
                 document.addEventListener('click', function (e) {
                     var button = e.target.closest('.btn-edit-course');
                     if (button) {
-                        editCourseIdInput.value = button.getAttribute('data-id');
+                        var courseId = button.getAttribute('data-id');
+                        var isEditingCourse = Boolean(courseId);
+                        editCourseIdInput.value = courseId;
                         editCourseCodeInput.value = button.getAttribute('data-code');
                         editCourseNameInput.value = button.getAttribute('data-name');
                         editCourseDescInput.value = button.getAttribute('data-description') || "";
+                        editCourseCodeInput.readOnly = isEditingCourse;
+                        courseModalTitle.textContent = isEditingCourse ? 'Chỉnh Sửa Môn Học' : 'Tạo Môn Mới';
+                        courseModalSubmit.textContent = isEditingCourse ? 'Lưu thay đổi' : 'Tạo môn';
                         
                         var leaderId = button.getAttribute('data-leader-id');
                         if (leaderId) {

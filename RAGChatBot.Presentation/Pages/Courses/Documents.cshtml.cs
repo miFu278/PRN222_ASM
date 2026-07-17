@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace RAGChatBot.Presentation.Pages.Courses
 {
-    [Authorize]
+    [Authorize(Roles = RoleNames.Lecturer + "," + RoleNames.Student)]
     public class DocumentsModel : PageModel
     {
         private readonly IDocumentService _documentService;
@@ -143,6 +143,7 @@ namespace RAGChatBot.Presentation.Pages.Courses
         public async Task<IActionResult> OnPostRetryAsync(Guid documentId)
         {
             await LoadCourseDetails();
+            if (!CanApprove) return Forbid();
             try
             {
                 await _documentService.RetryDocumentAsync(documentId, CurrentUserId);
@@ -238,7 +239,6 @@ namespace RAGChatBot.Presentation.Pages.Courses
 
             var isLecturer = User.IsInRole(RoleNames.Lecturer);
             var isStudent = User.IsInRole(RoleNames.Student);
-            var isAdmin = User.IsInRole(RoleNames.Admin);
             CanUpload = false;
 
             var courses = await _courseService.GetAllCoursesAsync();
@@ -251,10 +251,11 @@ namespace RAGChatBot.Presentation.Pages.Courses
                 SubjectLeaderName = course.SubjectLeaderName;
 
                 var isLeader = course.SubjectLeaderId == CurrentUserId;
-                HasCourseAccess = isAdmin || isStudent || (isLecturer && isLeader);
-                CanUpload = isLeader || isAdmin;
-                CanApprove = isLeader || isAdmin;
-                CanDelete = isLeader || isAdmin;
+                var canManage = isLecturer && isLeader;
+                HasCourseAccess = isStudent || canManage;
+                CanUpload = canManage;
+                CanApprove = canManage;
+                CanDelete = canManage;
             }
         }
 

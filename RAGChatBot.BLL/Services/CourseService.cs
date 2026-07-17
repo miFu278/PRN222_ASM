@@ -38,6 +38,13 @@ namespace RAGChatBot.BLL.Services
 
         public async Task<CourseDto> CreateCourseAsync(CourseDto courseDto, Guid userId)
         {
+            if (!courseDto.SubjectLeaderId.HasValue || courseDto.SubjectLeaderId == Guid.Empty)
+            {
+                throw new ArgumentException("Vui lòng chọn giảng viên phụ trách môn học.", nameof(courseDto.SubjectLeaderId));
+            }
+
+            await EnsureLecturerAsync(courseDto.SubjectLeaderId.Value);
+
             var course = new Course
             {
                 Code = courseDto.Code.Trim().ToUpper(),
@@ -110,13 +117,7 @@ namespace RAGChatBot.BLL.Services
                 throw new KeyNotFoundException("Không tìm thấy môn học!");
             }
 
-            var user = await _userRepository.GetByIdAsync(subjectLeaderId);
-            if (user == null ||
-                (!user.Role.Name.Equals(RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase) &&
-                 !user.Role.Name.Equals(RoleNames.Admin, StringComparison.OrdinalIgnoreCase)))
-            {
-                throw new ArgumentException("Người dùng được chọn không hợp lệ hoặc không phải Giảng viên/Admin!");
-            }
+            await EnsureLecturerAsync(subjectLeaderId);
 
             course.SubjectLeaderId = subjectLeaderId;
             await _courseRepository.UpdateAsync(course);
@@ -143,13 +144,7 @@ namespace RAGChatBot.BLL.Services
             // Kiểm tra phân quyền Trưởng bộ môn nếu có chỉ định
             if (courseDto.SubjectLeaderId.HasValue)
             {
-                var user = await _userRepository.GetByIdAsync(courseDto.SubjectLeaderId.Value);
-                if (user == null ||
-                    (!user.Role.Name.Equals(RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase) &&
-                     !user.Role.Name.Equals(RoleNames.Admin, StringComparison.OrdinalIgnoreCase)))
-                {
-                    throw new ArgumentException("Trưởng bộ môn được chọn không hợp lệ hoặc không phải Giảng viên/Admin!");
-                }
+                await EnsureLecturerAsync(courseDto.SubjectLeaderId.Value);
             }
 
             course.Code = newCode;
@@ -200,6 +195,16 @@ namespace RAGChatBot.BLL.Services
             var userMap = users.ToDictionary(u => u.Id, u => !string.IsNullOrEmpty(u.FullName) ? u.FullName : u.Username);
 
             return courses.Select(c => MapToDto(c, userMap));
+        }
+
+        private async Task EnsureLecturerAsync(Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user is null ||
+                !string.Equals(user.Role?.Name, RoleNames.Lecturer, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Người phụ trách phải là giảng viên.", nameof(userId));
+            }
         }
     }
 }

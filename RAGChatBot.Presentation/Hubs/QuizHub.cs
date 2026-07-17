@@ -37,8 +37,7 @@ namespace RAGChatBot.Presentation.Hubs
             var courseExists = (await _courseService.GetAllCoursesAsync())
                 .Any(course => course.Code.Equals(normalizedCode, StringComparison.OrdinalIgnoreCase));
             var allowed = courseExists &&
-                (Context.User!.IsInRole(RoleNames.Admin) ||
-                 Context.User.IsInRole(RoleNames.Student) ||
+                (Context.User!.IsInRole(RoleNames.Student) ||
                  (Context.User.IsInRole(RoleNames.Lecturer) &&
                   await _courseService.IsSubjectLeaderAsync(normalizedCode, userId)));
             if (!allowed) throw new HubException("Bạn không có quyền theo dõi môn học này.");

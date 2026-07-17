@@ -1,0 +1,1912 @@
+[
+  {
+    "id": "TC001",
+    "title": "Ask a grounded chat question and revisit the thread history",
+    "description": "This verifies that a user can ask a course-grounded question, see cited answer content and quota information, and reopen the saved thread later.",
+    "category": "Course-grounded chat and history",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the chat panel"
+      },
+      {
+        "type": "action",
+        "description": "Select a course"
+      },
+      {
+        "type": "action",
+        "description": "Send a question about the selected course"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a cited answer is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the remaining quota is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Route users to the correct area after sign-in",
+    "description": "This verifies that a signed-in user is sent to the appropriate role-based area after logging in.",
+    "category": "Authentication and role routing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the correct role-specific area"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Admin signs in and reaches the admin area",
+    "description": "This verifies that an admin can sign in with local credentials and is routed to the admin experience after login.",
+    "category": "Authentication and role routing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the admin area"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Protect admin-only areas from non-admin access",
+    "description": "This verifies that a non-admin user cannot open the admin dashboard or other admin-only management pages through direct navigation.",
+    "category": "Authentication and role routing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the admin dashboard from navigation or a direct in-app link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied for the admin area"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Lecturer signs in and reaches the lecturer area",
+    "description": "This verifies that a lecturer can sign in with local credentials and is routed to the lecturer experience after login.",
+    "category": "Authentication and role routing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the lecturer area"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "End the current session from authenticated navigation",
+    "description": "This verifies that an authenticated user can log out and return to the unauthenticated state.",
+    "category": "Authentication and role routing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the sign-out control from authenticated navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user is returned to the logged-out state"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "View admin dashboard metrics",
+    "description": "An administrator can open the dashboard and see summary metrics and chart data for the current reporting period.",
+    "category": "Admin dashboard and payment filtering",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin dashboard link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dashboard totals are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dashboard chart data is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Student signs in and reaches the student area",
+    "description": "This verifies that a student can sign in with local credentials and is routed to the student experience after login.",
+    "category": "Authentication and role routing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the student area"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Admin creates a course and assigns a lecturer",
+    "description": "This verifies that an admin can create a course from the course list and assign a lecturer so the new course is available for management.",
+    "category": "Course administration and lecturer assignment",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Create a new course with a unique code and title"
+      },
+      {
+        "type": "action",
+        "description": "Assign a lecturer to the new course"
+      },
+      {
+        "type": "action",
+        "description": "Save the course"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new course appears in the course list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the lecturer assignment is reflected for the course"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Take and submit a quiz attempt as a student",
+    "description": "This verifies that a student can start a quiz attempt, answer questions, submit it, and see the resulting score and correct answers.",
+    "category": "Quiz management and attempts",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the quiz page for a course available to the student"
+      },
+      {
+        "type": "action",
+        "description": "Start a quiz attempt"
+      },
+      {
+        "type": "action",
+        "description": "Select answers for the questions"
+      },
+      {
+        "type": "action",
+        "description": "Submit the attempt"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the score and correct answers are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Block non-admin access to the dashboard",
+    "description": "A non-admin user is prevented from viewing the admin dashboard and sees an access denied state instead.",
+    "category": "Admin dashboard and payment filtering",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Admin/Dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an access denied message is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "Create a quiz for a course as the assigned lecturer",
+    "description": "This verifies that an assigned lecturer can create a quiz and save it so it appears in the course quiz area.",
+    "category": "Quiz management and attempts",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the quiz page for an assigned course"
+      },
+      {
+        "type": "action",
+        "description": "Create a new quiz"
+      },
+      {
+        "type": "action",
+        "description": "Add quiz questions"
+      },
+      {
+        "type": "action",
+        "description": "Save the quiz"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the quiz is listed for the course"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Admin cannot access lecturer document management",
+    "description": "This verifies that an admin is blocked from opening a course document management page and sees access control enforced.",
+    "category": "Course documents and indexing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open a course's documents page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC014",
+    "title": "Restrict document management to the assigned lecturer",
+    "description": "This verifies that only the assigned lecturer can access a course's document management actions while other roles can view only read-only content.",
+    "category": "Lecturer document upload/approval/retry/reindex/download and student read-only document access",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the documents page for a course assigned to the current lecturer"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify lecturer document management actions are available"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify student-style read-only access is not shown to the lecturer"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC015",
+    "title": "Lecturer uploads a course document and sees it listed",
+    "description": "This verifies that an assigned lecturer can upload a supported course document and see it appear with processing status in the document list.",
+    "category": "Course documents and indexing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the documents page for one of the lecturer's courses"
+      },
+      {
+        "type": "action",
+        "description": "Upload a supported document"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the uploaded document appears in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a processing status is shown for the document"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC016",
+    "title": "Create a course and assign a lecturer",
+    "description": "This verifies that an admin can create a new course and assign a lecturer to it from the course management area.",
+    "category": "Course CRUD and lecturer assignment",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Create a new course"
+      },
+      {
+        "type": "action",
+        "description": "Assign a lecturer to the new course"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new course is listed with an assigned lecturer"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC017",
+    "title": "Change dashboard reporting period",
+    "description": "An administrator can change the dashboard reporting period or year and see the displayed metrics refresh accordingly.",
+    "category": "Admin dashboard and payment filtering",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin dashboard link"
+      },
+      {
+        "type": "action",
+        "description": "Change the dashboard reporting period"
+      },
+      {
+        "type": "action",
+        "description": "Change the dashboard year"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dashboard totals are refreshed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dashboard chart data is refreshed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC018",
+    "title": "Lecturer inspects document chunks and downloads a document",
+    "description": "This verifies that an assigned lecturer can open a document's details, inspect extracted chunks, and access the available document download action.",
+    "category": "Course documents and indexing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the documents page for one of the lecturer's courses"
+      },
+      {
+        "type": "action",
+        "description": "Open a document's details"
+      },
+      {
+        "type": "action",
+        "description": "Inspect the extracted chunks"
+      },
+      {
+        "type": "action",
+        "description": "Download the document"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the document chunks are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the document is available to download"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC019",
+    "title": "Update and remove a course from the course list",
+    "description": "This verifies that an admin can edit an existing course and then delete it from the course list.",
+    "category": "Course CRUD and lecturer assignment",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Create a new course"
+      },
+      {
+        "type": "action",
+        "description": "Edit the course details"
+      },
+      {
+        "type": "action",
+        "description": "Delete the course"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the course is no longer listed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC020",
+    "title": "Authenticated user logs out",
+    "description": "This verifies that a signed-in user can end the session from the authenticated navigation and return to the public experience.",
+    "category": "Authentication and role routing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the authenticated navigation"
+      },
+      {
+        "type": "action",
+        "description": "Log out"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the session has ended"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the public entry experience is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC021",
+    "title": "Generate quiz questions and save them",
+    "description": "This verifies that an assigned lecturer can generate quiz questions from course content, review them, and save the generated quiz.",
+    "category": "Quiz management and attempts",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the quiz page for an assigned course"
+      },
+      {
+        "type": "action",
+        "description": "Generate quiz questions"
+      },
+      {
+        "type": "action",
+        "description": "Review the generated questions"
+      },
+      {
+        "type": "action",
+        "description": "Save the quiz"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify generated questions are saved as a quiz"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC022",
+    "title": "Lecturer approves a document for course use",
+    "description": "This verifies that an assigned lecturer can approve a document and see it become available for use in the course.",
+    "category": "Course documents and indexing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the documents page for one of the lecturer's courses"
+      },
+      {
+        "type": "action",
+        "description": "Approve a document"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the document is marked as approved"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the document is available for course use"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC023",
+    "title": "Upload, approve, and inspect a course document",
+    "description": "This verifies that a lecturer can add a course document, approve it, and inspect its chunking and download-related details.",
+    "category": "Lecturer document upload/approval/retry/reindex/download and student read-only document access",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the documents page for an assigned course"
+      },
+      {
+        "type": "action",
+        "description": "Add a new document record"
+      },
+      {
+        "type": "action",
+        "description": "Approve the uploaded document"
+      },
+      {
+        "type": "action",
+        "description": "Inspect the document chunks and document details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the document appears as available for the course"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC024",
+    "title": "Compare subscription plans and open Premium checkout",
+    "description": "This verifies that a user can review the plan comparison and start the Premium checkout flow from the subscription page.",
+    "category": "Premium subscription and personal transaction history",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Subscription"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the Free and Premium plans are displayed"
+      },
+      {
+        "type": "action",
+        "description": "Start Premium checkout"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the checkout flow is opened"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC025",
+    "title": "Filter admin payment records",
+    "description": "An administrator can open the payment list and filter transactions by type and status to review the expected subset of records.",
+    "category": "Admin dashboard and payment filtering",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin dashboard link"
+      },
+      {
+        "type": "action",
+        "description": "Open the payment list"
+      },
+      {
+        "type": "action",
+        "description": "Select a payment transaction type filter"
+      },
+      {
+        "type": "action",
+        "description": "Select a payment status filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the filtered payment records are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC026",
+    "title": "Admin updates course details",
+    "description": "This verifies that an admin can open an existing course, change its metadata, and see the updated information reflected afterward.",
+    "category": "Course administration and lecturer assignment",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open an existing course for editing"
+      },
+      {
+        "type": "action",
+        "description": "Update the course metadata"
+      },
+      {
+        "type": "action",
+        "description": "Save the course"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated course information is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC027",
+    "title": "Read course documents without management controls",
+    "description": "This verifies that a student can open a course document page and view documents without seeing lecturer-only management actions.",
+    "category": "Lecturer document upload/approval/retry/reindex/download and student read-only document access",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the documents page for a course available to the student"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the course documents are visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify lecturer-only management actions are hidden"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC028",
+    "title": "Lecturer refreshes document processing for a course",
+    "description": "This verifies that an assigned lecturer can retry or reindex course documents and see the document state update afterward.",
+    "category": "Course documents and indexing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the documents page for one of the lecturer's courses"
+      },
+      {
+        "type": "action",
+        "description": "Retry document processing or reindex the course documents"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the document list is still displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the document processing state is updated"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC029",
+    "title": "Review personal transaction history",
+    "description": "This verifies that a user can open their transaction history and see only their own payment records.",
+    "category": "Premium subscription and personal transaction history",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Transactions"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user's payment records are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify other users' transaction data is not displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC030",
+    "title": "Student can view approved course documents but not manage them",
+    "description": "This verifies that a student can open a course's documents page and see approved material without lecturer-only management actions.",
+    "category": "Course documents and indexing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the documents page for a course with approved material"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify approved documents are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify document management actions are not available"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC031",
+    "title": "Admin removes a course after confirmation",
+    "description": "This verifies that an admin can delete a course from the course list and that it no longer appears afterward.",
+    "category": "Course administration and lecturer assignment",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Choose a course for removal"
+      },
+      {
+        "type": "action",
+        "description": "Confirm the deletion"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the course no longer appears in the list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC032",
+    "title": "Reopen a previous chat thread",
+    "description": "This verifies that a user can return to prior chat history and review stored messages and answers.",
+    "category": "Course-grounded chat and history",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the chat history list"
+      },
+      {
+        "type": "action",
+        "description": "Open a previous chat thread for a course"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the stored conversation messages are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC033",
+    "title": "View admin dashboard metrics and revenue filters",
+    "description": "This verifies that an admin can open the dashboard and use payment-related filtering to review summary metrics.",
+    "category": "Admin dashboard metrics and payment filtering",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the admin dashboard"
+      },
+      {
+        "type": "action",
+        "description": "Apply a payment filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dashboard metrics are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify filtered payment results are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC034",
+    "title": "Create an admin user account",
+    "description": "An administrator can create a new account with a role and tier and see it appear in the user list.",
+    "category": "Admin user and whitelist management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin users link"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the new user details with a unique account"
+      },
+      {
+        "type": "action",
+        "description": "Select a role for the new user"
+      },
+      {
+        "type": "action",
+        "description": "Select a subscription tier for the new user"
+      },
+      {
+        "type": "action",
+        "description": "Submit the user creation form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new user appears in the user list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC035",
+    "title": "Review quiz attempt history",
+    "description": "This verifies that a student can open quiz history and review past attempts and results for a course.",
+    "category": "Quiz management and attempts",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the quiz page for a course available to the student"
+      },
+      {
+        "type": "action",
+        "description": "Open attempt history"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify past attempts and results are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC036",
+    "title": "Manage admin users from the admin console",
+    "description": "This verifies that an admin can create a user, change a tier or role, and delete a user from the user management page.",
+    "category": "Admin user creation/deletion/tier changes/import",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Admin/Users"
+      },
+      {
+        "type": "action",
+        "description": "Create a new user"
+      },
+      {
+        "type": "action",
+        "description": "Change the user's tier or role"
+      },
+      {
+        "type": "action",
+        "description": "Delete the user"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user no longer appears in the list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC037",
+    "title": "Change a user's subscription tier",
+    "description": "An administrator can switch an existing user's subscription tier and see the updated tier in the list.",
+    "category": "Admin user and whitelist management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin users link"
+      },
+      {
+        "type": "action",
+        "description": "Select an existing user in the list"
+      },
+      {
+        "type": "action",
+        "description": "Change the user's subscription tier"
+      },
+      {
+        "type": "action",
+        "description": "Save the user changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated tier is displayed in the user list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC038",
+    "title": "Delete a user account",
+    "description": "An administrator can delete an existing user after confirmation and see the account removed from the list.",
+    "category": "Admin user and whitelist management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin users link"
+      },
+      {
+        "type": "action",
+        "description": "Select an existing user in the list"
+      },
+      {
+        "type": "action",
+        "description": "Confirm deletion of the user account"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user is removed from the user list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC039",
+    "title": "Manage the student whitelist from the admin console",
+    "description": "This verifies that an admin can add and remove whitelist entries and review the whitelist list.",
+    "category": "Whitelist add/delete/import",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Admin/Whitelist"
+      },
+      {
+        "type": "action",
+        "description": "Add a whitelist entry"
+      },
+      {
+        "type": "action",
+        "description": "Remove the whitelist entry"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the whitelist list is updated"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC040",
+    "title": "Add and remove whitelist entries",
+    "description": "An administrator can add and delete whitelist entries and see the whitelist list update accordingly.",
+    "category": "Admin user and whitelist management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin whitelist link"
+      },
+      {
+        "type": "action",
+        "description": "Add a whitelist email entry"
+      },
+      {
+        "type": "action",
+        "description": "Delete the whitelist email entry"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the whitelist list reflects the changes"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC041",
+    "title": "Inspect and clear application logs",
+    "description": "This verifies that an admin can open the log viewer and clear the displayed logs.",
+    "category": "Log inspection and clear-log actions",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Admin/Logs"
+      },
+      {
+        "type": "action",
+        "description": "Inspect the log list"
+      },
+      {
+        "type": "action",
+        "description": "Clear the logs"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty log state is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC042",
+    "title": "Handle a cancelled subscription return",
+    "description": "This verifies that cancelling the Premium checkout returns the user to the cancelled state page.",
+    "category": "Premium subscription and personal transaction history",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Subscription"
+      },
+      {
+        "type": "action",
+        "description": "Start Premium checkout"
+      },
+      {
+        "type": "action",
+        "description": "Cancel the checkout flow"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the cancelled state page is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC043",
+    "title": "Open course, document, quiz, and attempt lists",
+    "description": "This verifies that searchable listing pages present the expected course and learning records for browsing.",
+    "category": "Search/listing views for courses, documents, quizzes, and attempts",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the course list is displayed"
+      },
+      {
+        "type": "action",
+        "description": "Open the quiz page for an accessible course"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the quiz list is displayed"
+      },
+      {
+        "type": "action",
+        "description": "Open the documents page for an accessible course"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the document list is displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC044",
+    "title": "Clear a selected log file",
+    "description": "An administrator can clear the selected log after confirmation and see the log contents removed.",
+    "category": "Admin log inspection",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin logs link"
+      },
+      {
+        "type": "action",
+        "description": "Select a log file"
+      },
+      {
+        "type": "action",
+        "description": "Confirm clearing the selected log"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected log is emptied"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC045",
+    "title": "Invalid credentials are rejected",
+    "description": "This verifies that entering invalid login details shows validation feedback and does not sign the user in.",
+    "category": "Authentication and role routing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with an invalid username"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with an invalid password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a validation error is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user is not signed in"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC046",
+    "title": "Reject an overly long chat question before submission",
+    "description": "This verifies that the chat input enforces the maximum question length and shows validation feedback instead of sending the message.",
+    "category": "Course-grounded chat and history",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Account/Login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /Courses"
+      },
+      {
+        "type": "action",
+        "description": "Open the chat panel"
+      },
+      {
+        "type": "action",
+        "description": "Select a course"
+      },
+      {
+        "type": "action",
+        "description": "Enter an overly long question into the chat input"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a chat validation error is visible"
+      }
+    ],
+    "priority": "Low"
+  }
+]

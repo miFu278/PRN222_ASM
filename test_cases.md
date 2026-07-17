@@ -1,77 +1,184 @@
-# Bộ Test Cases Hoàn Chỉnh - Dự Án RAGChatBot (Week 9: Final Project)
+# RAGChatBot Test Cases
 
-Tài liệu này cung cấp danh sách đầy đủ các Test Cases để kiểm thử chức năng của hệ thống, bao gồm các dòng nghiệp vụ chính (Mainflows), phân quyền, thanh toán VNPay, cấu hình chia chunk văn bản, đo lường hiệu năng và cập nhật real-time qua SignalR.
+Tài liệu này là checklist hồi quy cho toàn bộ tính năng chính của hệ thống. Các ca ghi `Unit` hoặc `E2E` đã có automated test; các ca `Manual` cần cấu hình dịch vụ ngoài.
 
----
+Baseline hiện tại:
 
-## 1. Phân Hệ Đăng Nhập & Phân Quyền (Authentication & Authorization)
+- 95 unit tests chạy độc lập, không gọi Internet.
+- 11 integration/E2E tests dùng PostgreSQL `pgvector` qua Docker Testcontainers.
+- Coverage unit hiện tại: BLL 51,31%, Domain 66,93%. DAL 4,44% vì phần lớn repository/migration được kiểm tra trong integration suite.
 
-| Test Case ID | Tên Test Case | Tiền điều kiện | Các bước thực hiện | Kết quả mong đợi |
-| :--- | :--- | :--- | :--- | :--- |
-| **TC-AUTH-01** | Đăng nhập Admin thành công | Tài khoản Admin tồn tại (`admin`) | 1. Truy cập trang `/Account/Login`<br>2. Nhập username `admin` và mật khẩu thích hợp.<br>3. Nhấn "Đăng nhập". | Đăng nhập thành công, chuyển hướng sang trang quản trị `/Admin/Dashboard`. |
-| **TC-AUTH-02** | Đăng nhập Giảng viên thành công | Tài khoản Giảng viên tồn tại (`lecturer_premium`) | 1. Truy cập trang `/Account/Login`<br>2. Nhập username và mật khẩu thích hợp.<br>3. Nhấn "Đăng nhập". | Đăng nhập thành công, chuyển hướng về trang chủ `/`. Thanh điều hướng hiển thị các mục quản lý môn học phù hợp. |
-| **TC-AUTH-03** | Đăng nhập qua Google OAuth2 | Trình duyệt đã đăng nhập tài khoản Google | 1. Tại trang đăng nhập, nhấn "Đăng nhập bằng Google".<br>2. Chọn tài khoản Google của bạn. | Đăng nhập thành công. Tài khoản sinh viên được tạo tự động với gói mặc định Free nếu là lần đầu tiên đăng nhập. |
-| **TC-AUTH-04** | Ngăn chặn truy cập trang Admin | Đang đăng nhập tài khoản Học viên hoặc Giảng viên | 1. Cố gắng nhập thủ công URL `/Admin/Dashboard` hoặc `/Admin/Users` trên thanh địa chỉ. | Trình duyệt chặn truy cập, hiển thị trang Access Denied (Mã lỗi 403 Forbidden). |
+## Lệnh chạy
 
----
+```powershell
+# Unit tests, không cần Docker hay Internet
+dotnet test RAGChatBot.Tests\RAGChatBot.Tests.csproj
 
-## 2. Phân Hệ ChatBot & Hạn Mức Lượt Hỏi (ChatBot & Credits Limit)
+# Integration/E2E, cần Docker đang chạy
+dotnet test RAGChatBot.IntegrationTests\RAGChatBot.IntegrationTests.csproj
 
-| Test Case ID | Tên Test Case | Tiền điều kiện | Các bước thực hiện | Kết quả mong đợi |
-| :--- | :--- | :--- | :--- | :--- |
-| **TC-CHAT-01** | Gửi tin nhắn và phản hồi RAG | Đăng nhập tài khoản Học viên, môn học có tài liệu học liệu đã được vector hóa | 1. Truy cập môn học cụ thể.<br>2. Nhập câu hỏi liên quan đến bài giảng vào khung chat và nhấn gửi. | 1. Tin nhắn của người dùng hiển thị lên khung chat.<br>2. Hiệu ứng loading dạng Washi Ink hiển thị.<br>3. Bot phản hồi chính xác dựa trên tài liệu môn học, định dạng Markdown hoạt động đúng. |
-| **TC-CHAT-02** | Tạo cuộc trò chuyện mới (Chat Thread) | Đăng nhập tài khoản Học viên | 1. Nhấn nút "Cuộc trò chuyện mới" ở menu lịch sử chat. | Danh sách lịch sử hiển thị cuộc trò chuyện mới, màn hình chat chính được dọn sạch và sẵn sàng cho câu hỏi đầu tiên. |
-| **TC-CHAT-03** | Khấu trừ Credit của tài khoản Free | Đăng nhập tài khoản Free (có 10 credits ban đầu) | 1. Nhìn vào bộ đếm credit hiển thị ở góc khung chat.<br>2. Tiến hành gửi 1 câu hỏi cho AI chatbot. | Bộ đếm giảm từ `10` xuống `9`. Tin nhắn gửi thành công và nhận phản hồi bình thường. |
-| **TC-CHAT-04** | Từ chối phản hồi khi hết Credit (Free) | Đăng nhập tài khoản Free đã sử dụng hết 10 credits (còn 0) | 1. Cố gắng nhập câu hỏi mới và nhấn gửi. | 1. Hệ thống không trừ thêm credit.<br>2. Bot trả về thông báo lỗi: *"Bạn đã hết lượt hỏi miễn phí hôm nay... Nâng cấp Premium để chat không giới hạn!"* và kích hoạt cờ OutOfCredits để gợi ý nâng cấp. |
-| **TC-CHAT-05** | Tài khoản Premium chat không giới hạn | Đăng nhập tài khoản Premium | 1. Bộ đếm hiển thị biểu tượng vô cực hoặc giá trị giả lập không giới hạn.<br>2. Thực hiện liên tục trên 10 câu hỏi chat. | Hệ thống không báo hết credit, cho phép chat liên tục không giới hạn. |
+# Toàn bộ solution
+dotnet test RAGChatBot.slnx
+```
 
----
+### Chạy E2E trên PostgreSQL thật
 
-## 3. Phân Hệ Quản Lý Tài Liệu Học Liệu & Chiến Lược Chia Chunk (Manage Docs & Chunking)
+Tạo một database riêng có tên chứa `test` hoặc `e2e`, ví dụ `ragchatbot_test`. Database cần PostgreSQL 16, extension `vector`, và tài khoản kết nối phải có quyền chạy migration. Không dùng database production vì test sẽ thay đổi schema, tạo dữ liệu thử và thực hiện các ca xóa. Nên dùng bản clone có thể bỏ sau khi test.
 
-| Test Case ID | Tên Test Case | Tiền điều kiện | Các bước thực hiện | Kết quả mong đợi |
-| :--- | :--- | :--- | :--- | :--- |
-| **TC-DOC-01** | Tải lên tài liệu chiến lược Character | Đăng nhập tài khoản Giảng viên hoặc Admin, truy cập môn học | 1. Nhấn nút tải tài liệu.<br>2. Chọn file PDF/DOCX.<br>3. Chọn Chiến lược chia: **Character** (Ký tự). Thiết lập Size = 500, Overlap = 50.<br>4. Nhấn Upload. | Tài liệu được tải lên thành công, trạng thái hiển thị là "Pending...". Background worker xử lý chia chunk theo từng ký tự. |
-| **TC-DOC-02** | Tải lên tài liệu chiến lược Word | Đăng nhập tài khoản Giảng viên hoặc Admin, truy cập môn học | 1. Nhấn nút tải tài liệu.<br>2. Chọn file PDF/DOCX.<br>3. Chọn Chiến lược chia: **Word** (Từ). Size = 200, Overlap = 20.<br>4. Nhấn Upload. | Tài liệu tải lên thành công. Background worker chia nhỏ văn bản dựa trên khoảng trắng và từ ngữ. |
-| **TC-DOC-03** | Tải lên tài liệu chiến lược Paragraph | Đăng nhập tài khoản Giảng viên hoặc Admin, truy cập môn học | 1. Nhấn nút tải tài liệu.<br>2. Chọn file PDF/DOCX.<br>3. Chọn Chiến lược chia: **Paragraph** (Đoạn văn). Size = 1000.<br>4. Nhấn Upload. | Tài liệu tải lên thành công. Background worker chia nhỏ dựa theo ký tự xuống dòng kép (`\n\n`), giữ nguyên vẹn cấu trúc đoạn văn. |
-| **TC-DOC-04** | Xử lý Background Worker & Vector hóa | Sau khi thực hiện tải tài liệu thành công ở các TC trên | 1. Chờ đợi trong giây lát và quan sát màn hình.<br>2. Nhấn nút Xem Chunks (nếu tài liệu đổi sang trạng thái thành công). | 1. Tài liệu đổi trạng thái từ "Pending" -> "Processing" -> "Vectorized" (Thành công).<br>2. Popup danh sách chunk hiển thị các đoạn nhỏ tương ứng với chiến lược chia đã chọn. |
-| **TC-DOC-05** | Tự động tạo Quiz ôn tập | Tài liệu vừa được Vector hóa thành công | 1. Truy cập mục "Ôn luyện trắc nghiệm" của môn học tương ứng. | Hệ thống tự động trích xuất kiến thức từ tài liệu vừa tải lên và hiển thị một bộ câu hỏi trắc nghiệm tự động sinh để học viên tự luyện tập. |
+```powershell
+$env:RAGCHATBOT_TEST_CONNECTION_STRING = "Host=localhost;Port=5432;Database=ragchatbot_test;Username=postgres;Password=your-password"
+dotnet test RAGChatBot.IntegrationTests\RAGChatBot.IntegrationTests.csproj --no-restore
+Remove-Item Env:RAGCHATBOT_TEST_CONNECTION_STRING
+```
 
----
+Khi biến môi trường trên không được đặt, suite tự quay về PostgreSQL Testcontainer và cần Docker. Fixture sẽ từ chối connection string có tên database không chứa `test` hoặc `e2e` để tránh chạy nhầm trên production.
 
-## 4. Phân Hệ Báo Cáo & Thống Kê Doanh Thu (Report & Statistics)
+Thu coverage:
 
-| Test Case ID | Tên Test Case | Tiền điều kiện | Các bước thực hiện | Kết quả mong đợi |
-| :--- | :--- | :--- | :--- | :--- |
-| **TC-REP-01** | Báo cáo doanh thu theo Tháng (Month) | Đăng nhập tài khoản Admin, truy cập Dashboard | 1. Tại bộ lọc thời gian, chọn chế độ "Month".<br>2. Chọn năm mong muốn kiểm tra. | Biểu đồ cột/đường hiển thị doanh thu chi tiết từ tháng 1 đến tháng 12 của năm đã chọn. |
-| **TC-REP-02** | Báo cáo doanh thu theo Quý (Quarter) | Đăng nhập tài khoản Admin, truy cập Dashboard | 1. Tại bộ lọc thời gian, chọn chế độ "Quarter".<br>2. Chọn năm mong muốn kiểm tra. | Biểu đồ cột hiển thị doanh thu tổng hợp theo 4 cột: Quý 1, Quý 2, Quý 3, Quý 4 của năm đã chọn. |
-| **TC-REP-03** | Báo cáo doanh thu theo Năm (Year) | Đăng nhập tài khoản Admin, truy cập Dashboard | 1. Tại bộ lọc thời gian, chọn chế độ "Year".<br>2. Chọn năm làm mốc so sánh. | Biểu đồ cột hiển thị tổng doanh thu của 3 năm liên tiếp (ví dụ: Năm hiện tại và 2 năm trước đó) để so sánh tăng trưởng. |
+```powershell
+dotnet test RAGChatBot.Tests\RAGChatBot.Tests.csproj --collect:"XPlat Code Coverage"
+```
 
----
+## 1. Tài khoản và phân quyền
 
-## 5. Phân Hệ Tích Hợp Thanh Toán VNPay (Subscriptions & Payments)
+| ID | Mức | Test case | Kết quả mong đợi |
+|---|---|---|---|
+| AUTH-01 | Unit | Đăng nhập đúng username/password | Trả về đúng user, role và subscription |
+| AUTH-02 | Unit | Đăng nhập user không tồn tại | Trả null, không kiểm tra password hash |
+| AUTH-03 | Unit | Đăng ký username mới | Hash password, trim họ tên, lưu đúng role |
+| AUTH-04 | Unit | Đăng ký trùng username | Từ chối và không ghi database |
+| AUTH-05 | E2E | Đăng nhập qua form | Phát cookie và truy cập được API bảo vệ |
+| AUTH-06 | E2E | Gọi API khi chưa đăng nhập | HTTP 401, không trả HTML trang login |
+| AUTH-07 | Unit | Xóa tài khoản Admin | Bị từ chối |
+| AUTH-08 | Manual | Logout | Cookie bị xóa, truy cập trang bảo vệ chuyển về login |
+| AUTH-09 | Manual | Google login hợp lệ | Tạo phiên đúng tài khoản đã whitelist |
+| AUTH-10 | Manual | Google login email ngoài whitelist | Không tạo tài khoản/phiên |
 
-| Test Case ID | Tên Test Case | Tiền điều kiện | Các bước thực hiện | Kết quả mong đợi |
-| :--- | :--- | :--- | :--- | :--- |
-| **TC-PAY-01** | Tạo liên kết thanh toán VNPay | Đăng nhập tài khoản Free, truy cập trang `/Subscription` | 1. Nhấn nút "Nâng cấp ngay" gói Premium.<br>2. Tại trang Checkout, xác nhận thông tin và bấm nút "Thanh Toán Qua VNPay". | Hệ thống tạo mã đơn hàng và chuyển hướng người dùng sang trang thanh toán thử nghiệm của cổng VNPay thành công. |
-| **TC-PAY-02** | VNPay Callback giao dịch Thành Công | Đang ở trang thanh toán thử nghiệm của VNPay | 1. Chọn phương thức thanh toán ví dụ ứng dụng ngân hàng hoặc thẻ.<br>2. Nhập thông tin thẻ test của VNPay, nhập OTP giả định.<br>3. Hoàn tất thanh toán và chờ VNPay redirect ngược lại website của ứng dụng. | 1. Redirect về trang `/Subscription/PaymentCallback` hiển thị trạng thái: *"Thanh toán thành công!"*.<br>2. Gói cước của tài khoản được cập nhật ngay lập tức thành `Premium`. Ghi log giao dịch thành công. |
-| **TC-PAY-03** | VNPay Callback giao dịch Thất Bại / Hủy | Đang ở trang thanh toán thử nghiệm của VNPay | 1. Nhấn nút "Hủy giao dịch" hoặc nhập sai mã OTP nhiều lần.<br>2. Chờ VNPay redirect ngược lại website của ứng dụng. | 1. Redirect về trang `/Subscription/PaymentCallback` hiển thị thông báo lỗi hoặc hủy thanh toán.<br>2. Gói cước tài khoản giữ nguyên là `Free`. Ghi log giao dịch với trạng thái thất bại. |
+## 2. Môn học và quyền Admin/Lecturer/Student
 
----
+| ID | Mức | Test case | Kết quả mong đợi |
+|---|---|---|---|
+| COURSE-01 | Unit | Tạo môn không chọn giảng viên | Từ chối |
+| COURSE-02 | Unit | Gán Admin/Student phụ trách môn | Từ chối, chỉ Lecturer hợp lệ |
+| COURSE-03 | Unit | Tạo môn hợp lệ | Chuẩn hóa code, trim dữ liệu, phát sự kiện realtime |
+| COURSE-04 | Unit | Đổi mã môn sau khi tạo | Từ chối vì liên kết document/quiz/chat |
+| COURSE-05 | Unit | Sửa tên, mô tả, giảng viên | Cập nhật và phát `CourseUpdated` |
+| COURSE-06 | Unit | Xóa môn | Xóa aggregate, dọn file và phát `CourseDeleted` |
+| COURSE-07 | Unit | Storage lỗi khi dọn file | Môn vẫn được xóa, lỗi được log |
+| COURSE-08 | E2E | Admin mở trang môn | Thấy Tạo/Sửa/Xóa, không thấy Document/Quiz |
+| COURSE-09 | E2E | Admin gọi URL Document/Quiz trực tiếp | HTTP 403 |
+| COURSE-10 | Manual | Lecturer chỉ thấy môn được phân công | Không thấy môn của lecturer khác |
+| COURSE-11 | Manual | Student xem danh sách môn | Xem được danh sách nhưng không có nút quản trị |
 
-## 6. Phân Hệ Đo Lường Hiệu Năng (Metrics Benchmark)
+## 3. Tài liệu và indexing
 
-| Test Case ID | Tên Test Case | Tiền điều kiện | Các bước thực hiện | Kết quả mong đợi |
-| :--- | :--- | :--- | :--- | :--- |
-| **TC-BENCH-01** | Ghi nhận thời gian đo hiệu năng | Upload và xử lý một tài liệu học liệu mới | 1. Tiến hành tải lên 1 tài liệu để chạy ngầm.<br>2. Xem nhật ký log của hệ thống hoặc database. | Hệ thống đo chính xác thời gian thực thi của các tiến trình và tạo mới bản ghi trong bảng `PerformanceBenchmarks` với loại tác vụ tương ứng. |
-| **TC-BENCH-02** | Hiển thị bảng số liệu Benchmark | Đăng nhập tài khoản Admin, truy cập Dashboard | 1. Kéo xuống phần "Tốc độ xử lý (Benchmark)". | Bảng dữ liệu hiển thị đúng thời gian xử lý trung bình của từng loại tác vụ (TextExtraction, Chunking, VectorEmbedding, QuizGeneration) tính bằng ms. |
+| ID | Mức | Test case | Kết quả mong đợi |
+|---|---|---|---|
+| DOC-01 | Unit | Upload định dạng không hỗ trợ | Từ chối trước khi ghi storage |
+| DOC-02 | Unit | Lecturer không phụ trách upload | HTTP/service từ chối |
+| DOC-03 | Unit | Admin upload dù đang được gán | Bị từ chối |
+| DOC-04 | Unit | Free upload quá 5 MB | Bị từ chối |
+| DOC-05 | Unit | Premium còn hạn upload dưới 50 MB | Thành công, tên file được sanitize |
+| DOC-06 | Unit | Database lỗi sau khi lưu file | Xóa file orphan |
+| DOC-07 | Unit | Lecturer phụ trách duyệt tài liệu | `IsApproved=true` |
+| DOC-08 | Unit | Admin/Student duyệt tài liệu | Bị từ chối |
+| DOC-09 | Unit | Lecturer cũ xóa tài liệu sau khi đổi người phụ trách | Bị từ chối |
+| DOC-10 | Unit | Re-index môn | Chỉ queue tài liệu approved và Success/Failed |
+| DOC-11 | Unit | Admin re-index | Bị từ chối |
+| DOC-12 | Unit | Student tải tài liệu chưa approved/success | Bị từ chối |
+| DOC-13 | Unit | Student tải tài liệu approved + success | Thành công |
+| DOC-14 | Unit | Admin tải tài liệu | Bị từ chối |
+| DOC-15 | E2E | Lecturer upload và download | Metadata + file private được lưu và đọc đúng |
+| DOC-16 | Manual | Worker xử lý PDF/DOCX | Pending → Success, tạo chunks/vector |
+| DOC-17 | Manual | Worker gặp file rỗng/API embedding lỗi | Chuyển Failed và cho phép Lecturer retry |
 
----
+## 4. Chat RAG và quota
 
-## 7. Phân Hệ Đồng Bộ Môn Học Trực Tiếp qua SignalR (Real-time Updates)
+| ID | Mức | Test case | Kết quả mong đợi |
+|---|---|---|---|
+| CHAT-01 | Unit | Câu hỏi rỗng hoặc quá 4.000 ký tự | Từ chối trước khi gọi dependency |
+| CHAT-02 | Unit | Thread thuộc user khác | Trả null/404 |
+| CHAT-03 | Unit | Không chọn môn hoặc môn không tồn tại | Không trừ lượt |
+| CHAT-04 | Unit | Free hết 10 lượt/ngày | Không gọi AI, trả `OutOfCredits` |
+| CHAT-05 | Unit | Premium còn hạn | Có 50 lượt/ngày |
+| CHAT-06 | Unit | Premium hết hạn | Quay về quota Free |
+| CHAT-07 | Unit | AI thất bại | Hoàn lượt, không lưu exchange |
+| CHAT-08 | Unit | AI thành công | Tạo thread, lưu 2 message và audit log |
+| CHAT-09 | Unit | Không có chunk liên quan | Trả câu trả lời grounded, không gọi completion API |
+| CHAT-10 | Unit | Có chunk liên quan | Gửi context/history, trả nguồn đúng document |
+| CHAT-11 | E2E | Chat qua HTTP | Cookie → API → service → PostgreSQL, remaining giảm đúng |
+| CHAT-12 | Manual | Hai request quota đồng thời | Không vượt giới hạn ngày |
 
-| Test Case ID | Tên Test Case | Tiền điều kiện | Các bước thực hiện | Kết quả mong đợi |
-| :--- | :--- | :--- | :--- | :--- |
-| **TC-REAL-01** | Tự động đồng bộ khi thêm mới môn học | 1. Trình duyệt A đăng nhập Admin.<br>2. Trình duyệt B đăng nhập Học viên đang xem màn hình danh sách môn học `/Courses`. | 1. Tại Trình duyệt A, nhấn "Tạo Môn Mới".<br>2. Điền thông tin và bấm "Lưu thay đổi". | Môn học mới xuất hiện ngay lập tức tại Trình duyệt B mà không cần nhấn F5. Dòng môn học mới tải có hiệu ứng trượt GSAP. |
-| **TC-REAL-02** | Tự động đồng bộ khi chỉnh sửa môn học | Như trên | 1. Tại Trình duyệt A, nhấn nút "Chỉnh sửa" của một môn học và thay đổi Tên hoặc Mô tả của môn đó.<br>2. Bấm "Lưu thay đổi". | Trình duyệt B tự động cập nhật tên môn học mới hoặc thông tin đã chỉnh sửa trực tiếp trên màn hình. |
-| **TC-REAL-03** | Tự động đồng bộ khi xóa môn học | Như trên | 1. Tại Trình duyệt A, nhấn nút "Xóa bỏ" một môn học và xác nhận xóa. | Dòng môn học đó lập tức biến mất khỏi danh sách hiển thị trên Trình duyệt B. |
+## 5. Quiz
+
+| ID | Mức | Test case | Kết quả mong đợi |
+|---|---|---|---|
+| QUIZ-01 | Unit | Bắt đầu quiz chưa publish | Bị từ chối |
+| QUIZ-02 | Unit | Có attempt đang chạy | Trả lại attempt cũ, không tạo trùng |
+| QUIZ-03 | Unit | Attempt cũ hết hạn | Đóng attempt cũ rồi tạo mới nếu còn lượt |
+| QUIZ-04 | Unit | Password sai | Từ chối trước khi đọc quota attempt |
+| QUIZ-05 | Unit | Bắt đầu hợp lệ | Snapshot câu hỏi, deadline và shuffle đúng cấu hình |
+| QUIZ-06 | Unit | Nộp attempt của user khác | Bị từ chối |
+| QUIZ-07 | Unit | Nộp attempt hết hạn | Đóng với điểm 0 rồi từ chối |
+| QUIZ-08 | Unit | Đáp án trùng question | Dùng đáp án cuối, chuẩn hóa A/B/C/D |
+| QUIZ-09 | E2E | Student start + submit qua HTTP | Lưu attempt/answer và tính điểm đúng |
+| QUIZ-10 | Unit | AI trả JSON trong markdown fence | Parse thành question bank đúng |
+| QUIZ-11 | Unit | AI trả 503 hoặc JSON lỗi | Trả danh sách rỗng, không crash worker |
+| QUIZ-12 | Manual | Lecturer tạo/xóa quiz và câu hỏi | Thành công khi đang phụ trách môn |
+| QUIZ-13 | E2E | Admin gọi Quiz UI/API | HTTP 403 |
+
+## 6. Thanh toán và subscription
+
+| ID | Mức | Test case | Kết quả mong đợi |
+|---|---|---|---|
+| PAY-01 | Unit | Tạo pending transaction | Lưu đúng orderId, amount, user |
+| PAY-02 | Unit | User thanh toán không tồn tại | Từ chối, không ghi transaction |
+| PAY-03 | Unit | Callback không hợp lệ | Không đổi trạng thái |
+| PAY-04 | Unit | Callback thất bại/hủy | Transaction chuyển Failed |
+| PAY-05 | Unit | Callback thành công đúng user và amount | Completed, nâng Premium và hạn sử dụng |
+| PAY-06 | Unit | Webhook hợp lệ | Hoàn tất không phụ thuộc browser user |
+| PAY-07 | Unit | Lịch sử giao dịch cá nhân | Chỉ trả transaction của user hiện tại |
+| PAY-08 | Unit | Admin lọc status | Repository nhận đúng filter |
+| PAY-09 | Manual | PayOS checkout thật | Redirect checkout URL và mô tả <= 9 ký tự |
+| PAY-10 | Manual | Callback giả mạo orderCode/amount | Không nâng Premium |
+| PAY-11 | Manual | Webhook gửi lặp | Idempotent, không gia hạn nhiều lần |
+
+## 7. Whitelist, import và dashboard
+
+| ID | Mức | Test case | Kết quả mong đợi |
+|---|---|---|---|
+| WL-01 | Unit | Email rỗng | Không query repository |
+| WL-02 | Unit | Kiểm tra email hoa/thừa khoảng trắng | Chuẩn hóa lowercase + trim |
+| WL-03 | Unit | Thêm email trùng | Từ chối, không gửi email |
+| WL-04 | Unit | Thêm email hợp lệ | Lưu trước, sau đó gửi welcome email |
+| WL-05 | Unit | Email provider lỗi | Entry vẫn được lưu |
+| WL-06 | Unit | Xóa entry không tồn tại | Trả lỗi rõ ràng |
+| WL-07 | Manual | Import Excel nhiều kiểu header | Nhận diện Email/Họ tên/MSSV, bỏ dòng lỗi và trùng |
+| DASH-01 | Unit | Biểu đồ tháng | Luôn đủ 12 tháng, tháng thiếu bằng 0 |
+| DASH-02 | Unit | Biểu đồ quý | Cộng đúng 3 tháng/quý |
+| DASH-03 | Unit | Biểu đồ năm | Trả đúng cửa sổ 3 năm |
+| DASH-04 | Manual | Admin lọc giao dịch theo trạng thái | Danh sách và tổng số khớp filter |
+
+## 8. Adapter và file processing
+
+| ID | Mức | Test case | Kết quả mong đợi |
+|---|---|---|---|
+| AI-01 | Unit | Embedding input rỗng | Trả vector rỗng, không gọi HTTP |
+| AI-02 | Unit | Embedding hợp lệ 1.536 chiều | Trả đúng vector và prefix retrieval query |
+| AI-03 | Unit | Embedding sai số chiều | Ném lỗi, không lưu vector lỗi |
+| AI-04 | Unit | Batch embedding trả sai thứ tự | Sắp xếp lại theo `index` |
+| FILE-01 | Unit | TextExtractor nhận stream null | `ArgumentNullException` |
+| FILE-02 | Unit | Extension không hỗ trợ | `NotSupportedException` |
+| FILE-03 | Unit | TXT/Markdown UTF-8 | Reset stream và đọc đủ nội dung |
+| FILE-04 | Manual | PDF nhiều trang | Ghép nội dung theo thứ tự trang |
+| FILE-05 | Manual | DOCX nhiều paragraph | Ghép đúng text trong `word/document.xml` |
+
+## Smoke test trước khi demo
+
+1. Login lần lượt bằng Admin, Lecturer và Student.
+2. Admin tạo môn, sửa tên/mô tả, đổi giảng viên và xóa một môn thử nghiệm.
+3. Xác nhận Admin không thấy và không truy cập được Document/Quiz.
+4. Lecturer phụ trách upload PDF, chờ Success, duyệt tài liệu và tạo quiz.
+5. Student tải tài liệu đã duyệt, chat đủ một câu, làm và nộp quiz.
+6. Kiểm tra Free còn 9 lượt; Premium hiển thị giới hạn 50 lượt/ngày.
+7. Tạo một giao dịch PayOS sandbox, kiểm tra lịch sử cá nhân và bộ lọc admin.

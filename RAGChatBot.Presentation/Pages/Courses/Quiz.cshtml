@@ -2,7 +2,7 @@
 @model RAGChatBot.Presentation.Pages.Courses.QuizModel
 @{
     ViewData["Title"] = $"Ôn Tập Trắc Nghiệm - {Model.CourseCode}";
-    var isLecturerOrAdmin = User.IsInRole("Lecturer") || User.IsInRole("Admin");
+    var isLecturer = User.IsInRole("Lecturer");
 }
 
 <div class="d-none">@Html.AntiForgeryToken()</div>
@@ -42,20 +42,20 @@
     <div class="zen-hero mb-5" style="min-height: auto;">
         <div class="zen-hero-title">
             <div class="text-accent fs-6 text-uppercase fw-bold tracking-wider mb-2">
-                @(isLecturerOrAdmin ? "Quản Lý Trắc Nghiệm" : "Ôn Luyện Trắc Nghiệm")
+                @(isLecturer ? "Quản Lý Trắc Nghiệm" : "Ôn Luyện Trắc Nghiệm")
             </div>
             <h2 class="font-serif m-0" style="font-size: 2.5rem;">@Model.CourseCode</h2>
         </div>
         <div class="zen-hero-desc">
-            @(isLecturerOrAdmin 
+            @(isLecturer
                 ? "Giao diện quản lý ngân hàng câu hỏi trắc nghiệm, thiết lập đề thi và theo dõi kết quả làm bài của học viên." 
                 : "Hệ thống hiển thị danh sách các bài trắc nghiệm do giảng viên thiết lập. Hãy làm bài để đánh giá mức độ hiểu bài của bạn.")
         </div>
     </div>
 
-    @if (isLecturerOrAdmin)
+    @if (isLecturer)
     {
-        <!-- Tabs for Lecturer/Admin -->
+        <!-- Tabs for the assigned lecturer -->
         <div class="d-flex border-bottom mb-5">
             <button class="tab-btn active me-4 pb-2 fw-bold border-0 bg-transparent" onclick="switchTab('questionBank')" id="tab-questionBank">
                 Ngân Hàng Câu Hỏi
@@ -276,7 +276,7 @@
 </div>
 
 <!-- Place Modals outside zen-container at the root level to prevent transform/stacking context layout bugs -->
-@if (isLecturerOrAdmin)
+@if (isLecturer)
 {
     <!-- Add/Edit Question Modal -->
     <div class="modal fade" id="questionModal" tabindex="-1" aria-hidden="true">
@@ -393,7 +393,7 @@ else
 <script>
 (function () {
     const courseCode = '@Model.CourseCode';
-    const isLecturerOrAdmin = @(isLecturerOrAdmin ? "true" : "false");
+    const isLecturer = @(isLecturer ? "true" : "false");
     const antiforgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
     const jsonHeaders = {
         'Content-Type': 'application/json',
@@ -505,7 +505,7 @@ else
         }
     }
 
-    if (isLecturerOrAdmin) {
+    if (isLecturer) {
         // Lecturer States
         let questionData = [];
         let quizData = [];
