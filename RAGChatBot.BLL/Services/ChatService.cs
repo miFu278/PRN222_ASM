@@ -178,7 +178,8 @@ namespace RAGChatBot.BLL.Services
                     FileName = source.FileName,
                     CourseCode = source.CourseCode,
                     ChunkIndex = source.ChunkIndex,
-                    Relevance = Math.Clamp(1d - source.Distance, 0d, 1d)
+                    Relevance = Math.Clamp(1d - source.Distance, 0d, 1d),
+                    Content = source.Content
                 }).ToList()
             };
         }

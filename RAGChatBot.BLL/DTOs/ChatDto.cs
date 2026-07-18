@@ -17,6 +17,7 @@ namespace RAGChatBot.BLL.DTOs
         public string CourseCode { get; init; } = string.Empty;
         public int ChunkIndex { get; init; }
         public double Relevance { get; init; }
+        public string Content { get; init; } = string.Empty;
     }
 
     public sealed class ChatThreadDto

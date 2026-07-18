@@ -96,6 +96,9 @@ public sealed class HttpE2ETests(E2ETestFixture fixture)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("E2E answer", payload.RootElement.GetProperty("reply").GetString());
         Assert.Equal(9, payload.RootElement.GetProperty("remaining").GetInt32());
+        var source = Assert.Single(payload.RootElement.GetProperty("sources").EnumerateArray());
+        Assert.Equal("e2e-source.pdf", source.GetProperty("fileName").GetString());
+        Assert.Equal("E2E source preview", source.GetProperty("content").GetString());
         var threadId = payload.RootElement.GetProperty("threadId").GetGuid();
 
         await using var scope = fixture.Services.CreateAsyncScope();

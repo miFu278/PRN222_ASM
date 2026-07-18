@@ -149,7 +149,7 @@ public sealed class AiAdapterTests
         var documents = Substitute.For<IKnowledgeDocumentRepository>();
         embeddings.GenerateEmbeddingAsync(Arg.Any<string>()).Returns(new[] { 1f });
         documents.SearchSimilarChunksAsync(
-                "PRN222", Arg.Any<float[]>(), 8, Arg.Any<double>())
+                "PRN222", Arg.Any<float[]>(), 10, Arg.Any<double>())
             .Returns(Array.Empty<RelevantDocumentChunk>());
         var handler = StubHttpMessageHandler.Json("{}");
         var service = new OpenAiChatService(
@@ -184,7 +184,7 @@ public sealed class AiAdapterTests
             Distance = 0.1
         };
         documents.SearchSimilarChunksAsync(
-                "PRN222", Arg.Any<float[]>(), 8, Arg.Any<double>())
+                "PRN222", Arg.Any<float[]>(), 10, Arg.Any<double>())
             .Returns(new[] { source });
         var response = JsonSerializer.Serialize(new
         {
@@ -209,7 +209,9 @@ public sealed class AiAdapterTests
 
         Assert.True(result.IsSuccessful);
         Assert.Equal("Answer [Nguồn 1]", result.Reply);
-        Assert.Equal(source.DocumentId, Assert.Single(result.Sources).DocumentId);
+        var returnedSource = Assert.Single(result.Sources);
+        Assert.Equal(source.DocumentId, returnedSource.DocumentId);
+        Assert.Equal(source.Content, returnedSource.Content);
         Assert.Contains("Previous question", handler.LastRequestBody);
         Assert.DoesNotContain("must be ignored", handler.LastRequestBody);
         await embeddings.Received(1).GenerateEmbeddingAsync(

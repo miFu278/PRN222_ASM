@@ -173,7 +173,16 @@ public sealed class E2ETestFixture : IAsyncLifetime
             => Task.FromResult(new ChatResponseResult(
                 $"E2E answer for {courseCode}: {question}",
                 true,
-                Array.Empty<ChatSource>()));
+                new[]
+                {
+                    new ChatSource(
+                        Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                        "e2e-source.pdf",
+                        courseCode,
+                        0,
+                        0.1,
+                        "E2E source preview")
+                }));
     }
 
     private sealed class InMemoryFileStorageService : IFileStorageService
