@@ -73,7 +73,8 @@ namespace RAGChatBot.Presentation.Pages
                         fileName = source.FileName,
                         courseCode = source.CourseCode,
                         chunkIndex = source.ChunkIndex,
-                        relevance = source.Relevance
+                        relevance = source.Relevance,
+                        content = source.Content
                     })
                 });
             }

@@ -104,7 +104,9 @@ namespace RAGChatBot.DAL.Services
             }
 
             var results = new List<float[]>();
-            const int batchSize = 16; // Gom nhóm 16 chunks một lượt để an toàn cho Rate Limit
+            const int batchSize = 32; // Gom nhóm 32 chunks để giảm bớt số lượt gọi HTTP request
+            var baseUrlClean = _baseUrl.TrimEnd('/');
+            var requestUrl = $"{baseUrlClean}/embeddings";
             
             for (int i = 0; i < texts.Count; i += batchSize)
             {
@@ -115,27 +117,40 @@ namespace RAGChatBot.DAL.Services
                     .ToList();
                 try
                 {
-                    var baseUrlClean = _baseUrl.TrimEnd('/');
-                    var requestUrl = $"{baseUrlClean}/embeddings";
+                    HttpResponseMessage? response = null;
+                    const int maxRetries = 5;
 
-                    var requestMessage = new HttpRequestMessage(HttpMethod.Post, requestUrl);
-                    requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
-                    
-                    var requestBody = new OpenAIEmbeddingRequest
+                    for (int attempt = 1; attempt <= maxRetries; attempt++)
                     {
-                        Input = batch,
-                        Model = _model
-                    };
+                        var requestMessage = new HttpRequestMessage(HttpMethod.Post, requestUrl);
+                        requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                        
+                        var requestBody = new OpenAIEmbeddingRequest
+                        {
+                            Input = batch,
+                            Model = _model
+                        };
 
-                    requestMessage.Content = JsonContent.Create(requestBody);
+                        requestMessage.Content = JsonContent.Create(requestBody);
+                        response = await _httpClient.SendAsync(requestMessage);
 
-                    var response = await _httpClient.SendAsync(requestMessage);
-                    
-                    if (!response.IsSuccessStatusCode)
+                        if ((int)response.StatusCode == 429)
+                        {
+                            var backoffSeconds = attempt * 5;
+                            _logger.LogWarning("Gemini Embedding API bị Rate Limit (429). Đang tạm dừng {Delay}s trước khi thử lại ({Attempt}/{MaxRetries})...", backoffSeconds, attempt, maxRetries);
+                            await Task.Delay(TimeSpan.FromSeconds(backoffSeconds));
+                            continue;
+                        }
+
+                        break;
+                    }
+
+                    if (response == null || !response.IsSuccessStatusCode)
                     {
-                        var errorContent = await response.Content.ReadAsStringAsync();
+                        var errorContent = response != null ? await response.Content.ReadAsStringAsync() : "No response";
+                        var statusCode = response != null ? (int)response.StatusCode : 0;
                         throw new HttpRequestException(
-                            $"Batch embedding API returned {(int)response.StatusCode}: {errorContent}");
+                            $"Batch embedding API returned {statusCode}: {errorContent}");
                     }
 
                     var result = await response.Content.ReadFromJsonAsync<OpenAIEmbeddingResponse>();
@@ -170,10 +185,10 @@ namespace RAGChatBot.DAL.Services
                     throw;
                 }
 
-                // Chờ 600ms giữa các batch để tránh 429 Rate Limit (100 RPM)
+                // Chờ 800ms giữa các batch để tránh 429 Rate Limit (100 RPM)
                 if (i + batchSize < texts.Count)
                 {
-                    await Task.Delay(600);
+                    await Task.Delay(800);
                 }
             }
 

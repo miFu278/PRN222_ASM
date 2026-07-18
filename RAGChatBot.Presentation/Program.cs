@@ -14,6 +14,8 @@ using System.Threading.RateLimiting;
 using RAGChatBot.Presentation.Services;
 using RAGChatBot.Presentation.Middlewares;
 using Serilog;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
@@ -150,6 +152,19 @@ builder.Services.AddHostedService<DocumentProcessingWorker>();
 // Dashboard & Benchmark services
 builder.Services.AddScoped<IBenchmarkRepository, BenchmarkRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+// Cấu hình giới hạn dung lượng request body (100MB) cho file upload lớn
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    options.Limits.MaxRequestBodySize = 100 * 1024 * 1024; // 100 MB
+});
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBodyLengthLimit = 100 * 1024 * 1024; // 100 MB
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
 
 // 4. Đăng ký Razor Pages
 builder.Services.AddRazorPages();

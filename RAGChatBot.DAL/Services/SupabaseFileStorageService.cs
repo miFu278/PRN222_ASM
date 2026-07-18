@@ -1,4 +1,4 @@
-﻿using RAGChatBot.Domain.Interfaces;
+using RAGChatBot.Domain.Interfaces;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -22,8 +22,8 @@ namespace RAGChatBot.DAL.Services
             await fileStream.CopyToAsync(ms);
             var fileBytes = ms.ToArray();
     
-            // 2. Sinh tên tệp tin duy nhất tránh trùng lặp đè tệp
-            var safeFileName = Path.GetFileName(fileName);
+            // 2. Sinh tên tệp tin duy nhất và loại bỏ ký tự tiếng Việt / đặc biệt không hợp lệ với Supabase Storage
+            var safeFileName = SanitizeFileName(fileName);
             var uniqueFileName = $"{Guid.NewGuid():N}_{safeFileName}";
 
             // 3. Khởi tạo Supabase Client (an toàn nếu chưa gọi trước đó)
@@ -39,8 +39,9 @@ namespace RAGChatBot.DAL.Services
             }
             catch (Exception ex)
             {
+                var details = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
                 throw new InvalidOperationException(
-                    $"Không thể lưu tệp vào bucket Supabase '{BucketName}'. Hãy kiểm tra bucket và storage policy.",
+                    $"Không thể lưu tệp vào bucket Supabase '{BucketName}'. Chi tiết: {details}. Hãy kiểm tra bucket, giới hạn kích thước tệp và storage policy trên Supabase Dashboard.",
                     ex);
             }
 
@@ -77,6 +78,42 @@ namespace RAGChatBot.DAL.Services
             }
 
             return storagePath.Trim().TrimStart('/');
+        }
+
+        private static string SanitizeFileName(string fileName)
+        {
+            var rawFileName = Path.GetFileName(fileName);
+            var extension = Path.GetExtension(rawFileName);
+            var nameWithoutExt = Path.GetFileNameWithoutExtension(rawFileName);
+
+            if (string.IsNullOrWhiteSpace(nameWithoutExt))
+            {
+                return $"file_{Guid.NewGuid():N}{extension}";
+            }
+
+            // Bỏ dấu tiếng Việt (Normalization Form D)
+            var normalized = nameWithoutExt.Normalize(System.Text.NormalizationForm.FormD);
+            var sb = new System.Text.StringBuilder();
+            foreach (var c in normalized)
+            {
+                var uc = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                if (uc != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+            var asciiName = sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
+
+            // Giữ lại ký tự chữ cái, chữ số, gạch ngang, gạch dưới. Các ký tự khác thay bằng '_'
+            var cleanName = System.Text.RegularExpressions.Regex.Replace(asciiName, @"[^a-zA-Z0-9_\-]", "_");
+            cleanName = System.Text.RegularExpressions.Regex.Replace(cleanName, @"_+", "_").Trim('_');
+
+            if (string.IsNullOrWhiteSpace(cleanName))
+            {
+                cleanName = "file";
+            }
+
+            return cleanName + extension;
         }
     }
 }

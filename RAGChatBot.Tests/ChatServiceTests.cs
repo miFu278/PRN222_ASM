@@ -99,7 +99,7 @@ public sealed class ChatServiceTests
         _responses.GetChatResponseAsync("Question", "PRN222", Arg.Any<IReadOnlyList<ChatHistoryItem>>())
             .Returns(new ChatResponseResult("Answer", true, new[]
             {
-                new ChatSource(Guid.NewGuid(), "source.pdf", "PRN222", 1, -0.2),
+                new ChatSource(Guid.NewGuid(), "source.pdf", "PRN222", 1, -0.2, "Preview content"),
                 new ChatSource(Guid.NewGuid(), "source.pdf", "PRN222", 2, 2.0)
             }));
         _chats.CreateThreadAsync(userId, "PRN222", "Question", Arg.Any<DateTime>()).Returns(thread);
@@ -110,6 +110,7 @@ public sealed class ChatServiceTests
         Assert.False(result.IsError);
         Assert.Equal(thread.Id, result.ThreadId);
         Assert.Equal(new[] { 1d, 0d }, result.Sources.Select(source => source.Relevance));
+        Assert.Equal("Preview content", result.Sources[0].Content);
         await _chats.Received(1).AddExchangeAsync(
             thread.Id, "Question", "Answer", Arg.Any<DateTime>());
         await _logs.Received(1).SaveChangesAsync();

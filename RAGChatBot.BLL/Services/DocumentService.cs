@@ -400,7 +400,20 @@ namespace RAGChatBot.BLL.Services
                 return Enumerable.Empty<ChunkDto>();
             }
 
-            await EnsureCanManageCourseAsync(document.CourseCode, userId);
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new UnauthorizedAccessException("Phiên người dùng không hợp lệ.");
+
+            var isSubjectLeader = await CanManageCourseAsync(document.CourseCode, user);
+            var isStudent = string.Equals(
+                user.Role?.Name,
+                RoleNames.Student,
+                StringComparison.OrdinalIgnoreCase);
+
+            if (!isSubjectLeader &&
+                (!isStudent || !document.IsApproved || document.Status != DocumentStatus.Success))
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền xem bản xem trước cho tài liệu này.");
+            }
 
             return document.Chunks
                 .OrderBy(c => c.ChunkIndex)

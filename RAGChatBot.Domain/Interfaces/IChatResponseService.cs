@@ -18,7 +18,8 @@ namespace RAGChatBot.Domain.Interfaces
         string FileName,
         string CourseCode,
         int ChunkIndex,
-        double Distance);
+        double Distance,
+        string Content = "");
 
     public sealed record ChatResponseResult(
         string Reply,

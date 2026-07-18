@@ -9,6 +9,8 @@ using System.Security.Claims;
 namespace RAGChatBot.Presentation.Pages.Courses
 {
     [Authorize(Roles = RoleNames.Lecturer + "," + RoleNames.Student)]
+    [RequestSizeLimit(100 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 100 * 1024 * 1024)]
     public class DocumentsModel : PageModel
     {
         private readonly IDocumentService _documentService;

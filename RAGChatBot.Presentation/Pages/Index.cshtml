@@ -5,6 +5,51 @@
     ViewData["Title"] = "Trang chủ";
 }
 
+@section Styles {
+<style>
+    #sourcesModal {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+    }
+
+    #sourcesModal .modal-dialog {
+        width: min(920px, calc(100vw - 32px));
+        max-width: none;
+        height: min(80vh, 760px);
+        margin: max(16px, 5vh) auto;
+    }
+
+    #sourcesModal .modal-content {
+        height: 100%;
+        max-height: 100%;
+        overflow: hidden;
+    }
+
+    #sourcesModal .modal-body {
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+        touch-action: pan-y;
+    }
+
+    html.sources-modal-open,
+    body.sources-modal-open {
+        overflow: hidden !important;
+        overscroll-behavior: none;
+    }
+
+    @@media (max-width: 576px) {
+        #sourcesModal .modal-dialog {
+            width: calc(100vw - 20px);
+            height: calc(100dvh - 20px);
+            margin: 10px auto;
+        }
+    }
+</style>
+}
+
 <div class="zen-chat-container">
     <!-- Zen Hero Section -->
     <div class="zen-hero">
@@ -130,6 +175,26 @@
     </div>
 </div>
 
+<!-- Modal Pop-up Xem Nguồn Trích Dẫn & Chunk Text -->
+<div class="modal fade" id="sourcesModal" tabindex="-1" aria-labelledby="sourcesModalTitle" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-light py-2 border-bottom">
+                <h6 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="sourcesModalTitle">
+                    <i class="fa-solid fa-book-bookmark text-primary"></i>
+                    <span>Nguồn Tài Liệu Tham Chiếu (RAG Chunks)</span>
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-3 bg-white" id="sourcesModalBody" data-lenis-prevent data-lenis-prevent-wheel data-lenis-prevent-touch>
+            </div>
+            <div class="modal-footer py-2 bg-light border-top">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
 (function () {
@@ -144,19 +209,117 @@
     const creditDisplay = document.getElementById('creditDisplay');
     const newThreadBtn = document.getElementById('newThreadBtn');
     const courseSelect = document.getElementById('chatCourseCode');
+    const sourcesModal = document.getElementById('sourcesModal');
     let isLoading = false;
     let activeThreadId = null;
+    let resumeLenisAfterSourcesModal = false;
 
-    // ── Format markdown (giữ nguyên logic cũ) ──
-    function formatMarkdown(text) {
+    sourcesModal.addEventListener('show.bs.modal', function () {
+        resumeLenisAfterSourcesModal = Boolean(window.lenis && !window.lenis.isStopped);
+        if (window.lenis && typeof window.lenis.stop === 'function') {
+            window.lenis.stop();
+        }
+        document.documentElement.classList.add('sources-modal-open');
+        document.body.classList.add('sources-modal-open');
+    });
+
+    sourcesModal.addEventListener('hidden.bs.modal', function () {
+        document.documentElement.classList.remove('sources-modal-open');
+        document.body.classList.remove('sources-modal-open');
+        if (resumeLenisAfterSourcesModal && window.lenis && typeof window.lenis.start === 'function') {
+            window.lenis.start();
+        }
+        resumeLenisAfterSourcesModal = false;
+    });
+
+    window.sourcesStore = window.sourcesStore || {};
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    window.openSourceModal = function(key, highlightIndex) {
+        const sources = window.sourcesStore[key];
+        if (!Array.isArray(sources) || sources.length === 0) return;
+
+        const modalBody = document.getElementById('sourcesModalBody');
+        modalBody.innerHTML = '';
+
+        const listContainer = document.createElement('div');
+        listContainer.className = 'd-flex flex-column gap-3';
+
+        sources.forEach((src, idx) => {
+            const card = document.createElement('div');
+            const isHighlight = highlightIndex === idx;
+            card.className = `p-3 rounded border ${isHighlight ? 'border-primary bg-primary-subtle' : 'bg-light'}`;
+            card.id = `modal-source-item-${idx}`;
+
+            const header = document.createElement('div');
+            header.className = 'd-flex justify-content-between align-items-center mb-2 pb-2 border-bottom';
+            header.innerHTML = `
+                <div>
+                    <span class="badge bg-secondary me-1">[Nguồn ${idx + 1}]</span>
+                    <strong class="text-dark"><i class="fa-regular fa-file-pdf me-1 text-primary"></i>${escapeHtml(src.fileName)}</strong>
+                    <span class="text-muted font-monospace small ms-2">(Đoạn ${src.chunkIndex + 1})</span>
+                </div>
+                <span class="badge bg-white text-dark border">${Math.round(src.relevance * 100)}% khớp</span>
+            `;
+
+            const contentBox = document.createElement('div');
+            contentBox.className = 'font-monospace p-2 rounded bg-white text-dark border small';
+            contentBox.style.whiteSpace = 'pre-wrap';
+            contentBox.textContent = src.content || 'Không có bản xem trước cho đoạn văn bản này.';
+
+            const footer = document.createElement('div');
+            footer.className = 'mt-2 text-end';
+            footer.innerHTML = `
+                <a href="/Courses/${encodeURIComponent(src.courseCode)}/Documents/${src.documentId}/View" target="_blank" rel="noopener noreferrer" data-bs-dismiss="modal" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.78rem;">
+                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Xem toàn bộ tài liệu (PDF/Word)
+                </a>
+            `;
+
+            card.appendChild(header);
+            card.appendChild(contentBox);
+            card.appendChild(footer);
+            listContainer.appendChild(card);
+        });
+
+        modalBody.appendChild(listContainer);
+
+        const modalEl = document.getElementById('sourcesModal');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+
+        if (typeof highlightIndex === 'number' && highlightIndex >= 0) {
+            setTimeout(() => {
+                const target = document.getElementById(`modal-source-item-${highlightIndex}`);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 300);
+        }
+    };
+
+    // ── Format markdown với trích dẫn Nguồn tương tác Pop-up ──
+    function formatMarkdown(text, currentSourceKey) {
         if (!text) return '';
-        return text
+        let formatted = text
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/`(.*?)`/g, '<code style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px;">$1</code>')
             .replace(/\n/g, '<br>');
+
+        if (currentSourceKey) {
+            formatted = formatted.replace(/\[Nguồn\s+(\d+)\]/g, function(match, num) {
+                const idx = parseInt(num, 10) - 1;
+                return `<button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 mx-1 source-ref-btn" style="font-size: 0.75rem; font-weight: 600; vertical-align: middle;" onclick="openSourceModal('${currentSourceKey}', ${idx})"><i class="fa-solid fa-quote-left me-1"></i>Nguồn ${num}</button>`;
+            });
+        }
+
+        return formatted;
     }
 
     function scrollToBottom() {
@@ -172,13 +335,13 @@
         }, 50);
     }
 
-    function appendMessage(role, text) {
+    function appendMessage(role, text, currentSourceKey) {
         const div = document.createElement('div');
         div.className = role === 'user' ? 'zen-msg zen-msg-user' : 'zen-msg zen-msg-bot';
         const bubble = document.createElement('div');
         bubble.className = 'zen-msg-bubble';
         if (role === 'bot' || role === 'assistant') {
-            bubble.innerHTML = formatMarkdown(text);
+            bubble.innerHTML = formatMarkdown(text, currentSourceKey);
         } else {
             bubble.textContent = text;
         }
@@ -187,36 +350,30 @@
         scrollToBottom();
     }
 
-    function appendSources(sources) {
+    function appendSourcesBar(sourceStoreKey) {
+        const sources = window.sourcesStore[sourceStoreKey];
         if (!Array.isArray(sources) || sources.length === 0) return;
-
-        const uniqueSources = [];
-        const seen = new Set();
-        sources.forEach(source => {
-            const key = `${source.documentId}:${source.chunkIndex}`;
-            if (!seen.has(key)) {
-                seen.add(key);
-                uniqueSources.push(source);
-            }
-        });
 
         const container = document.createElement('div');
         container.className = 'zen-msg zen-msg-bot';
         const bubble = document.createElement('div');
         bubble.className = 'zen-msg-bubble';
+        bubble.style.maxWidth = '90%';
 
-        const title = document.createElement('div');
-        title.className = 'small text-muted mb-2';
-        title.textContent = 'Nguồn tài liệu đã sử dụng';
-        bubble.appendChild(title);
+        const summaryBar = document.createElement('div');
+        summaryBar.className = 'd-flex align-items-center gap-2 flex-wrap';
 
-        uniqueSources.forEach((source, index) => {
-            const item = document.createElement('div');
-            item.className = 'small';
-            item.textContent = `[Nguồn ${index + 1}] ${source.fileName} — đoạn ${source.chunkIndex + 1} (${Math.round(source.relevance * 100)}%)`;
-            bubble.appendChild(item);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-light border text-primary font-monospace py-1 px-3 rounded-pill';
+        btn.style.fontSize = '0.82rem';
+        btn.innerHTML = `<i class="fa-solid fa-layer-group me-1"></i> Xem ${sources.length} nguồn tài liệu tham chiếu`;
+        btn.addEventListener('click', () => {
+            window.openSourceModal(sourceStoreKey);
         });
 
+        summaryBar.appendChild(btn);
+        bubble.appendChild(summaryBar);
         container.appendChild(bubble);
         chatMessages.appendChild(container);
         scrollToBottom();
@@ -367,8 +524,27 @@
             const data = await response.json().catch(() => ({}));
 
             if (response.ok) {
-                appendMessage('bot', data.reply ?? data.message ?? 'Không có phản hồi.');
-                appendSources(data.sources);
+                let sourceStoreKey = null;
+                if (Array.isArray(data.sources) && data.sources.length > 0) {
+                    const uniqueSources = [];
+                    const seen = new Set();
+                    data.sources.forEach(source => {
+                        const key = `${source.documentId}:${source.chunkIndex}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            uniqueSources.push(source);
+                        }
+                    });
+                    if (uniqueSources.length > 0) {
+                        sourceStoreKey = 'src_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                        window.sourcesStore[sourceStoreKey] = uniqueSources;
+                    }
+                }
+
+                appendMessage('bot', data.reply ?? data.message ?? 'Không có phản hồi.', sourceStoreKey);
+                if (sourceStoreKey) {
+                    appendSourcesBar(sourceStoreKey);
+                }
 
                 // Cập nhật threadId từ response để duy trì luồng
                 if (data.threadId) {
@@ -401,12 +577,6 @@
             setLoading(false);
             inputField.focus();
         }
-    }
-
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str || '';
-        return div.innerHTML;
     }
 
     // ── Cuộc trò chuyện mới ──
