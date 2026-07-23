@@ -14,17 +14,20 @@ namespace RAGChatBot.Presentation.Pages.Subscription
         private readonly IPaymentService _paymentService;
         private readonly IAuthService _authService;
         private readonly ILogger<CheckoutModel> _logger;
+        private readonly IConfiguration _configuration;
 
         public CheckoutModel(
             IPayOSService payOSService,
             IPaymentService paymentService,
             IAuthService authService,
-            ILogger<CheckoutModel> logger)
+            ILogger<CheckoutModel> logger,
+            IConfiguration configuration)
         {
             _payOSService = payOSService;
             _paymentService = paymentService;
             _authService = authService;
             _logger = logger;
+            _configuration = configuration;
         }
 
         public string? ErrorMessage { get; set; }
@@ -57,7 +60,7 @@ namespace RAGChatBot.Presentation.Pages.Subscription
                 return RedirectToPage("/Index");
             }
 
-            const long amount = 199000;
+            long amount = _configuration.GetValue<long>("SubscriptionSettings:PremiumPrice", 199000);
 
             var orderCode = Interlocked.Increment(ref _lastOrderCode);
 

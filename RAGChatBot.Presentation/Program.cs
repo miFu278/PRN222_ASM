@@ -140,11 +140,13 @@ var payosClient = new PayOS.PayOSClient(new PayOS.PayOSOptions
     ChecksumKey = payosSection["ChecksumKey"] ?? throw new InvalidOperationException("Missing PayOS:ChecksumKey")
 });
 builder.Services.AddSingleton(payosClient);
+var appBaseUrl = builder.Configuration["AppUrls:BaseUrl"] ?? "http://localhost:5178";
 builder.Services.AddSingleton<IPayOSService>(sp => new PayOSService(
     sp.GetRequiredService<PayOS.PayOSClient>(),
-    payosSection["ReturnUrl"] ?? "http://localhost:5178/Subscription/PaymentCallback",
-    payosSection["CancelUrl"] ?? "http://localhost:5178/Subscription/PaymentCancelled"
+    payosSection["ReturnUrl"] ?? $"{appBaseUrl}/Subscription/PaymentCallback",
+    payosSection["CancelUrl"] ?? $"{appBaseUrl}/Subscription/PaymentCancelled"
 ));
+
 
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddHostedService<DocumentProcessingWorker>();

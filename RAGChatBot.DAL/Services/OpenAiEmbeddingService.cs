@@ -19,7 +19,7 @@ namespace RAGChatBot.DAL.Services
         private readonly string _baseUrl;
         private readonly string _apiKey;
         private readonly string _model;
-        private const int EmbeddingDimensions = 1536;
+        private readonly int _embeddingDimensions;
 
         public OpenAiEmbeddingService(
             HttpClient httpClient, 
@@ -33,6 +33,7 @@ namespace RAGChatBot.DAL.Services
             _baseUrl = section["BaseUrl"] ?? "https://aigw.9router.com/v1";
             _apiKey = section["ApiKey"] ?? string.Empty;
             _model = section["EmbeddingModel"] ?? "text-embedding-3-small";
+            _embeddingDimensions = int.TryParse(section["EmbeddingDimensions"], out var dim) ? dim : 1536;
 
             if (string.IsNullOrWhiteSpace(_apiKey))
             {
@@ -59,7 +60,8 @@ namespace RAGChatBot.DAL.Services
                 var requestBody = new OpenAIEmbeddingRequest
                 {
                     Input = $"task: search result | query: {text.Trim()}",
-                    Model = _model
+                    Model = _model,
+                    Dimensions = _embeddingDimensions
                 };
 
                 requestMessage.Content = JsonContent.Create(requestBody);
@@ -81,10 +83,10 @@ namespace RAGChatBot.DAL.Services
                 }
 
                 var embedding = result.Data[0].Embedding;
-                if (embedding.Length != EmbeddingDimensions)
+                if (embedding.Length != _embeddingDimensions)
                 {
                     throw new InvalidOperationException(
-                        $"Embedding API returned {embedding.Length} dimensions instead of {EmbeddingDimensions}.");
+                        $"Embedding API returned {embedding.Length} dimensions instead of {_embeddingDimensions}.");
                 }
 
                 return embedding;
@@ -128,7 +130,8 @@ namespace RAGChatBot.DAL.Services
                         var requestBody = new OpenAIEmbeddingRequest
                         {
                             Input = batch,
-                            Model = _model
+                            Model = _model,
+                            Dimensions = _embeddingDimensions
                         };
 
                         requestMessage.Content = JsonContent.Create(requestBody);
@@ -165,10 +168,10 @@ namespace RAGChatBot.DAL.Services
                     foreach (var item in sortedData)
                     {
                         var embedding = item.Embedding;
-                        if (embedding.Length != EmbeddingDimensions)
+                        if (embedding.Length != _embeddingDimensions)
                         {
                             throw new InvalidOperationException(
-                                $"Batch embedding API returned {embedding.Length} dimensions instead of {EmbeddingDimensions}.");
+                                $"Batch embedding API returned {embedding.Length} dimensions instead of {_embeddingDimensions}.");
                         }
                         results.Add(embedding);
                     }
@@ -205,7 +208,7 @@ namespace RAGChatBot.DAL.Services
             public string Model { get; set; } = "text-embedding-3-small";
 
             [JsonPropertyName("dimensions")]
-            public int Dimensions { get; set; } = EmbeddingDimensions;
+            public int Dimensions { get; set; }
         }
 
         private class OpenAIEmbeddingResponse

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RAGChatBot.Domain.Constants;
 using RAGChatBot.Domain.Interfaces;
@@ -31,7 +31,8 @@ namespace RAGChatBot.DAL.Services
             _apiKey = section["ApiKey"] ?? string.Empty;
             _senderEmail = section["SenderEmail"] ?? "no-reply@ragchatbot.com";
             _senderName = section["SenderName"] ?? "RAG ChatBot Admin";
-            _loginUrl = section["LoginUrl"] ?? "http://localhost:5178/Account/Login";
+            var appBaseUrl = configuration["AppUrls:BaseUrl"] ?? "http://localhost:5178";
+            _loginUrl = section["LoginUrl"] ?? $"{appBaseUrl}/Account/Login";
 
             if (string.IsNullOrWhiteSpace(_apiKey))
             {

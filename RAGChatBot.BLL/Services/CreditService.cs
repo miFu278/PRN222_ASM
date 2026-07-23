@@ -1,23 +1,27 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using RAGChatBot.Domain.Interfaces;
 
 namespace RAGChatBot.BLL.Services
 {
     public class CreditService : ICreditService
     {
-        private const int FreeDailyLimit = 10;
-        private const int PremiumDailyLimit = 50;
+        private readonly int _freeDailyLimit;
+        private readonly int _premiumDailyLimit;
         private static readonly TimeZoneInfo VietnamTimeZone = ResolveVietnamTimeZone();
         private readonly IUserRepository _userRepository;
         private readonly IChatSessionRepository _chatSessionRepository;
 
         public CreditService(
             IUserRepository userRepository,
-            IChatSessionRepository chatSessionRepository)
+            IChatSessionRepository chatSessionRepository,
+            IConfiguration configuration)
         {
             _userRepository = userRepository;
             _chatSessionRepository = chatSessionRepository;
+            _freeDailyLimit = configuration.GetValue<int>("SubscriptionSettings:FreeDailyLimit", 10);
+            _premiumDailyLimit = configuration.GetValue<int>("SubscriptionSettings:PremiumDailyLimit", 50);
         }
 
         public async Task<(bool allowed, int remaining)> CheckAndDeductCreditAsync(
@@ -28,8 +32,8 @@ namespace RAGChatBot.BLL.Services
             var dailyLimit = user != null &&
                 string.Equals(user.SubscriptionTier, "Premium", StringComparison.OrdinalIgnoreCase) &&
                 (!user.SubscriptionExpiresAt.HasValue || user.SubscriptionExpiresAt.Value > DateTime.UtcNow)
-                    ? PremiumDailyLimit
-                    : FreeDailyLimit;
+                    ? _premiumDailyLimit
+                    : _freeDailyLimit;
 
             return await _chatSessionRepository.TryConsumeDailyCreditAsync(
                 userId,
