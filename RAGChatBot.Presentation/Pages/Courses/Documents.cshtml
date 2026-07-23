@@ -80,7 +80,7 @@
                         <label class="form-label text-muted small text-uppercase tracking-wider">Tệp đính kèm (.pdf, .docx):</label>
                         <input type="file" asp-for="UploadedFile" class="input-zen w-100" accept=".pdf,.docx" required style="padding: 0 !important; cursor: pointer;" />
                         <div class="mt-2 small text-muted" style="font-weight: 300;">
-                            Giới hạn: @(Model.CurrentSubscriptionTier == "Premium" ? "50 MB (Premium)" : "5 MB (Free)")
+                            Giới hạn: @(Model.CurrentSubscriptionTier == "Premium" ? $"{Model.MaxUploadSizePremiumMB} MB (Premium)" : $"{Model.MaxUploadSizeFreeMB} MB (Free)")
                         </div>
                     </div>
 

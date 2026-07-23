@@ -96,7 +96,7 @@ namespace RAGChatBot.DAL.Context
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.DocumentId);
                 entity.Property(e => e.Embedding)
-                      .HasColumnType("vector(1536)"); // 1536 chiều (chuẩn OpenAI text-embedding-3-small)
+                      .HasColumnType($"vector({AiConstants.VectorDimensions})"); // Chuẩn hóa số chiều từ hằng số
                 
                 entity.HasOne(e => e.Document)
                       .WithMany(d => d.Chunks)

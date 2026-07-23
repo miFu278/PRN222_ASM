@@ -15,11 +15,13 @@ namespace RAGChatBot.Presentation.Pages.Courses
     {
         private readonly IDocumentService _documentService;
         private readonly ICourseService _courseService;
+        private readonly IConfiguration _configuration;
 
-        public DocumentsModel(IDocumentService documentService, ICourseService courseService)
+        public DocumentsModel(IDocumentService documentService, ICourseService courseService, IConfiguration configuration)
         {
             _documentService = documentService;
             _courseService = courseService;
+            _configuration = configuration;
         }
 
         [BindProperty(SupportsGet = true)]
@@ -37,6 +39,8 @@ namespace RAGChatBot.Presentation.Pages.Courses
         public bool HasCourseAccess { get; set; }
         public string CurrentSubscriptionTier { get; set; } = "Free";
         public Guid CurrentUserId { get; set; }
+        public long MaxUploadSizeFreeMB { get; set; } = 5;
+        public long MaxUploadSizePremiumMB { get; set; } = 50;
 
         [BindProperty]
         public string Chapter { get; set; } = string.Empty;
@@ -56,6 +60,8 @@ namespace RAGChatBot.Presentation.Pages.Courses
         public async Task<IActionResult> OnGetAsync()
         {
             await LoadCourseDetails();
+            MaxUploadSizeFreeMB = _configuration.GetValue<long>("SubscriptionSettings:MaxUploadSizeFreeMB", 5);
+            MaxUploadSizePremiumMB = _configuration.GetValue<long>("SubscriptionSettings:MaxUploadSizePremiumMB", 50);
             if (!HasCourseAccess) return Forbid();
             await LoadDocuments();
             return Page();
@@ -75,7 +81,9 @@ namespace RAGChatBot.Presentation.Pages.Courses
 
             try
             {
-                long maxBytes = CurrentSubscriptionTier == "Premium" ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+                MaxUploadSizeFreeMB = _configuration.GetValue<long>("SubscriptionSettings:MaxUploadSizeFreeMB", 5);
+                MaxUploadSizePremiumMB = _configuration.GetValue<long>("SubscriptionSettings:MaxUploadSizePremiumMB", 50);
+                long maxBytes = CurrentSubscriptionTier == "Premium" ? MaxUploadSizePremiumMB * 1024 * 1024 : MaxUploadSizeFreeMB * 1024 * 1024;
                 if (UploadedFile.Length > maxBytes)
                 {
                     ModelState.AddModelError(string.Empty, $"File quá lớn. Giới hạn là {(maxBytes / 1024 / 1024)}MB.");
